@@ -1,0 +1,13 @@
+# Build output
+build/
+
+# Coverage artifacts
+coverage_combined/
+coverage_unit.cov
+coverage_report.xml
+
+# IDE / OS
+.vs/
+*.user
+.DS_Store
+Thumbs.db
