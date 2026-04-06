@@ -1,6 +1,40 @@
+/**
+ * @file main.c
+ * @brief Application entry point — simulated patient monitoring session.
+ *
+ * @details
+ * Demonstrates the Patient Vital Signs Monitor with two simulated patients:
+ *
+ * **Patient 1 — Sarah Johnson (ID 1001)**
+ * Simulates a deterioration trajectory across three readings:
+ * - Reading 1: All normal (admission baseline)
+ * - Reading 2: All WARNING (developing sepsis-like presentation)
+ * - Reading 3: Temperature and SpO2 CRITICAL (acute crisis)
+ *
+ * **Patient 2 — David Okonkwo (ID 1002)**
+ * Simulates an isolated bradycardia episode:
+ * - Reading 1: All normal (stable)
+ * - Reading 2: Heart rate CRITICAL (severe bradycardia at 38 bpm)
+ *
+ * ### Output Format
+ * Each reading shows per-parameter classification in brackets and any
+ * active alerts prefixed with `!  WARNING` or `!! CRITICAL`. A summary
+ * block is printed at the end of each patient's session.
+ *
+ * @version 1.0.0
+ * @date    2026-04-06
+ * @author  vinu-engineer
+ */
+
 #include <stdio.h>
 #include "patient.h"
 
+/**
+ * @brief Print a single vital sign reading with per-parameter status and alerts.
+ *
+ * @param[in] num  Reading sequence number (1-based), used in the heading.
+ * @param[in] v    Pointer to the VitalSigns to display. Must not be NULL.
+ */
 static void print_reading(int num, const VitalSigns *v)
 {
     Alert alerts[MAX_ALERTS];
@@ -30,12 +64,17 @@ static void print_reading(int num, const VitalSigns *v)
     }
 }
 
+/**
+ * @brief Run the monitoring session for Patient 1 (deterioration scenario).
+ *
+ * @details Admits Sarah Johnson and records three readings that progress
+ * from NORMAL → WARNING → CRITICAL to demonstrate full alert escalation.
+ */
 static void monitor_patient(void)
 {
     PatientRecord rec;
     VitalSigns v;
 
-    /* --- Admit patient ----------------------------------------- */
     patient_init(&rec, 1001, "Sarah Johnson", 52, 72.5f, 1.66f);
 
     printf("==================================================\n");
@@ -48,27 +87,30 @@ static void monitor_patient(void)
            calculate_bmi(rec.info.weight_kg, rec.info.height_m),
            bmi_category(calculate_bmi(rec.info.weight_kg, rec.info.height_m)));
 
-    /* --- Reading 1: normal admission vitals -------------------- */
-    v = (VitalSigns){ 78, 122, 82, 36.7f, 98 };
+    v = (VitalSigns){ 78, 122, 82, 36.7f, 98 }; /* normal admission       */
     patient_add_reading(&rec, &v);
     print_reading(1, &v);
 
-    /* --- Reading 2: mild deterioration — all WARNING ----------- */
-    v = (VitalSigns){ 108, 148, 94, 37.9f, 93 };
+    v = (VitalSigns){ 108, 148, 94, 37.9f, 93 }; /* mild deterioration    */
     patient_add_reading(&rec, &v);
     print_reading(2, &v);
 
-    /* --- Reading 3: acute crisis — CRITICAL -------------------- */
-    v = (VitalSigns){ 135, 175, 112, 39.8f, 87 };
+    v = (VitalSigns){ 135, 175, 112, 39.8f, 87 }; /* acute crisis         */
     patient_add_reading(&rec, &v);
     print_reading(3, &v);
 
-    /* --- Final summary ----------------------------------------- */
     printf("\n");
     patient_print_summary(&rec);
     printf("\n");
 }
 
+/**
+ * @brief Run the monitoring session for Patient 2 (bradycardia scenario).
+ *
+ * @details Admits David Okonkwo and records two readings, with the second
+ * showing isolated severe bradycardia (38 bpm) while all other parameters
+ * remain normal.
+ */
 static void monitor_second_patient(void)
 {
     PatientRecord rec;
@@ -85,13 +127,11 @@ static void monitor_second_patient(void)
            calculate_bmi(rec.info.weight_kg, rec.info.height_m),
            bmi_category(calculate_bmi(rec.info.weight_kg, rec.info.height_m)));
 
-    /* Stable patient — all normal */
-    v = (VitalSigns){ 68, 118, 76, 36.5f, 99 };
+    v = (VitalSigns){ 68, 118, 76, 36.5f, 99 }; /* stable baseline        */
     patient_add_reading(&rec, &v);
     print_reading(1, &v);
 
-    /* Bradycardia episode */
-    v = (VitalSigns){ 38, 110, 72, 36.6f, 97 };
+    v = (VitalSigns){ 38, 110, 72, 36.6f, 97 }; /* bradycardia episode    */
     patient_add_reading(&rec, &v);
     print_reading(2, &v);
 
@@ -100,6 +140,10 @@ static void monitor_second_patient(void)
     printf("\n");
 }
 
+/**
+ * @brief Application entry point.
+ * @return 0 on successful completion.
+ */
 int main(void)
 {
     monitor_patient();

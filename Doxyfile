@@ -1,0 +1,134 @@
+# =============================================================================
+# Doxyfile — Doxygen Configuration
+# Project : Patient Vital Signs Monitor
+# Version : 1.0.0
+# Standard: IEC 62304 Class B
+#
+# Generates:
+#   - HTML reference documentation  (docs/html/index.html)
+#   - Architecture call graphs
+#   - Module dependency (include) graphs
+#   - Data structure diagrams
+#   - Detailed design documentation per function
+#
+# Requires: Doxygen 1.9+  and  Graphviz (for diagrams)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Project identity
+# -----------------------------------------------------------------------------
+PROJECT_NAME           = "Patient Vital Signs Monitor"
+PROJECT_NUMBER         = 1.0.0
+PROJECT_BRIEF          = "Medical device vital signs monitoring software — IEC 62304 Class B"
+PROJECT_LOGO           =
+OUTPUT_DIRECTORY       = docs
+
+# -----------------------------------------------------------------------------
+# Source inputs
+# -----------------------------------------------------------------------------
+INPUT                  = src include
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = NO
+EXCLUDE_PATTERNS       =
+
+# -----------------------------------------------------------------------------
+# Extraction — document everything, including static and private members
+# -----------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_LOCAL_METHODS  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = YES
+
+# -----------------------------------------------------------------------------
+# Source browsing — embed annotated source in the HTML output
+# This is essential for IEC 62304 code review and audit trail.
+# -----------------------------------------------------------------------------
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+REFERENCES_LINK_SOURCE = YES
+
+# -----------------------------------------------------------------------------
+# Output formats
+# -----------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_TIMESTAMP         = YES
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 250
+
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+# -----------------------------------------------------------------------------
+# Preprocessing — parse #ifdef blocks so MSVC guards are documented too
+# -----------------------------------------------------------------------------
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+PREDEFINED             = _MSC_VER
+
+# -----------------------------------------------------------------------------
+# Diagrams — requires Graphviz (dot) to be installed
+# Generates: call graphs, caller graphs, include graphs, collaboration diagrams
+# -----------------------------------------------------------------------------
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 0
+UML_LOOK               = YES
+UML_LIMIT_NUM_FIELDS   = 20
+TEMPLATE_RELATIONS     = YES
+
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_GRAPH_MAX_NODES    = 100
+MAX_DOT_GRAPH_DEPTH    = 0
+DOT_TRANSPARENT        = YES
+DOT_CLEANUP            = YES
+
+# -----------------------------------------------------------------------------
+# Warnings — treat undocumented items as warnings for IEC 62304 audit
+# -----------------------------------------------------------------------------
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+WARN_LOGFILE           = docs/doxygen_warnings.log
+
+# -----------------------------------------------------------------------------
+# Output styling
+# -----------------------------------------------------------------------------
+ALPHABETICAL_INDEX     = YES
+COLS_IN_ALPHA_INDEX    = 3
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_BY_SCOPE_NAME     = NO
+SHOW_INCLUDE_FILES     = YES
+SHOW_USED_FILES        = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+
+# -----------------------------------------------------------------------------
+# Custom HTML header/footer (optional — leave blank to use Doxygen defaults)
+# -----------------------------------------------------------------------------
+HTML_HEADER            =
+HTML_FOOTER            =
+HTML_STYLESHEET        =
+HTML_EXTRA_STYLESHEET  =
