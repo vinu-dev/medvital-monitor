@@ -1,6 +1,6 @@
 @echo off
 echo ================================
-echo   Building MyApp with CMake
+echo   Building Patient Monitor
 echo ================================
 
 :: Check if cmake is available
@@ -40,9 +40,9 @@ if %ERRORLEVEL% NEQ 0 (
 :: Run the executable
 echo.
 echo ================================
-echo   Running myapp
+echo   Running Patient Monitor
 echo ================================
-build\Debug\myapp.exe 2>nul || build\myapp.exe
+build\Debug\patient_monitor.exe 2>nul || build\patient_monitor.exe
 
 echo.
 echo Done!
