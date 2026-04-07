@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-B
+**Document ID:** RTM-001-REV-C
 **Project:** Patient Vital Signs Monitor
-**Version:** 1.3.0
+**Version:** 1.4.0
 **Date:** 2026-04-07
 **Status:** Approved
 **Standard:** IEC 62304 §5.7.3 / FDA SW Validation Guidance
@@ -55,6 +55,8 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-013 | SYS-013 | SWR-GUI-002 | `gui_main.c` : `attempt_login()`, `login_proc()`, logout handler | `AuthDisplayName.*` (5 tests) | — |
 | UNS-014, UNS-005, UNS-006 | SYS-014 | SWR-GUI-003 | `gui_main.c` : `paint_tile()`, `paint_tiles()`, `paint_status_banner()`, `update_dashboard()` | GUI demo | — |
 | UNS-014, UNS-008, UNS-009 | SYS-014 | SWR-GUI-004 | `gui_main.c` : `create_dash_controls()`, `do_admit()`, `do_add_reading()`, `do_scenario()` | GUI demo | — |
+| UNS-015 | SYS-015 | SWR-GUI-005 | `hw_vitals.h` (interface); `gui_main.c` uses only HAL calls | Architecture review | — |
+| UNS-015 | SYS-015, SYS-012 | SWR-GUI-006 | `sim_vitals.c` : `hw_init()`, `hw_get_next_reading()` | GUI demo (tiles cycle NORMAL→WARNING→CRITICAL→NORMAL) | — |
 
 ---
 
@@ -125,8 +127,9 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-012 | Platform compatibility | SYS-012 | SWR-PAT-001, SWR-ALT-003 | ✓ |
 | UNS-013 | User authentication | SYS-013 | SWR-GUI-001, SWR-GUI-002 | ✓ |
 | UNS-014 | Graphical dashboard | SYS-014 | SWR-GUI-003, SWR-GUI-004 | ✓ |
+| UNS-015 | Live monitoring feed | SYS-015 | SWR-GUI-005, SWR-GUI-006 | ✓ |
 
-**Result: 14 / 14 User Needs covered ✓**
+**Result: 15 / 15 User Needs covered ✓**
 
 ---
 
@@ -157,8 +160,10 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | SWR-GUI-002 | `attempt_login()`, `login_proc()`, logout | 5 | — | ✓ |
 | SWR-GUI-003 | `paint_tile()`, `paint_tiles()`, `paint_status_banner()` | GUI demo | — | ✓ |
 | SWR-GUI-004 | `create_dash_controls()`, `do_admit()`, `do_add_reading()` | GUI demo | — | ✓ |
+| SWR-GUI-005 | `hw_vitals.h` HAL interface | Architecture review | — | ✓ |
+| SWR-GUI-006 | `sim_vitals.c` : `hw_init()`, `hw_get_next_reading()` | GUI demo | — | ✓ |
 
-**Result: 21 / 21 SWRs implemented and tested ✓**
+**Result: 23 / 23 SWRs implemented and tested ✓**
 
 ---
 
@@ -182,3 +187,4 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 |-----|------------|-----------------|----------------------|
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-001..004; 14/14 UNS, 21/21 SWR, 121 tests |
+| C   | 2026-04-07 | vinu-engineer   | Added UNS-015, SWR-GUI-005/006 (HAL + sim); 15/15 UNS, 23/23 SWR, 121 tests |

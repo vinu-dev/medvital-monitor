@@ -29,6 +29,7 @@
 #include "alerts.h"
 #include "patient.h"
 #include "gui_auth.h"
+#include "hw_vitals.h"
 
 /* =======================================================================
  * Window class names
@@ -68,6 +69,10 @@
 #define IDC_BTN_SCEN1    1200
 #define IDC_BTN_SCEN2    1201
 #define IDC_BTN_LOGOUT   1202
+#define IDC_BTN_PAUSE    1203
+
+/* Simulation timer ID */
+#define TIMER_SIM        1
 
 /* Dashboard — output lists */
 #define IDC_LIST_ALERTS  1300
@@ -120,6 +125,9 @@ typedef struct {
     /* Patient session */
     PatientRecord patient;
     int           has_patient;
+
+    /* Simulation state */
+    int           sim_paused;
 
     /* GDI font handles */
     HFONT font_hdr;       /* 18 pt bold  — header title       */
@@ -196,11 +204,22 @@ static void paint_header(HDC hdc, int cw)
                  g_app.font_hdr, CLR_WHITE,
                  DT_SINGLELINE | DT_VCENTER | DT_LEFT);
 
+    /* SIM LIVE / SIM PAUSED badge */
+    if (g_app.has_patient) {
+        const char *sim_txt   = g_app.sim_paused ? "SIM PAUSED" : "* SIM LIVE";
+        COLORREF    sim_color = g_app.sim_paused ? RGB(253, 224,  71)
+                                                 : RGB(134, 239, 172);
+        draw_text_ex(hdc, sim_txt,
+                     cw - 360, 0, 130, HDR_H,
+                     g_app.font_tile_lbl, sim_color,
+                     DT_SINGLELINE | DT_VCENTER | DT_RIGHT);
+    }
+
     /* Logged-in user */
     if (g_app.logged_user[0] != '\0') {
         snprintf(buf, sizeof(buf), "User: %s", g_app.logged_user);
         draw_text_ex(hdc, buf,
-                     cw - 220, 0, 160, HDR_H,
+                     cw - 220, 0, 130, HDR_H,
                      g_app.font_ui, RGB(186, 230, 253),
                      DT_SINGLELINE | DT_VCENTER | DT_RIGHT);
     }
@@ -227,13 +246,12 @@ static void paint_patient_bar(HDC hdc, int cw)
                  bmi, bmi_category(bmi),
                  g_app.patient.reading_count, MAX_READINGS);
     } else {
-        snprintf(buf, sizeof(buf),
-                 "  No patient admitted — "
-                 "fill in patient details below and click  Admit / Refresh");
+        snprintf(buf, sizeof(buf), "  Awaiting first simulation reading...");
     }
 
     draw_text_ex(hdc, buf, 0, HDR_H, cw, PBAR_H,
-                 g_app.font_ui, CLR_LIGHT_GRAY,
+                 g_app.font_ui,
+                 g_app.has_patient ? CLR_LIGHT_GRAY : RGB(148, 163, 184),
                  DT_SINGLELINE | DT_VCENTER | DT_LEFT);
 }
 
@@ -709,17 +727,62 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
 
-        case WM_CREATE:
+        case WM_CREATE: {
+            VitalSigns first_v;
             g_app.hwnd_dash = w;
             create_dash_controls(w);
             font_all_children(w, g_app.font_ui);
-            /* Logout button sits inside the painted header — create after font pass */
+            /* Header buttons — created after font pass so they get the right font */
             {
                 HWND btn = make_btn(w, IDC_BTN_LOGOUT, "Logout",
                                     WIN_CW - 86, 14, 72, 28);
                 SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
             }
+            {
+                HWND btn = make_btn(w, IDC_BTN_PAUSE, "Pause Sim",
+                                    WIN_CW - 176, 14, 86, 28);
+                SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
+            }
+            /* Initialise simulation and auto-admit demo patient */
+            hw_init();
+            g_app.sim_paused = 0;
+            patient_init(&g_app.patient, 2001, "James Mitchell",
+                         45, 78.0f, 1.75f);
+            g_app.has_patient = 1;
+            /* Pre-populate patient identity fields with demo values */
+            set_txt(w, IDC_PAT_ID,     "2001");
+            set_txt(w, IDC_PAT_NAME,   "James Mitchell");
+            set_txt(w, IDC_PAT_AGE,    "45");
+            set_txt(w, IDC_PAT_WEIGHT, "78.0");
+            set_txt(w, IDC_PAT_HEIGHT, "1.75");
+            /* First reading fires immediately so dashboard is never empty */
+            hw_get_next_reading(&first_v);
+            patient_add_reading(&g_app.patient, &first_v);
+            /* 2-second simulation timer */
+            SetTimer(w, TIMER_SIM, 2000, NULL);
             update_dashboard(w);
+            return 0;
+        }
+
+        case WM_TIMER:
+            if (wp == TIMER_SIM && !g_app.sim_paused) {
+                VitalSigns v;
+                /* If buffer is full, re-init patient keeping same demographics
+                 * so monitoring continues uninterrupted across cycle boundaries */
+                if (g_app.has_patient
+                        && patient_is_full(&g_app.patient)) {
+                    patient_init(&g_app.patient,
+                                 g_app.patient.info.id,
+                                 g_app.patient.info.name,
+                                 g_app.patient.info.age,
+                                 g_app.patient.info.weight_kg,
+                                 g_app.patient.info.height_m);
+                }
+                hw_get_next_reading(&v);
+                patient_add_reading(&g_app.patient, &v);
+                g_app.has_patient = 1;
+                update_dashboard(w);
+            }
             return 0;
 
         case WM_ERASEBKGND: {
@@ -748,9 +811,17 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
                 case IDC_BTN_CLEAR:  do_clear(w);       return 0;
                 case IDC_BTN_SCEN1:  do_scenario(w, 1); return 0;
                 case IDC_BTN_SCEN2:  do_scenario(w, 2); return 0;
+                case IDC_BTN_PAUSE:
+                    g_app.sim_paused = !g_app.sim_paused;
+                    SetWindowTextA(GetDlgItem(w, IDC_BTN_PAUSE),
+                                   g_app.sim_paused ? "Resume Sim" : "Pause Sim");
+                    InvalidateRect(w, NULL, FALSE);
+                    return 0;
                 case IDC_BTN_LOGOUT:
+                    KillTimer(w, TIMER_SIM);
                     ZeroMemory(&g_app.patient, sizeof(g_app.patient));
                     g_app.has_patient      = 0;
+                    g_app.sim_paused       = 0;
                     g_app.logged_user[0]   = '\0';
                     DestroyWindow(w);
                     g_app.hwnd_dash = NULL;
@@ -766,6 +837,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             break;
 
         case WM_DESTROY:
+            KillTimer(w, TIMER_SIM);
             g_app.hwnd_dash = NULL;
             if (g_app.hwnd_login == NULL) PostQuitMessage(0);
             return 0;

@@ -40,6 +40,7 @@ if(WIN32)
     add_executable(patient_monitor_gui WIN32
         src/gui_main.c
         src/gui_auth.c
+        src/sim_vitals.c
     )
     target_include_directories(patient_monitor_gui PRIVATE include)
     target_link_libraries(patient_monitor_gui PRIVATE monitor_lib)

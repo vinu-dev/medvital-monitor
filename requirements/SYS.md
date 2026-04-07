@@ -167,9 +167,20 @@ The dashboard shall refresh automatically after each new reading is added.
 
 ---
 
+### SYS-015 — Hardware Abstraction Layer
+**Requirement:** The system shall isolate all data acquisition behind a
+hardware abstraction layer (HAL) consisting of two functions: `hw_init()`
+and `hw_get_next_reading()`. The simulation back-end (`sim_vitals.c`) shall
+be replaceable by a hardware driver translation unit without modifying any
+other source file. All HAL implementations shall use only static storage.
+**Traces to:** UNS-015
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
 |-----|------------|-----------------|----------------------|
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added SYS-013, SYS-014 (GUI) |
+| C   | 2026-04-07 | vinu-engineer   | Added SYS-015 (HAL) |

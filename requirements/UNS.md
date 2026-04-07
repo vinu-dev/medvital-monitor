@@ -162,9 +162,21 @@ high-pressure scenarios.
 
 ---
 
+### UNS-015 — Live Monitoring Feed
+**Need:** The system shall display a continuous live feed of vital signs that
+updates automatically without requiring any clinician action after login.
+**Rationale:** Bedside monitoring must be continuous — requiring manual data
+entry in real use would introduce latency and increase the risk of delayed
+detection of deterioration. A simulation feed demonstrates the full monitoring
+workflow and provides a plug point for real hardware integration.
+**Priority:** High
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
 |-----|------------|-----------------|----------------------|
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added UNS-013, UNS-014 (GUI) |
+| C   | 2026-04-07 | vinu-engineer   | Added UNS-015 (live monitoring feed / HAL) |

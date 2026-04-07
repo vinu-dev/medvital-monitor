@@ -288,9 +288,38 @@ scenarios (deterioration, bradycardia).
 
 ---
 
+### SWR-GUI-005 — Hardware Abstraction Layer Interface
+**Requirement:** The GUI shall acquire vital signs exclusively through the
+HAL interface defined in `hw_vitals.h` (`hw_init()`, `hw_get_next_reading()`).
+No GUI source file shall directly reference simulation-specific data structures.
+Swapping `sim_vitals.c` for a hardware driver translation unit shall be
+sufficient to connect real hardware without modifying `gui_main.c`.
+**Traces to:** UNS-015, SYS-015
+**Implemented in:** `include/hw_vitals.h`, `src/gui_main.c`
+**Verified by:** Architecture review — `gui_main.c` contains no references to
+`SIM_SEQUENCE` or any sim-specific symbol.
+
+---
+
+### SWR-GUI-006 — Simulated Vital Signs Data Feed
+**Requirement:** The simulation back-end (`sim_vitals.c`) shall:
+1. Implement a 20-entry clinical scenario table cycling through four phases:
+   STABLE NORMAL (indices 0–4), DETERIORATING to WARNING (5–8), CRITICAL
+   (9–11), and RECOVERING (12–18), with entry 19 returning to stable.
+2. Expose readings via `hw_get_next_reading()` with automatic wrap-around.
+3. Be reset by `hw_init()` to index 0.
+4. Use only static storage — no heap allocation.
+**Traces to:** UNS-015, SYS-012, SYS-015
+**Implemented in:** `src/sim_vitals.c`
+**Verified by:** Verified visually via GUI demonstration (tiles cycle through
+NORMAL → WARNING → CRITICAL → NORMAL colour states over time).
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
 |-----|------------|-----------------|----------------------|
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added UNIT-GUI module (SWR-GUI-001..004) |
+| C   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-005 (HAL), SWR-GUI-006 (sim) |
