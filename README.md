@@ -12,76 +12,103 @@ Built to **IEC 62304 Class B** and **FDA SW Validation Guidance** standards.
 3. [Modules](#modules)
 4. [Alert Thresholds](#alert-thresholds)
 5. [Build](#build)
-6. [Testing](#testing)
-7. [Code Coverage](#code-coverage)
-8. [Documentation](#documentation)
-9. [Standards Compliance](#standards-compliance)
-10. [Repository Structure](#repository-structure)
+6. [GUI Workflow](#gui-workflow)
+7. [Testing](#testing)
+8. [Code Coverage](#code-coverage)
+9. [Documentation](#documentation)
+10. [Standards Compliance](#standards-compliance)
+11. [Repository Structure](#repository-structure)
 
 ---
 
 ## Overview
 
-The application monitors up to 10 sequential vital sign readings per patient,
-classifies each parameter against clinical thresholds, generates structured
-alert records, and displays a formatted summary with overall patient status.
-It includes a Windows desktop GUI for interactive monitoring alongside the
-original console walkthrough.
+The Patient Vital Signs Monitor acquires and classifies four vital sign parameters
+in real time, generates structured alert records, and presents them through a
+colour-coded Windows desktop GUI.  A console demonstration executable is also
+included.
 
 **Supported vital signs:**
-- Heart rate (bpm)
-- Blood pressure — systolic and diastolic (mmHg)
-- Body temperature (°C)
-- Peripheral oxygen saturation — SpO2 (%)
-- Body Mass Index — BMI (derived from weight and height)
+
+| Parameter         | Unit  | Source standard                       |
+|-------------------|-------|---------------------------------------|
+| Heart rate        | bpm   | AHA/ACC 2019                          |
+| Systolic BP       | mmHg  | JNC-8 / ESC 2018                      |
+| Diastolic BP      | mmHg  | JNC-8 / ESC 2018                      |
+| Body temperature  | °C    | WHO Clinical References               |
+| SpO2              | %     | British Thoracic Society              |
+| BMI (derived)     | kg/m² | WHO BMI categories                    |
+
+**Design constraints (IEC 62304 Class B):**
+
+- No heap allocation — all storage is stack or statically sized.
+- Patient record holds up to `MAX_READINGS` (10) readings per monitoring cycle;
+  the GUI resets and continues automatically when the buffer is full.
+- Hardware acquisition isolated behind a HAL (`hw_vitals.h`) so the simulation
+  driver (`sim_vitals.c`) can be replaced by a real hardware driver without
+  modifying any other file.
 
 ---
 
 ## Architecture
 
 ```
-+-------------------------------------------------------------------+
-|                  Presentation Layer                               |
-|  patient_monitor_gui (gui_main.c)  |  patient_monitor (main.c)    |
-|  Interactive Win32 dashboard       |  Console scenario demo        |
-+-------------------------------+-----------------------------------+
-                                |
-                +---------------v---------------+
-                |          patient.c             |
-                |   PatientRecord management     |
-                |   - Init / add reading         |
-                |   - Status query               |
-                |   - Print summary              |
-                +-------+---------------+--------+
-                        |               |
-           +------------v---+   +-------v---------+
-           |   vitals.c     |   |   alerts.c      |
-           | Parameter      |   | Alert record    |
-           | validation     |   | generation      |
-           | BMI / strings  |   | from VitalSigns |
-           +----------------+   +-----------------+
++-----------------------------------------------------------------------+
+|                        Presentation Layer                             |
+|                                                                       |
+|  patient_monitor_gui.exe (gui_main.c)   patient_monitor.exe (main.c) |
+|  Interactive Win32 dashboard            Console scenario demo         |
+|  -- Login / logout                                                    |
+|  -- Colour-coded vital tiles (NORMAL/WARNING/CRITICAL)                |
+|  -- Live simulation feed  (Pause / Resume)                            |
++----------------------------+------------------------------------------+
+                             |
+              +--------------v--------------+
+              |        HAL Interface         |
+              |  hw_vitals.h                 |
+              |  hw_init() / hw_get_next()   |
+              |                              |
+              |  sim_vitals.c  <-- current   |
+              |  hw_driver.c   <-- swap in   |
+              |                   for real HW|
+              +--------------+---------------+
+                             |
+              +--------------v--------------+
+              |          patient.c           |
+              |   PatientRecord management   |
+              |   - Init / add reading       |
+              |   - Status query             |
+              |   - Print summary            |
+              +--------+----------+----------+
+                       |          |
+          +------------v--+  +----v-----------+
+          |   vitals.c    |  |   alerts.c     |
+          | Parameter     |  | Alert record   |
+          | validation    |  | generation     |
+          | BMI / strings |  | from VitalSigns|
+          +---------------+  +----------------+
 ```
 
 ### Data Flow
 
 ```
-VitalSigns  -->  check_*()           --> AlertLevel  (per parameter)
-VitalSigns  -->  overall_alert_level --> AlertLevel  (aggregate)
-VitalSigns  -->  generate_alerts()   --> Alert[]     (display records)
-Alert[]     -->  patient_print_summary / print_reading
-GUI actions  -->  patient_*() + vitals_*() + generate_alerts()
+hw_get_next_reading()  -->  VitalSigns
+VitalSigns  -->  check_*()            -->  AlertLevel  (per parameter)
+VitalSigns  -->  overall_alert_level  -->  AlertLevel  (aggregate)
+VitalSigns  -->  generate_alerts()   -->  Alert[]      (display records)
+Alert[]     -->  GUI tiles / status banner / alerts list
 ```
 
 ### Memory Model
 
-No heap allocation is used anywhere in the production code.
-All storage is stack or statically sized:
+No heap allocation is used anywhere in production code.
 
-| Structure     | Size                                  |
-|---------------|---------------------------------------|
-| `VitalSigns`  | 5 fields — ~20 bytes                  |
-| `Alert`       | level + 32 + 96 bytes = ~132 bytes    |
-| `PatientRecord` | PatientInfo + 10 × VitalSigns + int |
+| Structure       | Storage                                       |
+|-----------------|-----------------------------------------------|
+| `VitalSigns`    | 5 fields — ~20 bytes                          |
+| `Alert`         | level + message strings — ~132 bytes          |
+| `PatientRecord` | PatientInfo + 10 × VitalSigns + int           |
+| Simulation      | 20-entry static table in `sim_vitals.c`       |
 
 ---
 
@@ -89,19 +116,19 @@ All storage is stack or statically sized:
 
 ### `vitals.c` / `vitals.h` — UNIT-VIT
 
-Core classification engine. Validates each vital sign parameter against
+Core classification engine.  Validates each vital sign parameter against
 AHA/ACC-derived clinical thresholds and returns an `AlertLevel`.
 
-| Function                  | Description                                          |
-|---------------------------|------------------------------------------------------|
-| `check_heart_rate()`      | Classifies bpm → NORMAL / WARNING / CRITICAL         |
-| `check_blood_pressure()`  | Classifies systolic + diastolic together             |
-| `check_temperature()`     | Classifies °C → NORMAL / WARNING / CRITICAL          |
-| `check_spo2()`            | Classifies SpO2 % → NORMAL / WARNING / CRITICAL      |
-| `overall_alert_level()`   | Returns the highest level across all four parameters |
-| `calculate_bmi()`         | BMI = weight / height²; returns -1.0 for invalid height |
-| `bmi_category()`          | Maps BMI float → WHO category string                 |
-| `alert_level_str()`       | Maps `AlertLevel` → "NORMAL" / "WARNING" / "CRITICAL"|
+| Function                 | Description                                           |
+|--------------------------|-------------------------------------------------------|
+| `check_heart_rate()`     | Classifies bpm → NORMAL / WARNING / CRITICAL          |
+| `check_blood_pressure()` | Classifies systolic + diastolic together              |
+| `check_temperature()`    | Classifies °C → NORMAL / WARNING / CRITICAL           |
+| `check_spo2()`           | Classifies SpO2 % → NORMAL / WARNING / CRITICAL       |
+| `overall_alert_level()`  | Returns the highest level across all four parameters  |
+| `calculate_bmi()`        | BMI = weight / height²; returns -1.0 for invalid input|
+| `bmi_category()`         | Maps BMI float → WHO category string                  |
+| `alert_level_str()`      | Maps `AlertLevel` → "NORMAL" / "WARNING" / "CRITICAL" |
 
 ---
 
@@ -110,37 +137,77 @@ AHA/ACC-derived clinical thresholds and returns an `AlertLevel`.
 Translates a `VitalSigns` snapshot into a list of human-readable `Alert`
 records, one per out-of-range parameter.
 
-| Function            | Description                                                |
-|---------------------|------------------------------------------------------------|
+| Function            | Description                                                  |
+|---------------------|--------------------------------------------------------------|
 | `generate_alerts()` | Fills caller-supplied buffer; returns count of alerts written |
 
 ---
 
 ### `patient.c` / `patient.h` — UNIT-PAT
 
-Top-level patient record management. Stores demographics and a history of
+Top-level patient record management.  Stores demographics and a history of
 up to `MAX_READINGS` (10) vital sign readings.
 
-| Function                    | Description                                      |
-|-----------------------------|--------------------------------------------------|
-| `patient_init()`            | Zero-fills and populates a `PatientRecord`       |
-| `patient_add_reading()`     | Appends a reading; returns 0 if buffer is full   |
-| `patient_latest_reading()`  | Returns pointer to last reading, or NULL         |
-| `patient_current_status()`  | Overall `AlertLevel` from latest reading         |
-| `patient_is_full()`         | True when `reading_count == MAX_READINGS`        |
-| `patient_print_summary()`   | Formatted terminal output with alerts            |
+| Function                   | Description                                    |
+|----------------------------|------------------------------------------------|
+| `patient_init()`           | Zero-fills and populates a `PatientRecord`     |
+| `patient_add_reading()`    | Appends a reading; returns 0 if buffer is full |
+| `patient_latest_reading()` | Returns pointer to last reading, or NULL       |
+| `patient_current_status()` | Overall `AlertLevel` from latest reading       |
+| `patient_is_full()`        | True when `reading_count == MAX_READINGS`      |
+| `patient_print_summary()`  | Formatted terminal output with alerts          |
+
+---
+
+### `gui_auth.c` / `gui_auth.h` — UNIT-GUI (auth)
+
+Fixed-credential authentication for the desktop GUI.
+
+| Function             | Description                                             |
+|----------------------|---------------------------------------------------------|
+| `auth_validate()`    | Returns 1 only when username + password both match      |
+| `auth_display_name()`| Maps a username to a display name for the header bar    |
+
+Default credential: **admin / Monitor@2026**
+
+---
+
+### `hw_vitals.h` — UNIT-HAL
+
+Hardware Abstraction Layer interface.  The GUI calls only these two functions;
+replacing `sim_vitals.c` with a hardware driver is the only change needed to
+connect real sensors.
+
+| Function                | Description                                          |
+|-------------------------|------------------------------------------------------|
+| `hw_init()`             | Initialise the acquisition source (called on login)  |
+| `hw_get_next_reading()` | Return the next `VitalSigns` sample                  |
+
+---
+
+### `sim_vitals.c` — UNIT-SIM
+
+Simulation back-end for the HAL.  Cycles through a 20-entry clinical scenario
+table covering four phases:
+
+| Phase         | Indices | Status   | Description                          |
+|---------------|---------|----------|--------------------------------------|
+| Stable        | 0–4     | NORMAL   | All parameters within clinical range |
+| Deteriorating | 5–8     | WARNING  | Gradual rise towards threshold       |
+| Critical      | 9–11    | CRITICAL | Life-threatening values              |
+| Recovering    | 12–19   | WARNING→NORMAL | Progressive return to stable  |
 
 ---
 
 ## Alert Thresholds
 
-| Parameter      | NORMAL           | WARNING                         | CRITICAL              |
-|----------------|------------------|---------------------------------|-----------------------|
-| Heart Rate     | 60–100 bpm       | 41–59 bpm / 101–150 bpm         | ≤ 40 / ≥ 151 bpm      |
-| Systolic BP    | 90–140 mmHg      | 71–89 mmHg / 141–180 mmHg       | ≤ 70 / ≥ 181 mmHg     |
-| Diastolic BP   | 60–90 mmHg       | 41–59 mmHg / 91–120 mmHg        | ≤ 40 / ≥ 121 mmHg     |
-| Temperature    | 36.1–37.2 °C     | 35.0–36.0 °C / 37.3–39.5 °C    | < 35.0 / > 39.5 °C   |
-| SpO2           | 95–100 %         | 90–94 %                         | < 90 %                |
+| Parameter    | NORMAL           | WARNING                          | CRITICAL              |
+|--------------|------------------|----------------------------------|-----------------------|
+| Heart Rate   | 60–100 bpm       | 41–59 bpm / 101–150 bpm          | ≤ 40 / ≥ 151 bpm      |
+| Systolic BP  | 90–140 mmHg      | 71–89 mmHg / 141–180 mmHg        | ≤ 70 / ≥ 181 mmHg     |
+| Diastolic BP | 60–90 mmHg       | 41–59 mmHg / 91–120 mmHg         | ≤ 40 / ≥ 121 mmHg     |
+| Temperature  | 36.1–37.2 °C     | 35.0–36.0 °C / 37.3–39.5 °C     | < 35.0 / > 39.5 °C   |
+| SpO2         | 95–100 %         | 90–94 %                          | < 90 %                |
 
 *Sources: AHA/ACC 2019, JNC-8, ESC 2018, WHO, British Thoracic Society*
 
@@ -150,72 +217,118 @@ up to `MAX_READINGS` (10) vital sign readings.
 
 ### Prerequisites
 
-| Tool        | Minimum Version | Install                                         |
-|-------------|-----------------|--------------------------------------------------|
-| CMake       | 3.15            | `winget install Kitware.CMake`                   |
-| MSVC        | VS 2019         | Visual Studio with "Desktop development with C++"|
-| Git         | Any             | `winget install Git.Git`                         |
+| Tool    | Minimum   | Install                                                      |
+|---------|-----------|--------------------------------------------------------------|
+| CMake   | 3.15      | `winget install Kitware.CMake`                               |
+| MinGW GCC | 6.3+   | https://sourceforge.net/projects/mingw/ — select gcc-g++, mingw32-make |
+| Git     | Any       | `winget install Git.Git`  (needed by CMake FetchContent)     |
 
-### Windows scripts (double-click in File Explorer)
+> **Note:** MSVC is **not** required.  The project uses MinGW GCC exclusively.
+> Google Test (release-1.10.0) is downloaded automatically on first build.
 
-| Script                     | Purpose                                              |
-|----------------------------|------------------------------------------------------|
-| `setup_gtest.bat`          | **Full clean build** — delete old build, configure, compile |
-| `build.bat`                | Incremental rebuild + launch the GUI (fallback: console app) |
-| `run_tests.bat`            | Rebuild + run all 106 tests                          |
-| `install_coverage_tools.bat` | Install OpenCppCoverage (one time)               |
-| `run_coverage.bat`         | Run tests with coverage, generate HTML + XML report  |
-| `generate_docs.bat`        | Generate Doxygen architecture + design documentation |
+### Scripts
 
-### Manual build (any terminal)
+Four scripts cover the full workflow — double-click in File Explorer or run
+from a terminal.
 
-```bat
-cmake -S . -B build -DBUILD_TESTS=ON
-cmake --build build --config Debug
-build\Debug\patient_monitor_gui.exe
-```
+| Script               | What it does                                                          |
+|----------------------|-----------------------------------------------------------------------|
+| `build.bat`          | Configure + build everything (first run or incremental). Launches GUI.|
+| `run_tests.bat`      | Rebuild test targets and run all 121 tests. Exits non-zero on failure.|
+| `run_coverage.bat`   | Build with `--coverage`, run tests, generate HTML + XML reports.      |
+| `generate_docs.bat`  | Run Doxygen to produce HTML + XML design documentation.               |
 
-### GUI workflow
-
-- Admit or refresh a patient from the demographic fields.
-- Enter live vital signs and append them to the current patient history.
-- Review the latest reading, aggregate status banner, and active alerts.
-- Load built-in deterioration and bradycardia scenarios for demos.
-
-The original console executable remains available:
+### Typical workflow
 
 ```bat
-build\Debug\patient_monitor.exe
+:: First time (or after a clean)
+build.bat
+
+:: After code changes
+build.bat
+
+:: Run tests
+run_tests.bat
+
+:: Code coverage (requires pip install gcovr for HTML output)
+run_coverage.bat
+
+:: Doxygen docs
+generate_docs.bat
 ```
+
+### Manual build
+
+```bat
+cmake -S . -B build -G "MinGW Makefiles" ^
+      -DCMAKE_C_COMPILER=gcc ^
+      -DCMAKE_CXX_COMPILER=g++ ^
+      -DBUILD_TESTS=ON
+cmake --build build
+build\patient_monitor_gui.exe
+```
+
+---
+
+## GUI Workflow
+
+**Login**
+
+- Credentials: `admin` / `Monitor@2026`
+- Press Enter or click **SIGN IN**
+
+**Dashboard (after login)**
+
+- A demo patient (James Mitchell) is admitted automatically on startup.
+- Vital sign tiles update every 2 seconds from the simulation feed.
+- The header shows **\* SIM LIVE** (green) or **SIM PAUSED** (amber).
+- Click **Pause Sim** / **Resume Sim** to freeze or resume the feed.
+- Click **Logout** to return to the login screen.
+
+**Manual data entry (optional)**
+
+- Edit patient demographics and click **Admit / Refresh** to change the patient.
+- Enter vital signs manually and click **Add Reading**.
+- Use **Demo: Deterioration** or **Demo: Bradycardia** to load preset scenarios.
+- **Clear Session** resets all data; the simulation feed resumes on the next tick.
+
+**Connecting real hardware**
+
+1. Write `src/hw_driver.c` implementing `hw_init()` and `hw_get_next_reading()`
+   (see `include/hw_vitals.h` for the interface contract).
+2. Replace `src/sim_vitals.c` with `src/hw_driver.c` in `CMakeLists.txt`.
+3. Rebuild — no other source file changes are needed.
 
 ---
 
 ## Testing
 
-**Framework:** Google Test v1.14.0 (downloaded automatically via CMake FetchContent)
+**Framework:** Google Test release-1.10.0 (downloaded automatically via CMake FetchContent)
 
 ### Test counts
 
-| File                              | Tests | Requirements            |
-|-----------------------------------|-------|-------------------------|
-| `tests/unit/test_vitals.cpp`      | 64    | REQ-VIT-001 – REQ-VIT-007 |
-| `tests/unit/test_alerts.cpp`      | 11    | REQ-ALT-001 – REQ-ALT-005 |
-| `tests/unit/test_patient.cpp`     | 19    | REQ-PAT-001 – REQ-PAT-006 |
-| `tests/integration/test_patient_monitoring.cpp` | 6 | REQ-INT-MON-001–006 |
-| `tests/integration/test_alert_escalation.cpp`   | 6 | REQ-INT-ESC-001–005 |
-| **Total**                         | **94 unit + 12 integration = 106** | |
+| File                                            | Tests | Requirements          |
+|-------------------------------------------------|-------|-----------------------|
+| `tests/unit/test_vitals.cpp`                    | 64    | SWR-VIT-001 – 007     |
+| `tests/unit/test_alerts.cpp`                    | 11    | SWR-ALT-001 – 004     |
+| `tests/unit/test_patient.cpp`                   | 19    | SWR-PAT-001 – 006     |
+| `tests/unit/test_auth.cpp`                      | 15    | SWR-GUI-001 – 002     |
+| `tests/integration/test_patient_monitoring.cpp` | 6     | SWR-PAT-*, SWR-VIT-*  |
+| `tests/integration/test_alert_escalation.cpp`   | 6     | SWR-VIT-*, SWR-ALT-*  |
+| **Total**                                       | **121** | **23 SWRs covered** |
 
 ### Test techniques applied
 
-| Technique                    | Applied to                                     |
-|------------------------------|------------------------------------------------|
-| Equivalence Partitioning     | All four vital sign functions                  |
-| Boundary Value Analysis      | Every threshold boundary (±1 from each limit)  |
-| Boundary Transition Accuracy | Heart rate and SpO2 full boundary sweep tables |
-| Escalation / Deescalation    | NORMAL → WARNING → CRITICAL and back           |
-| Multi-parameter crisis       | All four parameters critical simultaneously    |
-| Capacity enforcement         | `patient_add_reading()` beyond MAX_READINGS    |
-| Independence verification    | Two patients with different statuses           |
+| Technique                   | Applied to                                      |
+|-----------------------------|-------------------------------------------------|
+| Equivalence Partitioning    | All four vital sign classification functions    |
+| Boundary Value Analysis     | Every threshold boundary (±1 from each limit)  |
+| Boundary Sweep Tables       | Heart rate and SpO2 full boundary sweep         |
+| Escalation / Deescalation   | NORMAL → WARNING → CRITICAL and back            |
+| Multi-parameter crisis      | All four parameters critical simultaneously     |
+| Capacity enforcement        | `patient_add_reading()` beyond MAX_READINGS     |
+| Independence verification   | Two patients with different statuses            |
+| Authentication paths        | Valid, wrong user, wrong password, empty, NULL  |
 
 ### Run tests
 
@@ -223,59 +336,59 @@ build\Debug\patient_monitor.exe
 run_tests.bat
 ```
 
-Or manually:
+Or manually with CTest:
+
 ```bat
-ctest --test-dir build -C Debug --output-on-failure
+ctest --test-dir build --output-on-failure
 ```
 
 ---
 
 ## Code Coverage
 
-**Tool:** OpenCppCoverage 0.9.9.0 (MSVC / Windows)
+**Toolchain:** MinGW GCC `--coverage` flag + `gcov` + `gcovr` (optional, for HTML)
 
-| File        | Line Coverage |
-|-------------|---------------|
-| `alerts.c`  | **100%**      |
-| `patient.c` | **100%**      |
-| `vitals.c`  | **98%**       |
-| **Overall** | **99.2%** (244 / 246 lines) |
+**Scope:** `vitals.c`, `alerts.c`, `patient.c`, `gui_auth.c` (production logic only)
 
-### Reports
-
-| File                         | Format              | Purpose                    |
-|------------------------------|---------------------|----------------------------|
-| `coverage_combined/index.html` | Interactive HTML  | Line-by-line review        |
-| `coverage_report.xml`          | Cobertura XML     | DHF / audit trail record   |
-| `build/results_unit.xml`       | JUnit XML         | Unit test execution record |
-| `build/results_integration.xml`| JUnit XML         | Integration test record    |
-
-### Run coverage
+### Setup
 
 ```bat
-install_coverage_tools.bat   REM first time only
+pip install gcovr      :: once — for HTML + Cobertura XML output
 run_coverage.bat
 ```
 
+> Without `gcovr`, the script falls back to `gcov` text output.
+
+### Reports generated
+
+| File                                     | Format        | Purpose                    |
+|------------------------------------------|---------------|----------------------------|
+| `coverage_report\index.html`             | HTML          | Line-by-line review        |
+| `coverage_report\coverage_cobertura.xml` | Cobertura XML | DHF / audit trail record   |
+| `build_cov\results_unit.xml`             | JUnit XML     | Unit test execution record |
+| `build_cov\results_integration.xml`      | JUnit XML     | Integration test record    |
+
+> Coverage is built in a separate `build_cov\` folder so the normal `build\` is not affected.
+
 ### IEC 62304 coverage targets
 
-| Coverage Type | Class B  | Class C (safety-critical)          |
-|---------------|----------|------------------------------------|
-| Statement     | 100%     | 100%                               |
-| Branch        | 100%     | 100%                               |
-| MC/DC         | N/A      | 100% — requires VectorCAST/BullseyeCoverage |
+| Coverage Type | Class B | Class C (safety-critical)                   |
+|---------------|---------|---------------------------------------------|
+| Statement     | 100%    | 100%                                        |
+| Branch        | 100%    | 100%                                        |
+| MC/DC         | N/A     | 100% — requires VectorCAST / BullseyeCoverage |
 
 ---
 
 ## Documentation
 
-**Tool:** Doxygen 1.9+ with Graphviz (for diagrams)
+**Tool:** Doxygen 1.9+ with Graphviz (for call graphs and dependency diagrams)
 
 ### Install tools
 
 ```bat
-winget install DimitriVanHeesch.Doxygen
-winget install Graphviz.Graphviz
+winget install --id DimitriVanHeesch.Doxygen
+winget install --id Graphviz.Graphviz
 ```
 
 ### Generate
@@ -284,43 +397,48 @@ winget install Graphviz.Graphviz
 generate_docs.bat
 ```
 
-Opens `docs/html/index.html` in your browser automatically.
+Opens `docs\html\index.html` automatically.
 
 ### What is generated
 
-| Section                  | Description                                         |
-|--------------------------|-----------------------------------------------------|
-| Module list              | File-level descriptions with IEC 62304 unit IDs     |
-| Data structure reference | `VitalSigns`, `Alert`, `PatientRecord`, `AlertLevel` |
-| Function reference       | Parameters, return values, pre/postconditions, and requirement annotations |
-| Requirement traceability | `SWR-*` Doxygen tags plus `REQ-*` test-case cross-references |
-| Call graphs              | Per-function call and caller diagrams (SVG)         |
-| Include dependency graph | Module dependency visualisation                     |
-| Source browser           | Annotated source with cross-references              |
-| Warnings log             | `docs/doxygen_warnings.log` — undocumented items    |
+| Section                  | Description                                                       |
+|--------------------------|-------------------------------------------------------------------|
+| Module list              | File-level descriptions with IEC 62304 unit IDs                   |
+| Data structure reference | `VitalSigns`, `Alert`, `PatientRecord`, `AlertLevel`              |
+| Function reference       | Parameters, return values, pre/postconditions, requirement tags   |
+| Requirement traceability | `SWR-*` Doxygen tags cross-referenced to test cases               |
+| Call graphs              | Per-function call and caller diagrams (SVG)                       |
+| Include dependency graph | Module dependency visualisation                                   |
+| Source browser           | Annotated source with cross-references                            |
+| Warnings log             | `docs\doxygen_warnings.log` — undocumented items                  |
 
 ---
 
 ## Standards Compliance
 
-| Standard                        | Area                                            |
-|---------------------------------|-------------------------------------------------|
-| **IEC 62304:2006+AMD1:2015**    | SW development lifecycle, Class B               |
-| **FDA SW Validation Guidance**  | Test strategy, traceability, coverage           |
-| **AHA/ACC 2019**                | Heart rate and blood pressure thresholds        |
-| **JNC-8 / ESC 2018**            | Hypertension classification                     |
-| **WHO Clinical References**     | Temperature ranges, BMI categories              |
-| **British Thoracic Society**    | SpO2 supplemental oxygen thresholds             |
+| Standard                      | Area                                              |
+|-------------------------------|---------------------------------------------------|
+| **IEC 62304:2006+AMD1:2015**  | SW development lifecycle, Class B                 |
+| **FDA SW Validation Guidance**| Test strategy, traceability, coverage             |
+| **AHA/ACC 2019**              | Heart rate and blood pressure thresholds          |
+| **JNC-8 / ESC 2018**         | Hypertension classification                       |
+| **WHO Clinical References**   | Temperature ranges, BMI categories                |
+| **British Thoracic Society**  | SpO2 supplemental oxygen thresholds               |
 
-### Traceability matrix
+### Requirements traceability
 
-| Requirement ID | Module     | Test File              |
-|----------------|------------|------------------------|
-| SWR-VIT-001–007| `vitals.c` | `test_vitals.cpp`      |
-| SWR-ALT-001–004| `alerts.c` | `test_alerts.cpp`      |
-| SWR-PAT-001–006| `patient.c`| `test_patient.cpp`     |
-| REQ-INT-MON    | All        | `test_patient_monitoring.cpp` |
-| REQ-INT-ESC    | All        | `test_alert_escalation.cpp`   |
+| Requirement ID  | Module                    | Test File                        |
+|-----------------|---------------------------|----------------------------------|
+| SWR-VIT-001–007 | `vitals.c`                | `test_vitals.cpp`                |
+| SWR-ALT-001–004 | `alerts.c`                | `test_alerts.cpp`                |
+| SWR-PAT-001–006 | `patient.c`               | `test_patient.cpp`               |
+| SWR-GUI-001–002 | `gui_auth.c`              | `test_auth.cpp`                  |
+| SWR-GUI-003–004 | `gui_main.c`              | GUI demonstration                |
+| SWR-GUI-005–006 | `hw_vitals.h`/`sim_vitals.c` | Architecture review + GUI demo|
+| SWR-INT-MON     | All modules               | `test_patient_monitoring.cpp`    |
+| SWR-INT-ESC     | All modules               | `test_alert_escalation.cpp`      |
+
+Full traceability matrix: `requirements/TRACEABILITY.md`
 
 ---
 
@@ -328,35 +446,45 @@ Opens `docs/html/index.html` in your browser automatically.
 
 ```
 medicalUT_IT/
-├── CMakeLists.txt                  # Root build configuration
-├── Doxyfile                        # Doxygen documentation configuration
-├── README.md                       # This file
+├── CMakeLists.txt                   # Root build configuration
+├── Doxyfile                         # Doxygen documentation configuration
+├── README.md                        # This file
 │
 ├── include/
-│   ├── vitals.h                    # Vital signs types and validation API
-│   ├── alerts.h                    # Alert record structure and generation API
-│   └── patient.h                   # Patient record management API
+│   ├── vitals.h                     # Vital signs types and validation API
+│   ├── alerts.h                     # Alert record structure and generation API
+│   ├── patient.h                    # Patient record management API
+│   ├── gui_auth.h                   # GUI authentication API
+│   └── hw_vitals.h                  # Hardware Abstraction Layer interface
 │
 ├── src/
-│   ├── vitals.c                    # Vital sign validation + BMI (UNIT-VIT)
-│   ├── alerts.c                    # Alert record generation (UNIT-ALT)
-│   ├── patient.c                   # Patient record management (UNIT-PAT)
-│   └── main.c                      # Application entry point
+│   ├── vitals.c                     # Vital sign validation + BMI  (UNIT-VIT)
+│   ├── alerts.c                     # Alert record generation      (UNIT-ALT)
+│   ├── patient.c                    # Patient record management     (UNIT-PAT)
+│   ├── gui_auth.c                   # GUI authentication            (UNIT-GUI)
+│   ├── sim_vitals.c                 # Simulation HAL back-end       (UNIT-SIM)
+│   ├── gui_main.c                   # Win32 GUI entry point         (UNIT-GUI)
+│   └── main.c                       # Console entry point
 │
 ├── tests/
 │   ├── CMakeLists.txt
 │   ├── unit/
-│   │   ├── test_vitals.cpp         # 64 unit tests — REQ-VIT
-│   │   ├── test_alerts.cpp         # 11 unit tests — REQ-ALT
-│   │   └── test_patient.cpp        # 19 unit tests — REQ-PAT
+│   │   ├── test_vitals.cpp          # 64 tests — SWR-VIT
+│   │   ├── test_alerts.cpp          # 11 tests — SWR-ALT
+│   │   ├── test_patient.cpp         # 19 tests — SWR-PAT
+│   │   └── test_auth.cpp            # 15 tests — SWR-GUI-001/002
 │   └── integration/
-│       ├── test_patient_monitoring.cpp  # 6 tests — REQ-INT-MON
-│       └── test_alert_escalation.cpp    # 6 tests — REQ-INT-ESC
+│       ├── test_patient_monitoring.cpp  # 6 tests — SWR-PAT-*, SWR-VIT-*
+│       └── test_alert_escalation.cpp    # 6 tests — SWR-VIT-*, SWR-ALT-*
 │
-├── build.bat                       # Incremental build + run app
-├── setup_gtest.bat                 # Full clean build
-├── run_tests.bat                   # Run all 106 tests
-├── run_coverage.bat                # Generate coverage report
-├── install_coverage_tools.bat      # Install OpenCppCoverage
-└── generate_docs.bat               # Generate Doxygen documentation
+├── requirements/
+│   ├── UNS.md                       # User Needs (15 items)
+│   ├── SYS.md                       # System Requirements (15 items)
+│   ├── SWR.md                       # Software Requirements (23 items)
+│   └── TRACEABILITY.md              # RTM — 15/15 UNS, 23/23 SWR, 121 tests
+│
+├── build.bat                        # Configure + build + launch GUI
+├── run_tests.bat                    # Run all 121 tests
+├── run_coverage.bat                 # GCC coverage report (gcov + gcovr)
+└── generate_docs.bat                # Doxygen HTML + XML documentation
 ```
