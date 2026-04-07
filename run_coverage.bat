@@ -114,7 +114,7 @@ if "!GCOVR_CMD!"=="" (
         "C:\Python312\Scripts\gcovr.exe"
         "C:\Python311\Scripts\gcovr.exe"
     ) do (
-        if exist %%P set GCOVR_CMD=%%P
+        if exist %%P set GCOVR_CMD=%%~P
     )
 )
 
