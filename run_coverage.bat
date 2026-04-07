@@ -118,59 +118,67 @@ if "!GCOVR_CMD!"=="" (
     )
 )
 
-if not "!GCOVR_CMD!"=="" (
-    echo       gcovr found -- generating HTML + Cobertura XML.
-    if exist "coverage_report" rmdir /s /q "coverage_report"
-    mkdir coverage_report
+:: Use goto so the gcovr command runs at top level (not inside a block).
+:: ^ line-continuation is unreliable inside parenthesised if/else blocks
+:: because cmd.exe concatenates all continued lines into one argument.
+if not "!GCOVR_CMD!"=="" goto :run_gcovr
+goto :run_gcov_fallback
 
-    "!GCOVR_CMD!" ^
-        --root . ^
-        --object-directory "%COV_BUILD%" ^
-        --filter "src/vitals\.c" ^
-        --filter "src/alerts\.c" ^
-        --filter "src/patient\.c" ^
-        --filter "src/gui_auth\.c" ^
-        --html-details coverage_report\index.html ^
-        --xml coverage_report\coverage_cobertura.xml ^
-        --print-summary
+:run_gcovr
+echo       gcovr found -- generating HTML + Cobertura XML.
+if exist "coverage_report" rmdir /s /q "coverage_report"
+mkdir coverage_report
 
+"!GCOVR_CMD!" ^
+    --root . ^
+    --object-directory "%COV_BUILD%" ^
+    --filter "src/vitals\.c" ^
+    --filter "src/alerts\.c" ^
+    --filter "src/patient\.c" ^
+    --filter "src/gui_auth\.c" ^
+    --html-details coverage_report\index.html ^
+    --xml coverage_report\coverage_cobertura.xml ^
+    --print-summary
+
+echo.
+echo   HTML report : coverage_report\index.html   ^<-- open in browser
+echo   XML  report : coverage_report\coverage_cobertura.xml  ^<-- DHF record
+
+if exist "coverage_report\index.html" (
     echo.
-    echo   HTML report : coverage_report\index.html   ^<-- open in browser
-    echo   XML  report : coverage_report\coverage_cobertura.xml  ^<-- DHF record
-
-    if exist "coverage_report\index.html" (
-        echo.
-        echo   Opening HTML report...
-        start "" "coverage_report\index.html"
-    )
-) else (
-    echo       gcovr not found -- using gcov text output.
-    echo       Install: winget install Python.Python.3.12
-    echo                pip install gcovr
-    echo.
-    echo   CMake places coverage data alongside object files.
-    echo   Passing the .gcno files directly so gcov finds them correctly.
-    echo.
-
-    echo   --- vitals.c ---
-    gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\vitals.c.gcno"
-
-    echo.
-    echo   --- alerts.c ---
-    gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\alerts.c.gcno"
-
-    echo.
-    echo   --- patient.c ---
-    gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\patient.c.gcno"
-
-    echo.
-    echo   --- gui_auth.c ---
-    gcov -b "%COV_BUILD%\tests\CMakeFiles\test_unit.dir\__\src\gui_auth.c.gcno"
-
-    echo.
-    echo   Annotated .gcov files written to the current directory.
-    echo   Lines marked ##### are not covered.
+    echo   Opening HTML report...
+    start "" "coverage_report\index.html"
 )
+goto :coverage_done
+
+:run_gcov_fallback
+echo       gcovr not found -- using gcov text output.
+echo       Install: winget install Python.Python.3.12
+echo                python -m pip install gcovr
+echo.
+echo   CMake places coverage data alongside object files.
+echo.
+
+echo   --- vitals.c ---
+gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\vitals.c.gcno"
+
+echo.
+echo   --- alerts.c ---
+gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\alerts.c.gcno"
+
+echo.
+echo   --- patient.c ---
+gcov -b "%COV_BUILD%\CMakeFiles\monitor_lib.dir\src\patient.c.gcno"
+
+echo.
+echo   --- gui_auth.c ---
+gcov -b "%COV_BUILD%\tests\CMakeFiles\test_unit.dir\__\src\gui_auth.c.gcno"
+
+echo.
+echo   Annotated .gcov files written to the current directory.
+echo   Lines marked ##### are not covered.
+
+:coverage_done
 
 :: -------------------------------------------------------
 :: Summary
