@@ -1,4 +1,14 @@
 # -------------------------------------------------------
+# Resolve GTest target name — 1.10.0 uses plain gtest_main,
+# later versions export the GTest:: namespace alias.
+# -------------------------------------------------------
+if(TARGET GTest::gtest_main)
+    set(GTEST_MAIN_TARGET GTest::gtest_main)
+else()
+    set(GTEST_MAIN_TARGET gtest_main)
+endif()
+
+# -------------------------------------------------------
 # Unit Tests
 # -------------------------------------------------------
 add_executable(test_unit
@@ -8,7 +18,7 @@ add_executable(test_unit
     unit/test_auth.cpp
     ${PROJECT_SOURCE_DIR}/src/gui_auth.c
 )
-target_link_libraries(test_unit PRIVATE monitor_lib GTest::gtest_main)
+target_link_libraries(test_unit PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/include)
 add_test(NAME UnitTests COMMAND test_unit --gtest_output=xml:${CMAKE_BINARY_DIR}/results_unit.xml)
 
@@ -19,7 +29,7 @@ add_executable(test_integration
     integration/test_patient_monitoring.cpp
     integration/test_alert_escalation.cpp
 )
-target_link_libraries(test_integration PRIVATE monitor_lib GTest::gtest_main)
+target_link_libraries(test_integration PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_integration PRIVATE ${PROJECT_SOURCE_DIR}/include)
 add_test(NAME IntegrationTests COMMAND test_integration --gtest_output=xml:${CMAKE_BINARY_DIR}/results_integration.xml)
 

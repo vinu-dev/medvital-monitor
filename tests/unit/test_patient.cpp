@@ -162,7 +162,8 @@ TEST(PatientStatus, REQ_PAT_004_CriticalVitals) {
 TEST(PatientStatus, REQ_PAT_004_StatusReflectsLatest) {
     PatientRecord rec;
     patient_init(&rec, 1, "Test", 25, 70.0f, 1.75f);
-    patient_add_reading(&rec, &make_critical_vitals());
+    VitalSigns crit = make_critical_vitals();
+    patient_add_reading(&rec, &crit);
     // Add a normal reading — status must update to NORMAL
     VitalSigns v = make_normal_vitals();
     patient_add_reading(&rec, &v);
