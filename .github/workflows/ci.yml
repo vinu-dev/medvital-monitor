@@ -114,8 +114,9 @@ jobs:
       # ------------------------------------------------------------------
       - name: Test summary
         if: always()
-        shell: python
+        shell: bash
         run: |
+          python3 - << 'PYEOF'
           import xml.etree.ElementTree as ET, os, sys
 
           def parse(path):
@@ -135,25 +136,27 @@ jobs:
 
           def row(label, d):
               if d is None:
-                  return f'| {label} | — | — | — | ⚠️ not run |\n'
-              icon = '✅' if d['failed'] == 0 else '❌'
-              return (f"| {label} | {d['total']} | {d['passed']} "
-                      f"| {d['failed']} | {icon} |\n")
+                  return '| ' + label + ' | - | - | - | not run |\n'
+              icon = 'PASS' if d['failed'] == 0 else 'FAIL'
+              return ('| ' + label + ' | ' + str(d['total']) + ' | ' +
+                      str(d['passed']) + ' | ' + str(d['failed']) + ' | ' + icon + ' |\n')
 
           total_all  = (unit['total']  if unit else 0) + (intg['total']  if intg else 0)
           passed_all = (unit['passed'] if unit else 0) + (intg['passed'] if intg else 0)
           failed_all = (unit['failed'] if unit else 0) + (intg['failed'] if intg else 0)
-          icon_all   = '✅' if failed_all == 0 else '❌'
+          icon_all   = 'PASS' if failed_all == 0 else 'FAIL'
 
           with open(summary, 'a') as f:
-              f.write('## 🧪 Test Results\n\n')
+              f.write('## Test Results\n\n')
               f.write('| Suite | Total | Passed | Failed | Status |\n')
-              f.write('|-------|------:|-------:|-------:|:------:|\n')
+              f.write('|-------|------:|-------:|-------:|-------:|\n')
               f.write(row('Unit tests (15 suites)', unit))
               f.write(row('Integration tests (2 suites)', intg))
-              f.write(f'| **Total** | **{total_all}** | **{passed_all}** '
-                      f'| **{failed_all}** | {icon_all} |\n\n')
-              f.write('> IEC 62304 Class B — 100 % statement + branch coverage\n')
+              f.write('| **Total** | **' + str(total_all) + '** | **' +
+                      str(passed_all) + '** | **' + str(failed_all) +
+                      '** | **' + icon_all + '** |\n\n')
+              f.write('> IEC 62304 Class B -- 100% statement + branch coverage\n')
+          PYEOF
 
       # ------------------------------------------------------------------
       # 9. Upload XML test results as an artifact
