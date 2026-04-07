@@ -65,8 +65,10 @@ echo Configuring...
 cmake -S . -B build -G "MinGW Makefiles" ^
       -DCMAKE_C_COMPILER=gcc ^
       -DCMAKE_CXX_COMPILER=g++ ^
-      -DBUILD_TESTS=ON
-if %ERRORLEVEL% NEQ 0 (
+      -DBUILD_TESTS=ON ^
+      -Wno-dev
+set CMAKE_RESULT=%ERRORLEVEL%
+if %CMAKE_RESULT% NEQ 0 (
     echo.
     echo ERROR: CMake configuration failed.
     echo Common causes:

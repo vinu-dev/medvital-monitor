@@ -44,8 +44,10 @@ if exist "%COV_BUILD%" rmdir /s /q "%COV_BUILD%"
 cmake -S . -B "%COV_BUILD%" -G "MinGW Makefiles" ^
       -DCMAKE_C_COMPILER=gcc ^
       -DCMAKE_CXX_COMPILER=g++ ^
-      -DENABLE_COVERAGE=ON >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
+      -DENABLE_COVERAGE=ON ^
+      -Wno-dev >nul 2>&1
+set CMAKE_RESULT=%ERRORLEVEL%
+if %CMAKE_RESULT% NEQ 0 (
     echo ERROR: CMake configuration failed.
     pause
     exit /b 1
