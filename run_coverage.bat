@@ -46,8 +46,7 @@ cmake -S . -B "%COV_BUILD%" -G "MinGW Makefiles" ^
       -DCMAKE_CXX_COMPILER=g++ ^
       -DENABLE_COVERAGE=ON ^
       -Wno-dev >nul 2>&1
-set CMAKE_RESULT=%ERRORLEVEL%
-if %CMAKE_RESULT% NEQ 0 (
+IF ERRORLEVEL 1 (
     echo ERROR: CMake configuration failed.
     pause
     exit /b 1

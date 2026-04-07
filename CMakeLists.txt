@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 project(PatientMonitor VERSION 1.0 LANGUAGES C CXX)
 
-# Silence CMP0148 dev-warning produced by GTest release-1.10.0 under CMake 3.27+
-# (FindPythonInterp / FindPythonLibs are removed in modern CMake).
-# This policy only exists in CMake >= 3.27, so guard the SET call.
+# GTest release-1.10.0 calls find_package(PythonInterp) internally.
+# Under CMake 3.27+ policy CMP0148, FindPythonInterp is deprecated.
+# Keep OLD behaviour so GTest can find (or gracefully fail to find) Python
+# without causing a configure error.  -Wno-dev in the build scripts
+# suppresses the resulting dev-mode deprecation warning.
 if(POLICY CMP0148)
-    cmake_policy(SET CMP0148 NEW)
+    cmake_policy(SET CMP0148 OLD)
 endif()
 
 set(CMAKE_C_STANDARD 11)

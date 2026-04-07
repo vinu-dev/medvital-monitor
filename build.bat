@@ -67,13 +67,12 @@ cmake -S . -B build -G "MinGW Makefiles" ^
       -DCMAKE_CXX_COMPILER=g++ ^
       -DBUILD_TESTS=ON ^
       -Wno-dev
-set CMAKE_RESULT=%ERRORLEVEL%
-if %CMAKE_RESULT% NEQ 0 (
+IF ERRORLEVEL 1 (
     echo.
     echo ERROR: CMake configuration failed.
     echo Common causes:
-    echo   - No internet connection  (FetchContent downloads Google Test)
-    echo   - Git not installed       winget install Git.Git
+    echo   - No internet connection  ^(FetchContent downloads Google Test^)
+    echo   - Git not installed:  winget install Git.Git
     echo   - Compiler not on PATH
     pause
     exit /b 1
@@ -85,7 +84,7 @@ if %CMAKE_RESULT% NEQ 0 (
 echo.
 echo Building...
 cmake --build build
-if %ERRORLEVEL% NEQ 0 (
+IF ERRORLEVEL 1 (
     echo.
     echo ERROR: Build failed. See errors above.
     pause
