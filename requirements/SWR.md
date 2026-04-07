@@ -316,6 +316,122 @@ NORMAL → WARNING → CRITICAL → NORMAL colour states over time).
 
 ---
 
+## Module UNIT-SEC — Multi-User Authentication and Account Management (`gui_users.c`, `gui_auth.c`)
+
+### SWR-SEC-001 — Multi-User Authentication with Role Detection
+**Requirement:** `users_authenticate(username, password, role_out)` shall:
+1. Return `1` if `username` and `password` exactly match an active account.
+2. On success, write the account's `UserRole` to `*role_out` if `role_out` is non-NULL.
+3. Return `0` for any unknown username or incorrect password without
+   revealing which field was incorrect.
+4. Return `0` without undefined behaviour when `username` or `password` is NULL.
+
+`users_init()` shall load accounts from `users.dat`; if absent or unreadable
+it shall fall back to built-in defaults (one ADMIN, one CLINICAL account).
+`users_save()` shall persist the current account list to `users.dat` and
+return `1` on success, `0` on failure.
+
+**Traces to:** SYS-016
+**Implemented in:** `src/gui_users.c` — `users_init()`, `users_authenticate()`, `users_save()`
+**Verified by:** `tests/unit/test_auth.cpp` — `UsersTest.REQ_SEC_001_*` (6 tests)
+
+---
+
+### SWR-SEC-002 — NULL-Safe Role Output Parameter
+**Requirement:** `users_authenticate()` shall accept `NULL` as the `role_out`
+argument without undefined behaviour. Authentication logic and return value
+shall be unaffected by whether `role_out` is NULL.
+
+**Traces to:** SYS-016
+**Implemented in:** `src/gui_users.c` — `users_authenticate()` (NULL guard on `role_out`)
+**Verified by:** `tests/unit/test_auth.cpp` — `UsersTest.REQ_SEC_002_RoleOutNullDoesNotCrash`
+
+---
+
+### SWR-SEC-003 — Password Management
+**Requirement:**
+- `users_change_password(username, old_password, new_password)` shall
+  change the stored password for `username` only when `old_password`
+  matches the current password **and** `new_password` is at least
+  `USERS_MIN_PASSWORD_LEN` (8) characters long. Returns `1` on success,
+  `0` otherwise.
+- `users_admin_set_password(username, new_password)` shall change any
+  account's password without requiring the current password, provided
+  `username` identifies an active account and `new_password` is at least
+  `USERS_MIN_PASSWORD_LEN` characters long. Returns `1` on success, `0`
+  otherwise.
+- Both functions shall return `0` without undefined behaviour when any
+  argument is NULL.
+
+**Traces to:** SYS-017
+**Implemented in:** `src/gui_users.c` — `users_change_password()`, `users_admin_set_password()`
+**Verified by:** `tests/unit/test_auth.cpp` — `UsersTest.REQ_SEC_003_*` (8 tests)
+
+---
+
+### SWR-GUI-007 — User Account Management API
+**Requirement:** The account management subsystem shall provide:
+- `users_add(username, display_name, password, role)` — add a new active
+  account; reject if the username already exists, if the password is shorter
+  than `USERS_MIN_PASSWORD_LEN`, or if the account limit
+  (`USERS_MAX_ACCOUNTS` = 8) is reached. Returns `1`/`0`.
+- `users_remove(username)` — deactivate an account; reject removal if it
+  would leave the system with zero ADMIN accounts. Returns `1`/`0`.
+- `users_count()` — return the number of currently active accounts.
+- `users_get_by_index(idx, out)` — copy the account at logical index `idx`
+  into `*out`. Returns `1` for valid index, `0` for out-of-range or negative
+  index.
+All functions shall use only static memory (no heap allocation).
+
+**Traces to:** SYS-016
+**Implemented in:** `src/gui_users.c` — `users_add()`, `users_remove()`, `users_count()`, `users_get_by_index()`
+**Verified by:** `tests/unit/test_auth.cpp` — `UsersTest.REQ_GUI_007_*` (8 tests)
+
+---
+
+### SWR-GUI-008 — Role-Based UI Differentiation
+**Requirement:** After successful authentication the dashboard shall:
+1. Display a **gold "ADMIN"** role badge and a **"Settings"** button for
+   `ROLE_ADMIN` users.
+2. Display a **teal "CLINICAL"** role badge and a **"My Account"** button for
+   `ROLE_CLINICAL` users.
+3. The "Settings" button shall be present **only** for ADMIN sessions;
+   CLINICAL users shall not be able to access user management controls.
+4. The role badge and available buttons shall be determined exclusively by
+   the `UserRole` returned by `users_authenticate()` at login time.
+
+**Traces to:** SYS-017
+**Implemented in:** `src/gui_main.c` — `WM_CREATE` handler in `dash_proc()`,
+`draw_pill()`, `IDC_BTN_SETTINGS`, `IDC_BTN_ACCOUNT`
+**Verified by:** Verified via GUI demonstration (role-conditional control
+creation in `dash_proc WM_CREATE`; Admin shows Settings, Clinical shows My Account).
+
+---
+
+### SWR-GUI-009 — User Management Settings Panel
+**Requirement:** The Settings panel (accessible to `ROLE_ADMIN` only) shall:
+1. Present a tabbed interface containing at minimum a **Users** tab and an
+   **About** tab.
+2. The Users tab shall list all active accounts in a listbox and provide:
+   - **Add** — opens a dialog to enter username, display name, password,
+     and role; rejects passwords shorter than `USERS_MIN_PASSWORD_LEN` and
+     duplicate usernames.
+   - **Remove** — removes the selected account; enforces the
+     minimum-one-admin invariant (matching SWR-GUI-007).
+   - **Set Password** — allows the admin to set a new password for the
+     selected account without requiring the account's current password.
+3. All user management operations shall call the corresponding
+   `gui_users.c` API functions.
+
+**Traces to:** SYS-016, SYS-017
+**Implemented in:** `src/gui_main.c` — `settings_proc()`, `pwddlg_proc()`,
+`adduser_proc()`
+**Verified by:** Verified via GUI demonstration (Settings panel opens for
+Admin; Add/Remove/Set Password operate via `users_add()`, `users_remove()`,
+`users_admin_set_password()`).
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -323,3 +439,4 @@ NORMAL → WARNING → CRITICAL → NORMAL colour states over time).
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added UNIT-GUI module (SWR-GUI-001..004) |
 | C   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-005 (HAL), SWR-GUI-006 (sim) |
+| D   | 2026-04-07 | vinu-engineer   | Added UNIT-SEC module: SWR-SEC-001/002/003, SWR-GUI-007/008/009 |

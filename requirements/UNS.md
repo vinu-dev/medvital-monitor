@@ -173,6 +173,21 @@ workflow and provides a plug point for real hardware integration.
 
 ---
 
+### UNS-016 — Role-Based Access and Multi-User Support
+**Need:** Different clinical staff roles (ward administrators and bedside
+clinicians) require different levels of system access. An administrator must
+be able to manage user accounts and credentials without exposing those
+controls to clinical users.
+**Rationale:** In a clinical environment, user management tasks (adding and
+removing accounts, resetting passwords) must be separated from patient
+monitoring to comply with role-based access control requirements and to
+minimise the risk of accidental or unauthorised configuration changes.
+Hospital IT governance mandates that only designated administrators may alter
+access control settings.
+**Priority:** High
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -180,3 +195,4 @@ workflow and provides a plug point for real hardware integration.
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added UNS-013, UNS-014 (GUI) |
 | C   | 2026-04-07 | vinu-engineer   | Added UNS-015 (live monitoring feed / HAL) |
+| D   | 2026-04-07 | vinu-engineer   | Added UNS-016 (role-based access / multi-user) |

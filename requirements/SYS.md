@@ -177,6 +177,36 @@ other source file. All HAL implementations shall use only static storage.
 
 ---
 
+### SYS-016 — Multi-User Account Management
+**Requirement:** The system shall maintain a persistent list of up to 8 named
+user accounts. Each account shall contain a unique username (up to 63
+characters), a display name (up to 63 characters), a user role
+(`ROLE_ADMIN` or `ROLE_CLINICAL`), and a password of at least
+`USERS_MIN_PASSWORD_LEN` (8) characters. The account list shall be persisted
+between sessions in a local file (`users.dat`) located in the same directory
+as the executable. When the file is absent or unreadable, the system shall
+fall back to two built-in default accounts (one ADMIN, one CLINICAL). All
+account storage shall use only static memory.
+**Traces to:** UNS-016
+
+---
+
+### SYS-017 — Role-Based Access Control
+**Requirement:** The system shall enforce role-based access control as follows:
+- `ROLE_ADMIN` users shall have access to all patient monitoring functions
+  and to the user management settings panel (add accounts, remove accounts,
+  reset any account's password).
+- `ROLE_CLINICAL` users shall have access to patient monitoring functions
+  and to personal password change only; the user management settings panel
+  shall not be accessible.
+- Role assignment shall be determined at authentication time by
+  `users_authenticate()` and shall remain fixed for the duration of the
+  session. The role badge and available controls displayed in the dashboard
+  header shall reflect the authenticated role.
+**Traces to:** UNS-016
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -184,3 +214,4 @@ other source file. All HAL implementations shall use only static storage.
 | A   | 2026-04-06 | vinu-engineer   | Initial release      |
 | B   | 2026-04-07 | vinu-engineer   | Added SYS-013, SYS-014 (GUI) |
 | C   | 2026-04-07 | vinu-engineer   | Added SYS-015 (HAL) |
+| D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |

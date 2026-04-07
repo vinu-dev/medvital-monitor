@@ -152,3 +152,9 @@ TEST(BMI, REQ_VIT_006_Category_Invalid)      { EXPECT_STREQ(bmi_category(-1.0f),
 TEST(AlertStr, REQ_VIT_007_Normal)   { EXPECT_STREQ(alert_level_str(ALERT_NORMAL),   "NORMAL");   }
 TEST(AlertStr, REQ_VIT_007_Warning)  { EXPECT_STREQ(alert_level_str(ALERT_WARNING),  "WARNING");  }
 TEST(AlertStr, REQ_VIT_007_Critical) { EXPECT_STREQ(alert_level_str(ALERT_CRITICAL), "CRITICAL"); }
+/* SWR-VIT-007 defensive default branch — exercises the unreachable-in-normal-use
+ * "UNKNOWN" path via an explicit out-of-range cast.  Required for IEC 62304
+ * Class B 100% branch coverage; rationale: the default branch is a defensive
+ * guard against undefined enum casts and is never reached by valid production
+ * code, but must be covered to close the branch metric. */
+TEST(AlertStr, REQ_VIT_007_Unknown)  { EXPECT_STREQ(alert_level_str((AlertLevel)99), "UNKNOWN");  }
