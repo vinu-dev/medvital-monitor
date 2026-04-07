@@ -1,9 +1,9 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-D
+**Document ID:** RTM-001-REV-E
 **Project:** Patient Vital Signs Monitor
-**Version:** 1.6.0
-**Date:** 2026-04-07
+**Version:** 1.7.0
+**Date:** 2026-04-08
 **Status:** Approved
 **Standard:** IEC 62304 §5.7.3 / FDA SW Validation Guidance
 
@@ -60,6 +60,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-016 | SYS-016 | SWR-SEC-001 | `gui_users.c` : `users_init()`, `users_authenticate()`, `users_save()` | `UsersTest.REQ_SEC_001_*` (6 tests) | — |
 | UNS-016 | SYS-016 | SWR-SEC-002 | `gui_users.c` : `users_authenticate()` NULL guard on `role_out` | `UsersTest.REQ_SEC_002_RoleOutNullDoesNotCrash` (1 test) | — |
 | UNS-016 | SYS-017 | SWR-SEC-003 | `gui_users.c` : `users_change_password()`, `users_admin_set_password()` | `UsersTest.REQ_SEC_003_*` (8 tests) | — |
+| UNS-016 | SYS-017 | SWR-SEC-004 | `src/pw_hash.c` : `pw_hash()`; `gui_users.c` : all credential paths | `UsersTest.REQ_SEC_004_*` (3 tests) | — |
 | UNS-016 | SYS-016 | SWR-GUI-007 | `gui_users.c` : `users_add()`, `users_remove()`, `users_count()`, `users_get_by_index()` | `UsersTest.REQ_GUI_007_*` (8 tests) | — |
 | UNS-016 | SYS-017 | SWR-GUI-008 | `gui_main.c` : role-conditional `WM_CREATE`, `draw_pill()`, `IDC_BTN_SETTINGS`, `IDC_BTN_ACCOUNT` | GUI demo (Admin→Settings, Clinical→My Account) | — |
 | UNS-016 | SYS-016, SYS-017 | SWR-GUI-009 | `gui_main.c` : `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo (Settings panel Add/Remove/Set Password) | — |
@@ -97,6 +98,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `UsersTest` | `REQ_SEC_001_*` | SWR-SEC-001 | SYS-016 | UNS-016 |
 | `UsersTest` | `REQ_SEC_002_*` | SWR-SEC-002 | SYS-016 | UNS-016 |
 | `UsersTest` | `REQ_SEC_003_*` | SWR-SEC-003 | SYS-017 | UNS-016 |
+| `UsersTest` | `REQ_SEC_004_*` | SWR-SEC-004 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_GUI_007_*` | SWR-GUI-007 | SYS-016 | UNS-016 |
 
 ### Integration Tests
@@ -176,11 +178,12 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | SWR-SEC-001 | `users_init()`, `users_authenticate()`, `users_save()` | 6 | — | ✓ |
 | SWR-SEC-002 | `users_authenticate()` NULL guard | 1 | — | ✓ |
 | SWR-SEC-003 | `users_change_password()`, `users_admin_set_password()` | 8 | — | ✓ |
+| SWR-SEC-004 | `pw_hash()` + all credential paths in `gui_users.c` | 3 | — | ✓ |
 | SWR-GUI-007 | `users_add()`, `users_remove()`, `users_count()`, `users_get_by_index()` | 8 | — | ✓ |
 | SWR-GUI-008 | Role-conditional `WM_CREATE`, `draw_pill()`, `IDC_BTN_SETTINGS` | GUI demo | — | ✓ |
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
 
-**Result: 29 / 29 SWRs implemented and tested ✓**
+**Result: 30 / 30 SWRs implemented and tested ✓**
 
 ---
 
@@ -223,8 +226,8 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_patient.cpp` | 19 | SWR-PAT-001 – SWR-PAT-006 |
 | `tests/integration/test_patient_monitoring.cpp` | 6 | SWR-PAT-*, SWR-VIT-* |
 | `tests/integration/test_alert_escalation.cpp` | 6 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004 |
-| `tests/unit/test_auth.cpp` | 38 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–003, SWR-GUI-007 |
-| **Total** | **145** | **27 SWRs (automated); 2 SWRs by GUI demo** |
+| `tests/unit/test_auth.cpp` | 41 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–004, SWR-GUI-007 |
+| **Total** | **148** | **28 SWRs (automated); 2 SWRs by GUI demo** |
 
 ---
 
@@ -236,3 +239,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | B   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-001..004; 14/14 UNS, 21/21 SWR, 121 tests |
 | C   | 2026-04-07 | vinu-engineer   | Added UNS-015, SWR-GUI-005/006 (HAL + sim); 15/15 UNS, 23/23 SWR, 121 tests |
 | D   | 2026-04-07 | vinu-engineer   | v1.6.0: added UNS-016, SYS-016/017, SWR-SEC-001..003 + SWR-GUI-007..009; 16/16 UNS, 29/29 SWR, 145 tests; 100% branch coverage |
+| E   | 2026-04-08 | vinu-engineer   | v1.7.0: added SWR-SEC-004 (SHA-256 hashing); 30/30 SWR, 148 tests; CodeQL/cppcheck findings resolved |

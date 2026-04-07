@@ -348,6 +348,25 @@ shall be unaffected by whether `role_out` is NULL.
 
 ---
 
+### SWR-SEC-004 — Password Hashing (No Plaintext Storage)
+**Requirement:** The system shall never store, log, or transmit passwords in
+plaintext. All passwords shall be transformed to a SHA-256 hex digest
+(`pw_hash()`, FIPS PUB 180-4) before storage. Authentication shall compare
+the SHA-256 digest of the candidate password against the stored digest.
+File format version "v2" stores 64-character lowercase hex digests in
+`users.dat`; v1 (plaintext) files are rejected on load and replaced by
+built-in defaults. The `pw_hash` implementation shall use only stack
+storage and have no external dependencies.
+
+**Traces to:** SYS-017
+**Implemented in:** `src/pw_hash.c` — `pw_hash()`; `src/gui_users.c` —
+`load_defaults()`, `users_authenticate()`, `users_change_password()`,
+`users_admin_set_password()`, `users_add()`, `users_save()`
+**Verified by:** `tests/unit/test_auth.cpp` — `UsersTest.REQ_SEC_004_*`
+(3 tests: not-plaintext, 64-char hex format, transparent authentication)
+
+---
+
 ### SWR-SEC-003 — Password Management
 **Requirement:**
 - `users_change_password(username, old_password, new_password)` shall

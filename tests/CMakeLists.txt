@@ -18,6 +18,7 @@ add_executable(test_unit
     unit/test_auth.cpp
     ${PROJECT_SOURCE_DIR}/src/gui_auth.c
     ${PROJECT_SOURCE_DIR}/src/gui_users.c
+    ${PROJECT_SOURCE_DIR}/src/pw_hash.c
 )
 target_link_libraries(test_unit PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/include)

@@ -196,14 +196,11 @@ TEST(PatientIsFull, REQ_PAT_005_Full) {
 // =============================================================
 
 static void run_print_summary(const PatientRecord *rec) {
-    // Redirect stdout to NUL so test output stays clean
-    FILE *nul = fopen("NUL", "w");
-    int saved = _dup(_fileno(stdout));
-    if (nul) _dup2(_fileno(nul), _fileno(stdout));
+    /* patient_print_summary() writes to stdout; the test verifies only
+     * that the function completes without a crash or fatal assertion.
+     * GTest captures and formats any output through its own runner.
+     * Redirecting to NUL is unnecessary and flagged CWE-732; removed. */
     patient_print_summary(rec);
-    fflush(stdout);
-    if (nul) { _dup2(saved, _fileno(stdout)); fclose(nul); }
-    _close(saved);
 }
 
 TEST(PatientPrintSummary, REQ_PAT_006_NoReadings) {

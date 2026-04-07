@@ -4,11 +4,11 @@
 ; Version  : 1.6.0
 ;
 ; Build with: ISCC.exe installer.iss
-; Output   : dist\PatientMonitorSetup-1.6.0.exe
+; Output   : dist\PatientMonitorSetup-1.7.0.exe
 ; =====================================================================
 
 #define AppName      "Patient Vital Signs Monitor"
-#define AppVersion   "1.6.0"
+#define AppVersion   "1.7.0"
 #define AppPublisher "Medical Device Project"
 #define AppExeName   "patient_monitor_gui.exe"
 [Setup]

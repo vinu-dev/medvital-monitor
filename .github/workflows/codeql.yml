@@ -58,6 +58,9 @@ jobs:
           # (format string), CWE-190 (integer overflow), CWE-476 (null
           # deref) and ~80 more rules on top of the default query set.
           queries: security-extended
+          # Exclude build/_deps (GTest third-party source) from analysis
+          # to eliminate false-positive path-injection alerts in gtest.cc.
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Cache GTest (FetchContent)
         uses: actions/cache@v4

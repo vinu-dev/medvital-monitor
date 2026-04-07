@@ -314,3 +314,40 @@ TEST_F(UsersTest, REQ_GUI_007_GetByIndexOutOfRangeFails)
     EXPECT_EQ(0, users_get_by_index(100, &acct));
     EXPECT_EQ(0, users_get_by_index(-1,  &acct));
 }
+
+/* -----------------------------------------------------------------------
+ * SWR-SEC-004 — Password hashing: never store plaintext
+ * ----------------------------------------------------------------------- */
+
+TEST_F(UsersTest, REQ_SEC_004_StoredValueIsNotPlaintext)
+{
+    /* The password_hash field must never equal the plaintext credential. */
+    UserAccount acct;
+    memset(&acct, 0, sizeof(acct));
+    users_get_by_index(0, &acct);
+    EXPECT_STRNE("Monitor@2026", acct.password_hash);
+}
+
+TEST_F(UsersTest, REQ_SEC_004_StoredValueIsSHA256Hex)
+{
+    /* SHA-256 hex digest is exactly 64 lowercase hex characters. */
+    UserAccount acct;
+    int i;
+    memset(&acct, 0, sizeof(acct));
+    users_get_by_index(0, &acct);
+    EXPECT_EQ(64, (int)strlen(acct.password_hash));
+    for (i = 0; i < 64; ++i) {
+        char c = acct.password_hash[i];
+        EXPECT_TRUE((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
+            << "Non-hex character at index " << i << ": '" << c << "'";
+    }
+}
+
+TEST_F(UsersTest, REQ_SEC_004_AuthStillWorksAfterHashing)
+{
+    /* Verify hashing is transparent: plaintext credentials passed to
+     * users_authenticate() still resolve correctly. */
+    EXPECT_EQ(1, users_authenticate("admin",    "Monitor@2026",  nullptr));
+    EXPECT_EQ(1, users_authenticate("clinical", "Clinical@2026", nullptr));
+    EXPECT_EQ(0, users_authenticate("admin",    "Clinical@2026", nullptr));
+}

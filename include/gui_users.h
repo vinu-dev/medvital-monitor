@@ -20,16 +20,18 @@ extern "C" {
 #define USERS_MAX_ACCOUNTS     8
 #define USERS_MAX_USERNAME_LEN 64
 #define USERS_MAX_DISPNAME_LEN 64
-#define USERS_MAX_PASSWORD_LEN 64
-#define USERS_MIN_PASSWORD_LEN 8
-#define USERS_DAT_FILENAME     "users.dat"
+#define USERS_MIN_PASSWORD_LEN  8
+#define USERS_MAX_PASSWORD_LEN  64   /**< Max plaintext password input length */
+#define USERS_DAT_FILENAME      "users.dat"
+
+#include "pw_hash.h"   /* PW_HASH_HEX_LEN = 65 */
 
 typedef enum { ROLE_ADMIN = 0, ROLE_CLINICAL = 1 } UserRole;
 
 typedef struct {
     char     username[USERS_MAX_USERNAME_LEN];
     char     display_name[USERS_MAX_DISPNAME_LEN];
-    char     password[USERS_MAX_PASSWORD_LEN];
+    char     password_hash[PW_HASH_HEX_LEN]; /**< SHA-256 hex digest — never plaintext */
     UserRole role;
     int      active;
 } UserAccount;

@@ -1,0 +1,9 @@
+name: "Patient Monitor CodeQL Configuration"
+
+# Exclude third-party dependencies fetched by CMake FetchContent.
+# build/_deps contains Google Test source code which is not our code
+# and generates false-positive path-injection and dangerous-function
+# alerts that would obscure real findings in our source files.
+paths-ignore:
+  - build
+  - "**/_deps/**"
