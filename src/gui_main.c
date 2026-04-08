@@ -234,6 +234,7 @@ static LRESULT CALLBACK pwddlg_proc  (HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK adduser_proc (HWND, UINT, WPARAM, LPARAM);
 static void create_dashboard(void);
 static void update_dashboard(HWND w);
+static void refresh_dash_language(HWND w);
 static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
@@ -539,7 +540,7 @@ static void paint_status_banner(HDC hdc, int cw)
     if (!g_app.sim_enabled) {
         bg  = CLR_SLATE;
         fg  = CLR_LIGHT_GRAY;
-        txt = "DEVICE MODE — Enable simulation in Settings to use synthetic data";
+        txt = localization_get_string(STR_DEVICE_MODE_MSG);
         fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
         draw_text_ex(hdc, txt, 0, STAT_Y, cw, STAT_H,
                      g_app.font_status, fg, DT_SINGLELINE|DT_VCENTER|DT_CENTER);
@@ -549,7 +550,11 @@ static void paint_status_banner(HDC hdc, int cw)
 
         /* Create a long repeating message for rolling effect */
         snprintf(rolling_msg, sizeof(rolling_msg),
-                 "   ✦  IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦");
+                 "   ✦  %s  ✦   %s  ✦   %s  ✦   %s  ✦",
+                 localization_get_string(STR_SIM_MODE_MSG),
+                 localization_get_string(STR_SIM_MODE_MSG),
+                 localization_get_string(STR_SIM_MODE_MSG),
+                 localization_get_string(STR_SIM_MODE_MSG));
 
         AlertLevel lvl = g_app.has_patient ? patient_current_status(&g_app.patient) : ALERT_NORMAL;
         switch (lvl) {
@@ -1228,6 +1233,11 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             if (sel_lang >= 0 && sel_lang < LOC_LANG_COUNT) {
                 localization_set_language((Language)sel_lang);
                 app_config_save_language(sel_lang);
+
+                /* Refresh the dashboard with new language */
+                if (g_app.hwnd_dash)
+                    refresh_dash_language(g_app.hwnd_dash);
+
                 /* Close and reopen Settings to refresh all localized labels */
                 DestroyWindow(w);
                 {
@@ -1583,7 +1593,7 @@ static void apply_sim_mode(HWND dash)
             set_txt(dash,IDC_PAT_HEIGHT,"1.75");
         }
         g_app.sim_paused = 0;
-        SetWindowTextA(GetDlgItem(dash, IDC_BTN_PAUSE), "Pause Sim");
+        SetWindowTextA(GetDlgItem(dash, IDC_BTN_PAUSE), localization_get_string(STR_PAUSE_SIM));
         hw_get_next_reading(&sv);
         patient_add_reading(&g_app.patient, &sv);
         SetTimer(dash, TIMER_SIM, 2000, NULL);
@@ -1594,6 +1604,81 @@ static void apply_sim_mode(HWND dash)
         g_app.has_patient = 0;
     }
     update_dashboard(dash);
+}
+
+/* ===================================================================
+ * Refresh all dashboard controls after language change  @req SWR-GUI-012
+ *
+ * Saves current edit-field data, destroys all child windows, recreates
+ * them with the new language, restores data and repaints.
+ * =================================================================== */
+static BOOL CALLBACK destroy_child_cb(HWND child, LPARAM lp)
+{
+    (void)lp;
+    DestroyWindow(child);
+    return TRUE;  /* continue enumeration */
+}
+
+static void refresh_dash_language(HWND w)
+{
+    /* --- save editable state --- */
+    char pat_id[32], pat_name[128], pat_age[16], pat_wt[16], pat_ht[16];
+    char v_hr[16], v_sys[16], v_dia[16], v_tmp[16], v_spo[16], v_rr[16];
+    HWND btn;
+
+    get_txt(w, IDC_PAT_ID,     pat_id,   sizeof(pat_id));
+    get_txt(w, IDC_PAT_NAME,   pat_name, sizeof(pat_name));
+    get_txt(w, IDC_PAT_AGE,    pat_age,  sizeof(pat_age));
+    get_txt(w, IDC_PAT_WEIGHT, pat_wt,   sizeof(pat_wt));
+    get_txt(w, IDC_PAT_HEIGHT, pat_ht,   sizeof(pat_ht));
+    get_txt(w, IDC_VIT_HR,     v_hr,     sizeof(v_hr));
+    get_txt(w, IDC_VIT_SYS,    v_sys,    sizeof(v_sys));
+    get_txt(w, IDC_VIT_DIA,    v_dia,    sizeof(v_dia));
+    get_txt(w, IDC_VIT_TEMP,   v_tmp,    sizeof(v_tmp));
+    get_txt(w, IDC_VIT_SPO2,   v_spo,    sizeof(v_spo));
+    get_txt(w, IDC_VIT_RR,     v_rr,     sizeof(v_rr));
+
+    /* --- destroy all child windows --- */
+    EnumChildWindows(w, destroy_child_cb, 0);
+
+    /* --- recreate all controls with new language --- */
+    create_dash_controls(w);
+
+    btn = make_btn(w, IDC_BTN_LOGOUT, localization_get_string(STR_LOGOUT), WIN_CW-86, 14, 72, 28);
+    SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
+    btn = make_btn(w, IDC_BTN_PAUSE,
+        g_app.sim_paused ? localization_get_string(STR_RESUME_SIM)
+                         : localization_get_string(STR_PAUSE_SIM),
+        WIN_CW-176, 14, 86, 28);
+    SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
+    btn = make_btn(w, IDC_BTN_SETTINGS, localization_get_string(STR_SETTINGS), WIN_CW-272, 14, 86, 28);
+    SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
+
+    font_children(w, g_app.font_ui);
+
+    /* --- restore saved state --- */
+    set_txt(w, IDC_PAT_ID,     pat_id);
+    set_txt(w, IDC_PAT_NAME,   pat_name);
+    set_txt(w, IDC_PAT_AGE,    pat_age);
+    set_txt(w, IDC_PAT_WEIGHT, pat_wt);
+    set_txt(w, IDC_PAT_HEIGHT, pat_ht);
+    set_txt(w, IDC_VIT_HR,     v_hr);
+    set_txt(w, IDC_VIT_SYS,    v_sys);
+    set_txt(w, IDC_VIT_DIA,    v_dia);
+    set_txt(w, IDC_VIT_TEMP,   v_tmp);
+    set_txt(w, IDC_VIT_SPO2,   v_spo);
+    set_txt(w, IDC_VIT_RR,     v_rr);
+
+    /* --- restore show/hide state --- */
+    ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
+    ShowWindow(GetDlgItem(w, IDC_BTN_SCEN1), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
+    ShowWindow(GetDlgItem(w, IDC_BTN_SCEN2), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
+
+    {   RECT cr; GetClientRect(w, &cr);
+        reposition_dash_controls(w, cr.right);
+    }
+    update_dashboard(w);
+    InvalidateRect(w, NULL, TRUE);
 }
 
 /* ===================================================================
@@ -1611,7 +1696,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
         btn = make_btn(w, IDC_BTN_LOGOUT, localization_get_string(STR_LOGOUT),   WIN_CW-86,  14, 72, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
-        btn = make_btn(w, IDC_BTN_PAUSE,  "Pause Sim",WIN_CW-176, 14, 86, 28);
+        btn = make_btn(w, IDC_BTN_PAUSE, localization_get_string(STR_PAUSE_SIM),WIN_CW-176, 14, 86, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
         btn = make_btn(w, IDC_BTN_SETTINGS, localization_get_string(STR_SETTINGS),  WIN_CW-272, 14, 86, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
@@ -1710,7 +1795,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         case IDC_BTN_PAUSE:
             g_app.sim_paused = !g_app.sim_paused;
             SetWindowTextA(GetDlgItem(w,IDC_BTN_PAUSE),
-                           g_app.sim_paused ? "Resume Sim" : "Pause Sim");
+                           g_app.sim_paused ? localization_get_string(STR_RESUME_SIM) : localization_get_string(STR_PAUSE_SIM));
             InvalidateRect(w, NULL, FALSE);
             return 0;
         case IDC_BTN_SETTINGS:

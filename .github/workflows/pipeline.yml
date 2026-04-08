@@ -338,18 +338,24 @@ jobs:
       - name: Generate coverage report
         run: |
           pip install gcovr
-          mkdir -p build_cov/report
-          gcovr --root . --filter 'src/' \
-            --xml build_cov/coverage.xml \
-            --html-details build_cov/report/index.html \
-            --print-summary
+          mkdir -p coverage-report
+          echo "--- Searching for .gcda files ---"
+          find build_cov -name '*.gcda' 2>/dev/null | head -20 || true
+          echo "--- Running gcovr ---"
+          gcovr --root . \
+            --search-path build_cov \
+            --gcov-executable gcov \
+            --filter 'src/' \
+            --xml coverage-report/coverage.xml \
+            --html-details coverage-report/index.html \
+            --print-summary || true
 
       - name: Coverage summary
         if: always()
         run: |
           python3 - << 'PYEOF'
           import xml.etree.ElementTree as ET, os, sys
-          path = 'build_cov/coverage.xml'
+          path = 'coverage-report/coverage.xml'
           if not os.path.exists(path):
               sys.exit(0)
           root = ET.parse(path).getroot()
@@ -371,9 +377,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ github.run_number }}
-          path: |
-            build_cov/coverage.xml
-            build_cov/report/
+          path: coverage-report/
           retention-days: 90
 
   # ═══════════════════════════════════════════════════════════════════
@@ -693,17 +697,20 @@ jobs:
           name: dvt-results-${{ github.sha }}
           path: site/dvt
 
+      - name: Debug artifact structure
+        run: find site -type f | head -40 || true
+
       - name: Generate index page
         run: |
           python3 - << 'PYEOF'
-          import os, datetime, xml.etree.ElementTree as ET
+          import os, datetime, xml.etree.ElementTree as ET, glob
 
           now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
-          # Parse test results
+          # Find test results (search for files regardless of nesting)
           unit_t = unit_p = unit_f = 0
           intg_t = intg_p = intg_f = 0
-          for xml_file in ['site/test-results/results_unit.xml', 'site/test-results/results_integration.xml']:
+          for xml_file in glob.glob('site/test-results/**/results_*.xml', recursive=True):
               if os.path.exists(xml_file):
                   root = ET.parse(xml_file).getroot()
                   t = int(root.get('tests', 0))
@@ -713,13 +720,22 @@ jobs:
                   else:
                       intg_t, intg_p, intg_f = t, t - f, f
 
-          # Parse coverage
+          # Find coverage XML (search regardless of nesting)
           cov_line = cov_branch = 0.0
-          cov_xml = 'site/coverage/build_cov/coverage.xml'
-          if os.path.exists(cov_xml):
-              root = ET.parse(cov_xml).getroot()
-              cov_line = float(root.get('line-rate', 0)) * 100
-              cov_branch = float(root.get('branch-rate', 0)) * 100
+          for cov_xml in glob.glob('site/coverage/**/coverage.xml', recursive=True):
+              if os.path.exists(cov_xml):
+                  root = ET.parse(cov_xml).getroot()
+                  cov_line = float(root.get('line-rate', 0)) * 100
+                  cov_branch = float(root.get('branch-rate', 0)) * 100
+                  break
+
+          # Find coverage HTML report link (search regardless of nesting)
+          cov_html = ""
+          for f in glob.glob('site/coverage/**/index.html', recursive=True):
+              cov_html = os.path.relpath(f, 'site')
+              break
+          if not cov_html:
+              cov_html = "coverage/"
 
           total_t = unit_t + intg_t
           total_f = unit_f + intg_f
@@ -783,11 +799,11 @@ jobs:
             <tr><td>Line coverage</td><td>{cov_line:.1f}%</td></tr>
             <tr><td>Branch coverage</td><td>{cov_branch:.1f}%</td></tr>
           </table>
-          <p><a href="coverage/build_cov/report/index.html">Detailed Coverage Report (HTML)</a></p>
+          <p><a href="{cov_html}">Detailed Coverage Report (HTML)</a></p>
 
           <h2>Reports</h2>
           <ul>
-            <li><a href="coverage/build_cov/report/index.html">Coverage — HTML detail</a></li>
+            <li><a href="{cov_html}">Coverage — HTML detail</a></li>
             <li><a href="dvt/">DVT — Design Verification results</a></li>
             <li><a href="test-results/">Test — JUnit XML results</a></li>
           </ul>
@@ -798,7 +814,9 @@ jobs:
 
           with open('site/index.html', 'w') as f:
               f.write(html)
-          print("Report index generated: site/index.html")
+          print(f"Report index generated. Coverage HTML: {cov_html}")
+          print(f"Coverage: {cov_line:.1f}% line, {cov_branch:.1f}% branch")
+          print(f"Tests: {total_t} total, {total_f} failed")
           PYEOF
 
       - name: Upload Pages artifact
