@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(PatientMonitor VERSION 1.8.0 LANGUAGES C CXX)
+project(PatientMonitor VERSION 1.9.0 LANGUAGES C CXX)
 
 # GTest release-1.10.0 calls find_package(PythonInterp) internally.
 # Under CMake 3.27+ policy CMP0148, FindPythonInterp is deprecated.

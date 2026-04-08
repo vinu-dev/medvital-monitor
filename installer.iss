@@ -1,14 +1,14 @@
 ; =====================================================================
 ; Patient Vital Signs Monitor -- Inno Setup 6 Installer Script
 ; Standard : IEC 62304 Class B Medical Device Software
-; Version  : 1.8.0
+; Version  : 1.9.0
 ;
 ; Build with: ISCC.exe installer.iss
-; Output   : dist\PatientMonitorSetup-1.8.0.exe
+; Output   : dist\PatientMonitorSetup-1.9.0.exe
 ; =====================================================================
 
 #define AppName      "Patient Vital Signs Monitor"
-#define AppVersion   "1.8.0"
+#define AppVersion   "1.9.0"
 #define AppPublisher "Medical Device Project"
 #define AppExeName   "patient_monitor_gui.exe"
 [Setup]

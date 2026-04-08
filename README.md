@@ -4,7 +4,7 @@
 
 Medical device software for real-time patient vital sign monitoring and alert generation.
 Built to **IEC 62304 Class B** and **FDA SW Validation Guidance** standards.
-**Version 1.8.0** — Simulation mode toggle (Sim/Device), version fix, SHA-256 passwords, multi-user roles, Settings panel.
+**Version 1.9.0** — UI alignment fix (tile overlap, header layout), simulation mode toggle, SHA-256 passwords, multi-user roles.
 
 ---
 

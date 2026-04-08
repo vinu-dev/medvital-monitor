@@ -1,6 +1,6 @@
 /**
  * @file gui_main.c
- * @brief Win32 GUI — Patient Vital Signs Monitor v1.8.0
+ * @brief Win32 GUI — Patient Vital Signs Monitor v1.9.0
  *
  * Windows:
  *   1. Login (PVM_Login)      — auth with role detection
@@ -37,7 +37,7 @@
  * App metadata
  * =================================================================== */
 #define APP_TITLE   "Patient Vital Signs Monitor"
-#define APP_VERSION "v1.8.0"
+#define APP_VERSION "v1.9.0"
 #define IDI_APPICON 101
 
 /* ===================================================================
@@ -310,40 +310,39 @@ static void paint_header(HDC hdc, int cw)
                  g_app.font_hdr, CLR_WHITE,
                  DT_SINGLELINE | DT_VCENTER | DT_LEFT);
 
-    /* Role pill badge */
+    /* Right-hand info block — stays left of the button cluster (rightmost 400 px) */
+    /* Logged-in display name + role pill — left half of info block */
+    if (g_app.logged_user[0]) {
+        snprintf(buf, sizeof(buf), "  %s", g_app.logged_user);
+        draw_text_ex(hdc, buf,
+                     cw - 480, 0, 180, HDR_H,
+                     g_app.font_ui, RGB(186, 230, 253),
+                     DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+    }
     {
         COLORREF badge_bg = (g_app.logged_role == ROLE_ADMIN) ? CLR_GOLD : CLR_TEAL;
         const char *badge_txt = (g_app.logged_role == ROLE_ADMIN) ? "ADMIN" : "CLINICAL";
-        draw_pill(hdc, cw - 468, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
+        draw_pill(hdc, cw - 300, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
     }
 
-    /* Sim / Device mode badge */
+    /* Sim / Device mode status — painted text just left of button cluster */
     {
         const char *mode_txt;
         COLORREF    mode_clr;
         if (!g_app.sim_enabled) {
-            mode_txt = "DEVICE MODE";
+            mode_txt = "DEVICE";
             mode_clr = RGB(148, 163, 184);
         } else if (g_app.sim_paused) {
-            mode_txt = "SIM PAUSED";
+            mode_txt = "PAUSED";
             mode_clr = RGB(253, 224,  71);
         } else {
-            mode_txt = "* SIM LIVE";
+            mode_txt = "SIM LIVE";
             mode_clr = RGB(134, 239, 172);
         }
         draw_text_ex(hdc, mode_txt,
-                     cw - 380, 0, 110, HDR_H,
+                     cw - 208, 0, 90, HDR_H,
                      g_app.font_tile_lbl, mode_clr,
-                     DT_SINGLELINE | DT_VCENTER | DT_RIGHT);
-    }
-
-    /* Logged-in display name */
-    if (g_app.logged_user[0]) {
-        snprintf(buf, sizeof(buf), "%s", g_app.logged_user);
-        draw_text_ex(hdc, buf,
-                     cw - 230, 0, 140, HDR_H,
-                     g_app.font_ui, RGB(186,230,253),
-                     DT_SINGLELINE | DT_VCENTER | DT_RIGHT);
+                     DT_SINGLELINE | DT_VCENTER | DT_CENTER);
     }
 }
 
@@ -371,10 +370,14 @@ static void paint_patient_bar(HDC hdc, int cw)
     } else {
         snprintf(buf, sizeof(buf), "  Awaiting first simulation reading...");
     }
-    draw_text_ex(hdc, buf, 0, HDR_H, cw, PBAR_H,
-                 g_app.font_ui,
-                 g_app.has_patient ? CLR_LIGHT_GRAY : RGB(148,163,184),
-                 DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+    {
+        COLORREF pbar_fg = (!g_app.sim_enabled)  ? RGB(100, 116, 139) :
+                           (g_app.has_patient)   ? CLR_LIGHT_GRAY     :
+                                                   RGB(148, 163, 184);
+        draw_text_ex(hdc, buf, 0, HDR_H, cw, PBAR_H,
+                     g_app.font_ui, pbar_fg,
+                     DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+    }
 }
 
 static void paint_tile(HDC hdc,
@@ -384,6 +387,11 @@ static void paint_tile(HDC hdc,
 {
     COLORREF bg, fg;
     char badge[24], full_val[48];
+    /* vertical split: label top, value middle, badge bottom (no overlap) */
+    int lbl_y  = ty + 6;                  /* label row top */
+    int val_y  = ty + 26;                 /* value row top (below label) */
+    int val_h  = th - 26 - 22;           /* value height: leaves room for badge */
+    int bdg_y  = ty + th - 20;           /* badge row top (bottom-anchored) */
     HPEN pen; HPEN open; HBRUSH obr;
 
     switch (level) {
@@ -398,10 +406,15 @@ static void paint_tile(HDC hdc,
     RoundRect(hdc, tx+1, ty+1, tx+tw-1, ty+th-1, 10, 10);
     SelectObject(hdc, open); SelectObject(hdc, obr); DeleteObject(pen);
 
-    draw_text_ex(hdc, label,     tx+10, ty+8,      tw-20, 18, g_app.font_tile_lbl, fg, DT_SINGLELINE|DT_LEFT);
-    snprintf(full_val, sizeof(full_val), "%s %s", value, unit);
-    draw_text_ex(hdc, full_val,  tx+8,  ty+30,     tw-16, 36, g_app.font_tile_val, CLR_DARK_TEXT, DT_SINGLELINE|DT_LEFT|DT_VCENTER);
-    draw_text_ex(hdc, badge,     tx+8,  ty+th-26,  tw-16, 20, g_app.font_tile_lbl, fg, DT_SINGLELINE|DT_LEFT);
+    /* Don't append unit when value is N/A */
+    if (strcmp(value, "N/A") == 0)
+        snprintf(full_val, sizeof(full_val), "N/A");
+    else
+        snprintf(full_val, sizeof(full_val), "%s %s", value, unit);
+
+    draw_text_ex(hdc, label,     tx+10, lbl_y,  tw-20, 18,    g_app.font_tile_lbl, fg,           DT_SINGLELINE|DT_LEFT);
+    draw_text_ex(hdc, full_val,  tx+8,  val_y,  tw-16, val_h, g_app.font_tile_val, CLR_DARK_TEXT, DT_SINGLELINE|DT_LEFT|DT_VCENTER);
+    draw_text_ex(hdc, badge,     tx+8,  bdg_y,  tw-16, 18,    g_app.font_tile_lbl, fg,           DT_SINGLELINE|DT_LEFT);
 }
 
 static void paint_tiles(HDC hdc, int cw)
