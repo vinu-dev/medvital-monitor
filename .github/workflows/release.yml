@@ -86,32 +86,26 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ steps.ver.outputs.tag }}"
-          Copy-Item "build_release\patient_monitor_gui.exe" "PatientMonitor-${tag}.exe"
+          Copy-Item "build_release\patient_monitor_gui.exe" "PatientMonitor-$tag.exe"
 
-          $readme = @"
-Patient Vital Signs Monitor ${tag}
-===================================
-IEC 62304 Class B Medical Device Software
+          $readme = "Patient Vital Signs Monitor $tag`r`n"
+          $readme += "===================================`r`n"
+          $readme += "IEC 62304 Class B Medical Device Software`r`n`r`n"
+          $readme += "REQUIREMENTS`r`n"
+          $readme += "  Windows 10/11 (x86-64). No extra runtime needed.`r`n`r`n"
+          $readme += "DEFAULT CREDENTIALS`r`n"
+          $readme += "  admin    / Monitor@2026   (ADMIN role)`r`n"
+          $readme += "  clinical / Clinical@2026  (CLINICAL role)`r`n"
+          $readme += "  Change these before clinical use.`r`n`r`n"
+          $readme += "SIMULATION MODE`r`n"
+          $readme += "  Sim ON  -- synthetic data every 2 s (demo/development)`r`n"
+          $readme += "  Sim OFF -- all tiles show N/A (connect real hardware)`r`n`r`n"
+          $readme += "SECURITY`r`n"
+          $readme += "  Passwords are SHA-256 hashed in users.dat.`r`n`r`n"
+          $readme += "Source: https://github.com/vinu-engineer/medicalUT_IT"
 
-REQUIREMENTS
-  Windows 10/11 (x86-64). No extra runtime needed.
-
-DEFAULT CREDENTIALS
-  admin    / Monitor@2026   (ADMIN role)
-  clinical / Clinical@2026  (CLINICAL role)
-  Change these before clinical use.
-
-SIMULATION MODE
-  Sim ON  -- synthetic data every 2 s (demo/development)
-  Sim OFF -- all tiles show N/A (connect real hardware)
-
-SECURITY
-  Passwords are SHA-256 hashed in users.dat.
-
-Source: https://github.com/vinu-engineer/medicalUT_IT
-"@
           $readme | Out-File -Encoding utf8 "README.txt"
-          Compress-Archive -Path "PatientMonitor-${tag}.exe", "README.txt" -DestinationPath "PatientMonitor-${tag}-portable.zip" -Force
+          Compress-Archive -Path "PatientMonitor-$tag.exe", "README.txt" -DestinationPath "PatientMonitor-$tag-portable.zip" -Force
 
       # ----------------------------------------------------------------
       # 6. Find installer
