@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-E
+**Document ID:** RTM-001-REV-F
 **Project:** Patient Vital Signs Monitor
-**Version:** 1.7.0
+**Version:** 2.6.0
 **Date:** 2026-04-08
 **Status:** Approved
 **Standard:** IEC 62304 §5.7.3 / FDA SW Validation Guidance
@@ -41,6 +41,11 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-005, UNS-006 | SYS-006 | SWR-VIT-005 | `vitals.c` : `overall_alert_level()` | `OverallAlert.*` (5 tests) | `REQ_INT_MON_002`, `REQ_INT_MON_003`, `REQ_INT_MON_004` |
 | UNS-007 | SYS-007 | SWR-VIT-006 | `vitals.c` : `calculate_bmi()`, `bmi_category()` | `BMI.*` (12 tests) | `REQ_INT_MON_001` |
 | UNS-005, UNS-006, UNS-010 | SYS-005, SYS-011 | SWR-VIT-007 | `vitals.c` : `alert_level_str()` | `AlertStr.*` (4 tests) | All integration tests |
+| UNS-001 | SYS-001 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | `RespRate.*` (12 tests), `OverallAlert.SWR_VIT_008_*` (3 tests) | — |
+| UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | `News2HR.*`, `News2RR.*`, `News2SpO2.*`, `News2SBP.*`, `News2Temp.*`, `News2Calc.*` (53 tests) | — |
+| UNS-005, UNS-006 | SYS-002, SYS-003 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | `AlarmLimitsTest.*` (31 tests) | — |
+| UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
+| UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | `ConfigTest.*` (27 tests) | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -100,6 +105,12 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `UsersTest` | `REQ_SEC_003_*` | SWR-SEC-003 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_SEC_004_*` | SWR-SEC-004 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_GUI_007_*` | SWR-GUI-007 | SYS-016 | UNS-016 |
+| `RespRate` | `REQ_VIT_008_*` | SWR-VIT-008 | SYS-001 | UNS-001 |
+| `News2HR`, `News2RR`, etc. | `News2*.*` | SWR-NEW-001 | SYS-005, SYS-006 | UNS-005, UNS-006 |
+| `AlarmLimitsTest` | `AlarmLimitsTest.*` | SWR-ALM-001 | SYS-002, SYS-003 | UNS-005, UNS-006 |
+| `TrendDirection`, `TrendExtract` | `Trend*.*` | SWR-TRD-001 | SYS-001, SYS-002 | UNS-001, UNS-009 |
+| `HALTestNoInit` | `HALTestNoInit.*` | SWR-GUI-005 | SYS-015 | UNS-015 |
+| `ConfigTest` | `ConfigTest.*` | SWR-GUI-010 | SYS-015 | UNS-015 |
 
 ### Integration Tests
 
@@ -156,7 +167,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | SWR-VIT-002 | `check_blood_pressure()` | 12 | 1 | ✓ |
 | SWR-VIT-003 | `check_temperature()` | 10 | 2 | ✓ |
 | SWR-VIT-004 | `check_spo2()` | 8 | 2 | ✓ |
-| SWR-VIT-005 | `overall_alert_level()` | 5 | 5 | ✓ |
+| SWR-VIT-005 | `overall_alert_level()` | 8 | 5 | ✓ |
 | SWR-VIT-006 | `calculate_bmi()`, `bmi_category()` | 12 | 1 | ✓ |
 | SWR-VIT-007 | `alert_level_str()` | 4 | all | ✓ |
 | SWR-ALT-001 | `generate_alerts()` | 4 | 3 | ✓ |
@@ -182,8 +193,13 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | SWR-GUI-007 | `users_add()`, `users_remove()`, `users_count()`, `users_get_by_index()` | 8 | — | ✓ |
 | SWR-GUI-008 | Role-conditional `WM_CREATE`, `draw_pill()`, `IDC_BTN_SETTINGS` | GUI demo | — | ✓ |
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
+| SWR-GUI-010 | `app_config.c` : `app_config_save()`, `app_config_load()` | 27 | — | ✓ |
+| SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
+| SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
+| SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
+| SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | 18 | — | ✓ |
 
-**Result: 30 / 30 SWRs implemented and tested ✓**
+**Result: 35 / 35 SWRs implemented and tested ✓**
 
 ---
 
@@ -198,6 +214,10 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `src/patient.c` | 61 | 61 | 100% | 14 | 14 | 100% | — |
 | `src/gui_auth.c` | 28 | 28 | 100% | 6 | 6 | 100% | Delegation layer fully covered by test_auth.cpp |
 | `src/gui_users.c` | ~120 | ~120 | 100% | ~40 | ~40 | 100% | All user management paths covered by REQ_SEC_* and REQ_GUI_007_* tests |
+| `src/news2.c` | ~90 | ~90 | 100% | ~30 | ~30 | 100% | All NEWS2 scoring paths covered by News2* tests |
+| `src/alarm_limits.c` | ~80 | ~80 | 100% | ~20 | ~20 | 100% | All alarm check paths covered by AlarmLimitsTest |
+| `src/trend.c` | ~60 | ~60 | 100% | ~12 | ~12 | 100% | All trend direction + extract paths covered by Trend* tests |
+| `src/pw_hash.c` | ~40 | ~40 | 100% | ~6 | ~6 | 100% | SHA-256 hashing covered by REQ_SEC_004 tests |
 
 **Coverage Rationale — `alert_level_str()` `default:` branch:**
 The `default: return "UNKNOWN"` branch in `alert_level_str()` (`vitals.c`) is a
@@ -221,13 +241,18 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 
 | Test File | Tests | SWRs Verified |
 |-----------|-------|---------------|
-| `tests/unit/test_vitals.cpp` | 65 | SWR-VIT-001 – SWR-VIT-007 |
+| `tests/unit/test_vitals.cpp` | 79 | SWR-VIT-001 – SWR-VIT-008 |
 | `tests/unit/test_alerts.cpp` | 11 | SWR-ALT-001 – SWR-ALT-004 |
 | `tests/unit/test_patient.cpp` | 19 | SWR-PAT-001 – SWR-PAT-006 |
+| `tests/unit/test_auth.cpp` | 36 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–004, SWR-GUI-007 |
+| `tests/unit/test_news2.cpp` | 53 | SWR-NEW-001 |
+| `tests/unit/test_alarm_limits.cpp` | 31 | SWR-ALM-001 |
+| `tests/unit/test_trend.cpp` | 18 | SWR-TRD-001 |
+| `tests/unit/test_hal.cpp` | 1 | SWR-GUI-005 |
+| `tests/unit/test_config.cpp` | 27 | SWR-GUI-010 |
 | `tests/integration/test_patient_monitoring.cpp` | 6 | SWR-PAT-*, SWR-VIT-* |
 | `tests/integration/test_alert_escalation.cpp` | 6 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004 |
-| `tests/unit/test_auth.cpp` | 41 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–004, SWR-GUI-007 |
-| **Total** | **148** | **28 SWRs (automated); 2 SWRs by GUI demo** |
+| **Total** | **287** | **33 SWRs (automated); 2 SWRs by GUI demo** |
 
 ---
 
@@ -240,3 +265,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | C   | 2026-04-07 | vinu-engineer   | Added UNS-015, SWR-GUI-005/006 (HAL + sim); 15/15 UNS, 23/23 SWR, 121 tests |
 | D   | 2026-04-07 | vinu-engineer   | v1.6.0: added UNS-016, SYS-016/017, SWR-SEC-001..003 + SWR-GUI-007..009; 16/16 UNS, 29/29 SWR, 145 tests; 100% branch coverage |
 | E   | 2026-04-08 | vinu-engineer   | v1.7.0: added SWR-SEC-004 (SHA-256 hashing); 30/30 SWR, 148 tests; CodeQL/cppcheck findings resolved |
+| F   | 2026-04-08 | vinu-engineer   | v2.6.0: added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend), SWR-GUI-010 (sim toggle); 35/35 SWR, 287 tests |

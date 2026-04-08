@@ -1,9 +1,9 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-A
+**Document ID:** SWR-001-REV-F
 **Project:** Patient Vital Signs Monitor
-**Version:** 1.0.0
-**Date:** 2026-04-06
+**Version:** 2.6.0
+**Date:** 2026-04-08
 **Status:** Approved
 **Standard:** IEC 62304 §5.2
 
@@ -533,7 +533,7 @@ header bar that switches between two operating modes:
    display `N/A`, the patient bar shall read
    `"DEVICE MODE — Simulation disabled. Connect real hardware for live data."`,
    and the status banner shall read
-   `"DEVICE MODE — Enable simulation in the header to use synthetic data"`.
+   `"DEVICE MODE — Enable simulation in Settings to use synthetic data"`.
 
 The selected mode shall be persisted to `monitor.cfg` (key `sim_enabled=0|1`)
 and restored when the application is next launched.
@@ -547,6 +547,56 @@ device-mode banners; Sim: ON resumes live data.
 
 ---
 
+## Module UNIT-ALM — Configurable Alarm Limits (`alarm_limits.c`)
+
+### SWR-ALM-001 — Per-Patient Configurable Alarm Limits
+**Requirement:** The system shall provide configurable alarm limits per vital
+sign parameter with sensible clinical defaults per IEC 60601-1-8:
+
+- HR: low 60 / high 100 bpm
+- SBP: low 90 / high 140 mmHg
+- DBP: low 60 / high 90 mmHg
+- Temp: low 36.1 / high 37.2 C
+- SpO2: low 95 %
+- RR: low 12 / high 20 br/min
+
+The alarm limits shall be:
+1. Editable in a Settings tab ("Alarm Limits")
+2. Persisted to `alarm_limits.cfg` (key=value format)
+3. Restorable to factory defaults via a "Reset Defaults" button
+4. Checked via `alarm_check_*()` functions that return `ALERT_NORMAL`,
+   `ALERT_WARNING`, or `ALERT_CRITICAL`
+
+**Traces to:** SYS-002, SYS-003
+**Implemented in:** `src/alarm_limits.c`, `include/alarm_limits.h`,
+`src/gui_main.c` — Alarm Limits tab in Settings
+**Verified by:** `tests/unit/test_alarm_limits.cpp` — 31 tests
+
+---
+
+## Module UNIT-TRD — Vital Signs Trend Analysis (`trend.c`)
+
+### SWR-TRD-001 — Trend Sparkline and Direction Detection
+**Requirement:** The system shall display a mini sparkline graph in each
+vital sign dashboard tile showing the last up to `MAX_READINGS` data points.
+The system shall also compute a trend direction for each parameter:
+
+- `TREND_STABLE`: when the first-half and second-half means differ by less
+  than 5% of the overall mean
+- `TREND_RISING`: when the second-half mean is significantly higher
+- `TREND_FALLING`: when the second-half mean is significantly lower
+
+Helper functions `trend_extract_hr()`, `trend_extract_sbp()`,
+`trend_extract_temp()`, `trend_extract_spo2()`, `trend_extract_rr()` shall
+extract per-parameter arrays from a `VitalSigns` history buffer.
+
+**Traces to:** SYS-001, SYS-002
+**Implemented in:** `src/trend.c`, `include/trend.h`,
+`src/gui_main.c` — `paint_sparkline()`, `paint_tiles()`
+**Verified by:** `tests/unit/test_trend.cpp` — 18 tests
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -556,3 +606,4 @@ device-mode banners; Sim: ON resumes live data.
 | C   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-005 (HAL), SWR-GUI-006 (sim) |
 | D   | 2026-04-07 | vinu-engineer   | Added UNIT-SEC module: SWR-SEC-001/002/003, SWR-GUI-007/008/009 |
 | E   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-010 (simulation mode toggle) — v1.8.0 |
+| F   | 2026-04-08 | vinu-engineer   | Added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend) — v2.6.0 |
