@@ -17,3 +17,4 @@ coverage_report.xml
 Thumbs.db
 .claude/
 monitor.cfg
+.claude/settings.local.json
