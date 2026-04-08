@@ -156,17 +156,15 @@ jobs:
 
           status = lambda f: ":white_check_mark: PASS" if f == 0 else ":x: FAIL"
 
-          summary = f"""## DVT — Design Verification Results
+          rows = [
+              "| Unit tests | {} | {} | {} | {} |".format(u_t, u_p, u_f, status(u_f)),
+              "| Integration tests | {} | {} | {} | {} |".format(i_t, i_p, i_f, status(i_f)),
+              "| **Combined** | **{}** | **{}** | **{}** | {} |".format(u_t+i_t, u_p+i_p, u_f+i_f, status(u_f+i_f)),
+          ]
+          table = "| Test Suite | Total | Passed | Failed | Result |\n|-----------|------:|-------:|-------:|--------|\n" + "\n".join(rows)
 
-| Test Suite | Total | Passed | Failed | Result |
-|-----------|------:|-------:|-------:|--------|
-| Unit tests | {u_t} | {u_p} | {u_f} | {status(u_f)} |
-| Integration tests | {i_t} | {i_p} | {i_f} | {status(i_f)} |
-| **Combined** | **{u_t+i_t}** | **{u_p+i_p}** | **{u_f+i_f}** | {status(u_f+i_f)} |
+          summary = "## DVT — Design Verification Results\n\n" + table + "\n\n> Protocol: `dvt/DVT_Protocol.md` (DVT-001-REV-A)\n> Full report: `dvt/results/dvt_report_*.txt` (download artefact)\n"
 
-> Protocol: `dvt/DVT_Protocol.md` (DVT-001-REV-A)
-> Full report: `dvt/results/dvt_report_*.txt` (download artefact)
-"""
           sumfile = os.environ.get("GITHUB_STEP_SUMMARY", "")
           if sumfile:
               with open(sumfile, "a") as f:

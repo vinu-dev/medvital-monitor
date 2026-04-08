@@ -81,35 +81,14 @@ jobs:
           $ver = "${{ steps.ver.outputs.ver }}"
           $tag = "${{ steps.ver.outputs.tag }}"
           $exeSrc = "build_release\patient_monitor_gui.exe"
-          $exeDst = "PatientMonitor-${tag}.exe"
+          $exeDst = "PatientMonitor-$tag.exe"
           Copy-Item $exeSrc $exeDst
 
-          $readme = @"
-Patient Vital Signs Monitor ${tag}
-===================================
-IEC 62304 Class B Medical Device Software
-
-REQUIREMENTS
-  Windows 10/11 (x86-64). No extra runtime needed.
-
-DEFAULT CREDENTIALS
-  admin    / Monitor@2026   (ADMIN role)
-  clinical / Clinical@2026  (CLINICAL role)
-  Change these before clinical use.
-
-SIMULATION MODE
-  Sim ON  -- synthetic data every 2 s (demo/development)
-  Sim OFF -- all tiles show N/A (connect real hardware)
-
-SECURITY
-  Passwords are SHA-256 hashed in users.dat.
-
-Source: https://github.com/${{ github.repository }}
-"@
+          $readme = "Patient Vital Signs Monitor $tag`nIEC 62304 Class B Medical Device Software`n`nREQUIREMENTS`n  Windows 10/11 (x86-64). No extra runtime needed.`n`nDEFAULT CREDENTIALS`n  admin    / Monitor@2026   (ADMIN role)`n  clinical / Clinical@2026  (CLINICAL role)`n  Change these before clinical use.`n`nSIMULATION MODE`n  Sim ON  -- synthetic data every 2 s (demo/development)`n  Sim OFF -- all tiles show N/A (connect real hardware)`n`nSECURITY`n  Passwords are SHA-256 hashed in users.dat.`n`nSource: https://github.com/${{ github.repository }}"
           $readme | Out-File -Encoding utf8 "README.txt"
 
           Compress-Archive -Path $exeDst, "README.txt" `
-            -DestinationPath "PatientMonitor-${tag}-portable.zip" -Force
+            -DestinationPath "PatientMonitor-$tag-portable.zip" -Force
 
       # ----------------------------------------------------------------
       # 6. Locate installer output
