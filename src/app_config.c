@@ -140,6 +140,9 @@ int app_config_load(int *sim_enabled_out)
 
 int app_config_save(int sim_enabled)
 {
+    /* Preserve language setting when saving sim_enabled */
+    int lang = app_config_load_language();
+
     char cfg_path[CFG_MAX_PATH] = {0};
     if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
         return 0;
@@ -148,7 +151,57 @@ int app_config_save(int sim_enabled)
     if (f == NULL)
         return 0;
 
-    int ok = (fprintf(f, "sim_enabled=%d\n", sim_enabled ? 1 : 0) > 0);
+    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
+                       sim_enabled ? 1 : 0, lang) > 0);
+    fclose(f);
+    return ok ? 1 : 0;
+}
+
+int app_config_load_language(void)
+{
+    char cfg_path[CFG_MAX_PATH] = {0};
+    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
+        return 0;
+
+    FILE *f = fopen(cfg_path, "r");
+    if (f == NULL)
+        return 0;
+
+    char line[128];
+    int lang = 0;
+    while (fgets(line, (int)sizeof(line), f) != NULL)
+    {
+        int value = 0;
+        if (sscanf(line, "language=%d", &value) == 1)
+        {
+            if (value >= 0 && value < 4)
+                lang = value;
+            break;
+        }
+    }
+    fclose(f);
+    return lang;
+}
+
+int app_config_save_language(int language)
+{
+    /* Preserve sim_enabled setting when saving language */
+    int sim = 1;
+    app_config_load(&sim);
+
+    if (language < 0 || language > 3)
+        language = 0;
+
+    char cfg_path[CFG_MAX_PATH] = {0};
+    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
+        return 0;
+
+    FILE *f = fopen(cfg_path, "w");
+    if (f == NULL)
+        return 0;
+
+    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
+                       sim, language) > 0);
     fclose(f);
     return ok ? 1 : 0;
 }

@@ -338,8 +338,10 @@ jobs:
       - name: Generate coverage report
         run: |
           pip install gcovr
+          mkdir -p build_cov/report
           gcovr --root . --filter 'src/' \
             --xml build_cov/coverage.xml \
+            --html-details build_cov/report/index.html \
             --print-summary
 
       - name: Coverage summary
@@ -369,7 +371,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ github.run_number }}
-          path: build_cov/coverage.xml
+          path: |
+            build_cov/coverage.xml
+            build_cov/report/
           retention-days: 90
 
   # ═══════════════════════════════════════════════════════════════════
@@ -651,3 +655,157 @@ jobs:
           if [ -n "$INSTALLER" ] && [ -f "$INSTALLER" ]; then
             gh release upload "${TAG}" "$INSTALLER" --clobber
           fi
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Reports — Publish test, coverage, and analysis reports
+  # Deploys to GitHub Pages (free for public repos)
+  # View at: https://<owner>.github.io/<repo>/
+  # ═══════════════════════════════════════════════════════════════════
+  publish-reports:
+    name: "Publish Reports (GitHub Pages)"
+    needs: dvt
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: site/coverage
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-${{ github.run_number }}
+          path: site/test-results
+
+      - name: Download DVT results
+        uses: actions/download-artifact@v4
+        with:
+          name: dvt-results-${{ github.sha }}
+          path: site/dvt
+
+      - name: Generate index page
+        run: |
+          python3 - << 'PYEOF'
+          import os, datetime, xml.etree.ElementTree as ET
+
+          now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+          # Parse test results
+          unit_t = unit_p = unit_f = 0
+          intg_t = intg_p = intg_f = 0
+          for xml_file in ['site/test-results/results_unit.xml', 'site/test-results/results_integration.xml']:
+              if os.path.exists(xml_file):
+                  root = ET.parse(xml_file).getroot()
+                  t = int(root.get('tests', 0))
+                  f = int(root.get('failures', 0)) + int(root.get('errors', 0))
+                  if 'unit' in xml_file:
+                      unit_t, unit_p, unit_f = t, t - f, f
+                  else:
+                      intg_t, intg_p, intg_f = t, t - f, f
+
+          # Parse coverage
+          cov_line = cov_branch = 0.0
+          cov_xml = 'site/coverage/build_cov/coverage.xml'
+          if os.path.exists(cov_xml):
+              root = ET.parse(cov_xml).getroot()
+              cov_line = float(root.get('line-rate', 0)) * 100
+              cov_branch = float(root.get('branch-rate', 0)) * 100
+
+          total_t = unit_t + intg_t
+          total_f = unit_f + intg_f
+          test_status = "PASS" if total_f == 0 else "FAIL"
+
+          html = f"""<!DOCTYPE html>
+          <html lang="en"><head>
+          <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Patient Vital Signs Monitor — CI Reports</title>
+          <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                   max-width: 900px; margin: 0 auto; padding: 2rem; background: #f8fafc; }}
+            h1 {{ color: #1e3a8a; border-bottom: 3px solid #1e3a8a; padding-bottom: .5rem; }}
+            h2 {{ color: #334155; margin-top: 2rem; }}
+            table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
+            th, td {{ border: 1px solid #cbd5e1; padding: .5rem 1rem; text-align: left; }}
+            th {{ background: #1e3a8a; color: white; }}
+            tr:nth-child(even) {{ background: #f1f5f9; }}
+            .pass {{ color: #16a34a; font-weight: bold; }}
+            .fail {{ color: #dc2626; font-weight: bold; }}
+            a {{ color: #2563eb; }}
+            .card {{ background: white; border-radius: 8px; padding: 1.5rem;
+                     box-shadow: 0 1px 3px rgba(0,0,0,.1); margin: 1rem 0; }}
+            .metric {{ font-size: 2rem; font-weight: bold; color: #1e3a8a; }}
+            .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }}
+          </style></head><body>
+          <h1>Patient Vital Signs Monitor</h1>
+          <p>IEC 62304 Class B — CI/CD Report Dashboard</p>
+          <p><em>Last updated: {now}</em></p>
+
+          <div class="grid">
+            <div class="card">
+              <div class="metric">{total_t - total_f}/{total_t}</div>
+              <div>Tests Passing</div>
+              <div class="{'pass' if total_f == 0 else 'fail'}">{test_status}</div>
+            </div>
+            <div class="card">
+              <div class="metric">{cov_line:.1f}%</div>
+              <div>Line Coverage</div>
+            </div>
+            <div class="card">
+              <div class="metric">{cov_branch:.1f}%</div>
+              <div>Branch Coverage</div>
+            </div>
+          </div>
+
+          <h2>Test Results</h2>
+          <table>
+            <tr><th>Suite</th><th>Total</th><th>Passed</th><th>Failed</th><th>Status</th></tr>
+            <tr><td>Unit tests</td><td>{unit_t}</td><td>{unit_p}</td><td>{unit_f}</td>
+                <td class="{'pass' if unit_f==0 else 'fail'}">{'PASS' if unit_f==0 else 'FAIL'}</td></tr>
+            <tr><td>Integration tests</td><td>{intg_t}</td><td>{intg_p}</td><td>{intg_f}</td>
+                <td class="{'pass' if intg_f==0 else 'fail'}">{'PASS' if intg_f==0 else 'FAIL'}</td></tr>
+            <tr><th>Total</th><th>{total_t}</th><th>{total_t - total_f}</th><th>{total_f}</th>
+                <th class="{'pass' if total_f==0 else 'fail'}">{test_status}</th></tr>
+          </table>
+
+          <h2>Code Coverage</h2>
+          <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Line coverage</td><td>{cov_line:.1f}%</td></tr>
+            <tr><td>Branch coverage</td><td>{cov_branch:.1f}%</td></tr>
+          </table>
+          <p><a href="coverage/build_cov/report/index.html">Detailed Coverage Report (HTML)</a></p>
+
+          <h2>Reports</h2>
+          <ul>
+            <li><a href="coverage/build_cov/report/index.html">Coverage — HTML detail</a></li>
+            <li><a href="dvt/">DVT — Design Verification results</a></li>
+            <li><a href="test-results/">Test — JUnit XML results</a></li>
+          </ul>
+
+          <hr>
+          <p><small>Generated by the <a href="https://github.com/vinu-engineer/medicalUT_IT">Pipeline</a> workflow.</small></p>
+          </body></html>"""
+
+          with open('site/index.html', 'w') as f:
+              f.write(html)
+          print("Report index generated: site/index.html")
+          PYEOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

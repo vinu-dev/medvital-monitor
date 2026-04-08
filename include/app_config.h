@@ -68,6 +68,32 @@ int app_config_load(int *sim_enabled_out);
  */
 int app_config_save(int sim_enabled);
 
+/**
+ * @brief Load the language preference from the configuration file.
+ *
+ * Reads the "language=N" line from the config file. Returns the language
+ * code (0=English, 1=Spanish, 2=French, 3=German). If absent or invalid,
+ * returns 0 (English).
+ *
+ * @return Language code (0-3), or 0 on failure.
+ *
+ * @req SWR-GUI-012
+ */
+int app_config_load_language(void);
+
+/**
+ * @brief Save the language preference to the configuration file.
+ *
+ * Appends or updates the "language=N" line in the config file.
+ * Preserves existing sim_enabled setting.
+ *
+ * @param language  Language code (0=English, 1=Spanish, 2=French, 3=German).
+ * @return 1 on success, 0 on failure.
+ *
+ * @req SWR-GUI-012
+ */
+int app_config_save_language(int language);
+
 #ifdef __cplusplus
 }
 #endif

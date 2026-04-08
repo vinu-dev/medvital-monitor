@@ -37,6 +37,7 @@
 #include "gui_users.h"
 #include "hw_vitals.h"
 #include "app_config.h"
+#include "localization.h"
 
 /* ===================================================================
  * App metadata
@@ -108,6 +109,9 @@
 #define IDC_BTN_USER_REM   1223
 #define IDC_BTN_USER_PWD   1224
 #define IDC_BTN_MY_PWD     1227  /**< My Account: change own password */
+/* Language tab in Settings @req SWR-GUI-012 */
+#define IDC_CMB_LANG       1228
+#define IDC_BTN_LANG_APPLY 1229
 /* Simulation tab in Settings @req SWR-GUI-010 */
 #define IDC_BTN_SIM_TOGGLE 1225
 #define IDC_STC_SIM_STATUS 1226
@@ -605,42 +609,42 @@ static void set_txt(HWND p, int id, const char *s) { SetWindowTextA(GetDlgItem(p
  * =================================================================== */
 static void create_dash_controls(HWND w)
 {
-    make_label(w,"ID",             20, CY,      40, 18);
+    make_label(w,localization_get_string(STR_PATIENT_ID), 20, CY, 40, 18);
     make_edit (w,IDC_PAT_ID, "1001",  20, CY+20, 100, 24);
-    make_label(w,"Full Name",     130, CY,      90, 18);
+    make_label(w,localization_get_string(STR_PATIENT_NAME), 130, CY, 90, 18);
     make_edit (w,IDC_PAT_NAME,"Sarah Johnson",130,CY+20,240,24);
-    make_label(w,"Age",           382, CY,      40, 18);
+    make_label(w,localization_get_string(STR_AGE), 382, CY, 40, 18);
     make_edit (w,IDC_PAT_AGE, "52",  382,CY+20,  70, 24);
-    make_label(w,"Weight (kg)",   464, CY,      90, 18);
+    make_label(w,localization_get_string(STR_WEIGHT_KG), 464, CY, 90, 18);
     make_edit (w,IDC_PAT_WEIGHT,"72.5",464,CY+20,90,24);
-    make_label(w,"Height (m)",    566, CY,      90, 18);
+    make_label(w,localization_get_string(STR_HEIGHT_M), 566, CY, 90, 18);
     make_edit (w,IDC_PAT_HEIGHT,"1.66",566,CY+20,90,24);
-    make_btn  (w,IDC_BTN_ADMIT,"Admit / Refresh",670,CY+18,130,28);
+    make_btn  (w,IDC_BTN_ADMIT,localization_get_string(STR_ADMIT_REFRESH),670,CY+18,130,28);
 
-    make_label(w,"HR (bpm)",     20, CY+62,  80, 18);
+    make_label(w,localization_get_string(STR_HR_BPM), 20, CY+62, 80, 18);
     make_edit (w,IDC_VIT_HR,  "78", 20, CY+82, 90, 24);
-    make_label(w,"Systolic",    122,CY+62,  70, 18);
+    make_label(w,localization_get_string(STR_SYSTOLIC), 122,CY+62, 70, 18);
     make_edit (w,IDC_VIT_SYS,"122",122,CY+82,  90, 24);
-    make_label(w,"Diastolic",   224,CY+62,  70, 18);
+    make_label(w,localization_get_string(STR_DIASTOLIC), 224,CY+62, 70, 18);
     make_edit (w,IDC_VIT_DIA, "82",224,CY+82,  90, 24);
-    make_label(w,"Temp (C)",    326,CY+62,  70, 18);
+    make_label(w,localization_get_string(STR_TEMP_C), 326,CY+62, 70, 18);
     make_edit (w,IDC_VIT_TEMP,"36.7",326,CY+82, 90,24);
-    make_label(w,"SpO2 (%)",    428,CY+62,  70, 18);
+    make_label(w,localization_get_string(STR_SPO2_PERCENT), 428,CY+62, 70, 18);
     make_edit (w,IDC_VIT_SPO2,"98", 428,CY+82,  90, 24);
-    make_label(w,"RR (br/min)", 530,CY+62,  80, 18);
+    make_label(w,localization_get_string(STR_RR_BR_MIN), 530,CY+62, 80, 18);
     make_edit (w,IDC_VIT_RR,  "15", 530,CY+82,  90, 24);
-    make_btn  (w,IDC_BTN_ADD, "Add Reading",  634,CY+80,110,28);
-    make_btn  (w,IDC_BTN_CLEAR,"Clear Session",756,CY+80,110,28);
+    make_btn  (w,IDC_BTN_ADD, localization_get_string(STR_ADD_READING),  634,CY+80,110,28);
+    make_btn  (w,IDC_BTN_CLEAR,localization_get_string(STR_CLEAR_SESSION),756,CY+80,110,28);
 
     make_btn(w,IDC_BTN_SCEN1,"Demo: Deterioration",20, CY+124,175,26);
     make_btn(w,IDC_BTN_SCEN2,"Demo: Bradycardia",  205,CY+124,160,26);
 
-    make_label(w,"Active Alerts",20,CY+162,160,18);
+    make_label(w,localization_get_string(STR_ACTIVE_ALERTS),20,CY+162,160,18);
     CreateWindowExA(WS_EX_CLIENTEDGE,"LISTBOX","",
                     WS_CHILD|WS_VISIBLE|WS_VSCROLL|LBS_NOINTEGRALHEIGHT,
                     20,CY+182,872,88,w,(HMENU)(INT_PTR)IDC_LIST_ALERTS,g_app.inst,NULL);
 
-    make_label(w,"Reading History",20,CY+282,160,18);
+    make_label(w,localization_get_string(STR_READING_HISTORY),20,CY+282,160,18);
     CreateWindowExA(WS_EX_CLIENTEDGE,"LISTBOX","",
                     WS_CHILD|WS_VISIBLE|WS_VSCROLL|LBS_NOINTEGRALHEIGHT,
                     20,CY+302,872,130,w,(HMENU)(INT_PTR)IDC_LIST_HISTORY,g_app.inst,NULL);
@@ -850,6 +854,9 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
     /* My Account tab control handles */
     static HWND acct_ctrls[4];
     static int  acct_count = 0;
+    /* Language tab control handles @req SWR-GUI-012 */
+    static HWND lang_ctrls[4];
+    static int  lang_count = 0;
 
     switch (msg) {
     case WM_CREATE: {
@@ -865,17 +872,30 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
         ZeroMemory(&ti, sizeof(ti)); ti.mask = TCIF_TEXT;
         if (g_app.logged_role == ROLE_ADMIN) {
-            ti.pszText = "Users";         TabCtrl_InsertItem(hw_tab, 0, &ti);
-            ti.pszText = "Simulation";    TabCtrl_InsertItem(hw_tab, 1, &ti);
-            ti.pszText = "About";         TabCtrl_InsertItem(hw_tab, 2, &ti);
-            ti.pszText = "Alarm Limits";  TabCtrl_InsertItem(hw_tab, 3, &ti);
-            ti.pszText = "My Account";    TabCtrl_InsertItem(hw_tab, 4, &ti);
+            ti.pszText = (char*)localization_get_string(STR_USER_MANAGEMENT);
+                                          TabCtrl_InsertItem(hw_tab, 0, &ti);
+            ti.pszText = (char*)localization_get_string(STR_SIM_MODE);
+                                          TabCtrl_InsertItem(hw_tab, 1, &ti);
+            ti.pszText = (char*)localization_get_string(STR_ABOUT);
+                                          TabCtrl_InsertItem(hw_tab, 2, &ti);
+            ti.pszText = (char*)localization_get_string(STR_ALARM_LIMITS);
+                                          TabCtrl_InsertItem(hw_tab, 3, &ti);
+            ti.pszText = (char*)localization_get_string(STR_MY_ACCOUNT);
+                                          TabCtrl_InsertItem(hw_tab, 4, &ti);
+            ti.pszText = (char*)localization_get_string(STR_LANGUAGE);
+                                          TabCtrl_InsertItem(hw_tab, 5, &ti);
         } else {
             /* Clinical users: no Users tab */
-            ti.pszText = "Simulation";    TabCtrl_InsertItem(hw_tab, 0, &ti);
-            ti.pszText = "Alarm Limits";  TabCtrl_InsertItem(hw_tab, 1, &ti);
-            ti.pszText = "My Account";    TabCtrl_InsertItem(hw_tab, 2, &ti);
-            ti.pszText = "About";         TabCtrl_InsertItem(hw_tab, 3, &ti);
+            ti.pszText = (char*)localization_get_string(STR_SIM_MODE);
+                                          TabCtrl_InsertItem(hw_tab, 0, &ti);
+            ti.pszText = (char*)localization_get_string(STR_ALARM_LIMITS);
+                                          TabCtrl_InsertItem(hw_tab, 1, &ti);
+            ti.pszText = (char*)localization_get_string(STR_MY_ACCOUNT);
+                                          TabCtrl_InsertItem(hw_tab, 2, &ti);
+            ti.pszText = (char*)localization_get_string(STR_ABOUT);
+                                          TabCtrl_InsertItem(hw_tab, 3, &ti);
+            ti.pszText = (char*)localization_get_string(STR_LANGUAGE);
+                                          TabCtrl_InsertItem(hw_tab, 4, &ti);
         }
 
         /* --- Users tab controls --- */
@@ -1029,6 +1049,32 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         for (i = 0; i < acct_count; ++i)
             ShowWindow(acct_ctrls[i], SW_HIDE);
 
+        /* --- Language tab controls @req SWR-GUI-012 --- */
+        lang_count = 0;
+        lang_ctrls[lang_count++] = make_label(w,
+            localization_get_string(STR_LANGUAGE), 16, 58, 520, 22);
+        lang_ctrls[lang_count++] = make_label(w,
+            "Select your preferred language. The application will\r\n"
+            "update the interface when you click Apply.",
+            16, 86, 520, 40);
+        {
+            HWND cmb = CreateWindowExA(0, "COMBOBOX", "",
+                WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST|WS_VSCROLL,
+                16, 140, 220, 200, w, (HMENU)(INT_PTR)IDC_CMB_LANG,
+                g_app.inst, NULL);
+            int cur_lang = (int)localization_get_language();
+            for (i = 0; i < LANG_COUNT; ++i) {
+                SendMessageA(cmb, CB_ADDSTRING, 0,
+                    (LPARAM)localization_get_language_name((Language)i));
+            }
+            SendMessageA(cmb, CB_SETCURSEL, (WPARAM)cur_lang, 0);
+            lang_ctrls[lang_count++] = cmb;
+        }
+        lang_ctrls[lang_count++] = make_btn(w, IDC_BTN_LANG_APPLY,
+            localization_get_string(STR_SAVE), 16, 180, 120, 30);
+        for (i = 0; i < lang_count; ++i)
+            ShowWindow(lang_ctrls[i], SW_HIDE);
+
         font_children(w, g_app.font_ui);
         if (about_count > 0)
             SendMessage(about_ctrls[0], WM_SETFONT, (WPARAM)g_app.font_status, TRUE);
@@ -1043,9 +1089,10 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(w, &ps);
         fill_rect(hdc, 0, 0, 550, 40, CLR_NAVY);
-        draw_text_ex(hdc, "  Settings", 0, 0, 550, 40,
+        { char hdr[64]; snprintf(hdr, sizeof(hdr), "  %s", localization_get_string(STR_SETTINGS));
+        draw_text_ex(hdc, hdr, 0, 0, 550, 40,
                      g_app.font_status, CLR_WHITE,
-                     DT_SINGLELINE|DT_VCENTER|DT_LEFT);
+                     DT_SINGLELINE|DT_VCENTER|DT_LEFT); }
         EndPaint(w, &ps);
         return 0;
     }
@@ -1057,20 +1104,22 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             int i;
             /* Map tab index to content: depends on role */
             int show_users=SW_HIDE, show_sim=SW_HIDE, show_about=SW_HIDE,
-                show_alm=SW_HIDE, show_acct=SW_HIDE;
+                show_alm=SW_HIDE, show_acct=SW_HIDE, show_lang=SW_HIDE;
             if (g_app.logged_role == ROLE_ADMIN) {
-                /* Admin tabs: 0=Users, 1=Sim, 2=About, 3=Alarm, 4=MyAccount */
+                /* Admin tabs: 0=Users, 1=Sim, 2=About, 3=Alarm, 4=MyAccount, 5=Language */
                 if (sel==0) show_users=SW_SHOW;
                 if (sel==1) show_sim=SW_SHOW;
                 if (sel==2) show_about=SW_SHOW;
                 if (sel==3) show_alm=SW_SHOW;
                 if (sel==4) show_acct=SW_SHOW;
+                if (sel==5) show_lang=SW_SHOW;
             } else {
-                /* Clinical tabs: 0=Sim, 1=Alarm, 2=MyAccount, 3=About */
+                /* Clinical tabs: 0=Sim, 1=Alarm, 2=MyAccount, 3=About, 4=Language */
                 if (sel==0) show_sim=SW_SHOW;
                 if (sel==1) show_alm=SW_SHOW;
                 if (sel==2) show_acct=SW_SHOW;
                 if (sel==3) show_about=SW_SHOW;
+                if (sel==4) show_lang=SW_SHOW;
             }
             ShowWindow(hw_list,    show_users);
             ShowWindow(hw_btn_add, show_users);
@@ -1085,6 +1134,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
                 ShowWindow(alm_ctrls[i],   show_alm);
             for (i = 0; i < acct_count;  ++i)
                 ShowWindow(acct_ctrls[i],  show_acct);
+            for (i = 0; i < lang_count;  ++i)
+                ShowWindow(lang_ctrls[i],  show_lang);
             InvalidateRect(w, NULL, TRUE);
         }
         if (nm->idFrom == IDC_LST_USERS && nm->code == (UINT)LBN_SELCHANGE) {
@@ -1170,6 +1221,27 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             /* Propagate to dashboard */
             if (g_app.hwnd_dash) apply_sim_mode(g_app.hwnd_dash);
             return 0;
+
+        case IDC_BTN_LANG_APPLY: {  /* @req SWR-GUI-012 */
+            HWND cmb = GetDlgItem(w, IDC_CMB_LANG);
+            int sel_lang = (int)SendMessageA(cmb, CB_GETCURSEL, 0, 0);
+            if (sel_lang >= 0 && sel_lang < LANG_COUNT) {
+                localization_set_language((Language)sel_lang);
+                app_config_save_language(sel_lang);
+                /* Close and reopen Settings to refresh all localized labels */
+                DestroyWindow(w);
+                {
+                    HWND hw_new = CreateWindowExA(
+                        WS_EX_TOOLWINDOW, CLASS_SETTINGS,
+                        localization_get_string(STR_SETTINGS),
+                        WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_VISIBLE,
+                        CW_USEDEFAULT,CW_USEDEFAULT, 560, 520,
+                        g_app.hwnd_dash, NULL, g_app.inst, NULL);
+                    (void)hw_new;
+                }
+            }
+            return 0;
+        }
 
         case IDC_LST_USERS:
             if (HIWORD(wp) == LBN_SELCHANGE) {
@@ -1537,14 +1609,18 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         create_dash_controls(w);
         font_children(w, g_app.font_ui);
 
-        btn = make_btn(w, IDC_BTN_LOGOUT, "Logout",   WIN_CW-86,  14, 72, 28);
+        btn = make_btn(w, IDC_BTN_LOGOUT, localization_get_string(STR_LOGOUT),   WIN_CW-86,  14, 72, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
         btn = make_btn(w, IDC_BTN_PAUSE,  "Pause Sim",WIN_CW-176, 14, 86, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
-        btn = make_btn(w, IDC_BTN_SETTINGS, "Settings",  WIN_CW-272, 14, 86, 28);
+        btn = make_btn(w, IDC_BTN_SETTINGS, localization_get_string(STR_SETTINGS),  WIN_CW-272, 14, 86, 28);
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
 
         app_config_load(&g_app.sim_enabled);          /* restore sim mode */
+        { /* restore language @req SWR-GUI-012 */
+            int lang = app_config_load_language();
+            localization_set_language((Language)lang);
+        }
         alarm_limits_load(&g_app.alarm_limits);       /* restore alarm limits @req SWR-ALM-001 */
         hw_init();
         g_app.sim_paused = 0;
@@ -1704,16 +1780,16 @@ static LRESULT CALLBACK login_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         char ver_buf[32];
         g_app.hwnd_login = w;
 
-        make_label(w,"Username:",70,196,300,18);
+        make_label(w,localization_get_string(STR_USERNAME),70,196,300,18);
         make_edit (w,IDC_LGN_USER,"admin",70,216,300,28);
-        make_label(w,"Password:",70,256,300,18);
+        make_label(w,localization_get_string(STR_PASSWORD),70,256,300,18);
         {
             HWND ed = CreateWindowExA(WS_EX_CLIENTEDGE,"EDIT","",
                 WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_AUTOHSCROLL|ES_PASSWORD,
                 70,276,300,28,w,(HMENU)(INT_PTR)IDC_LGN_PASS,g_app.inst,NULL);
             SendMessage(ed,EM_SETPASSWORDCHAR,(WPARAM)'*',0);
         }
-        CreateWindowExA(0,"BUTTON","SIGN IN",
+        CreateWindowExA(0,"BUTTON",localization_get_string(STR_SIGN_IN),
             WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,
             70,320,300,38,w,(HMENU)(INT_PTR)IDC_LGN_BTN,g_app.inst,NULL);
         CreateWindowExA(0,"STATIC","",WS_CHILD|WS_VISIBLE|SS_LEFT,
@@ -1745,7 +1821,7 @@ static LRESULT CALLBACK login_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         draw_text_ex(hdc,APP_TITLE,  20, 70,400,30,g_app.font_status,CLR_WHITE,DT_SINGLELINE|DT_CENTER|DT_VCENTER);
         draw_text_ex(hdc,"Authorized Clinical Use Only",
                      20,110,400,22,g_app.font_ui,RGB(186,230,253),DT_SINGLELINE|DT_CENTER|DT_VCENTER);
-        draw_text_ex(hdc,"Sign In",70,163,300,28,g_app.font_status,CLR_DARK_TEXT,DT_SINGLELINE|DT_CENTER|DT_VCENTER);
+        draw_text_ex(hdc,localization_get_string(STR_SIGN_IN),70,163,300,28,g_app.font_status,CLR_DARK_TEXT,DT_SINGLELINE|DT_CENTER|DT_VCENTER);
         EndPaint(w,&ps);
         return 0;
     }
@@ -1798,7 +1874,7 @@ static void open_settings(HWND parent)
     EnableWindow(parent, FALSE);
     g_app.hwnd_settings = CreateWindowExA(
         WS_EX_DLGMODALFRAME|WS_EX_APPWINDOW,
-        CLASS_SETTINGS, "Settings",
+        CLASS_SETTINGS, localization_get_string(STR_SETTINGS),
         WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
         CW_USEDEFAULT,CW_USEDEFAULT,550,510,
         parent,NULL,g_app.inst,NULL);
@@ -1868,6 +1944,10 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
     wc.hIcon         = g_app.app_icon;
     wc.hIconSm       = (HICON)LoadImageA(inst, MAKEINTRESOURCEA(IDI_APPICON),
                                           IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+
+    /* Initialize localization before any window is created @req SWR-GUI-012 */
+    { int lang = app_config_load_language();
+      localization_set_language((Language)lang); }
 
     wc.lpfnWndProc   = login_proc;    wc.lpszClassName = CLASS_LOGIN;    RegisterClassExA(&wc);
     wc.lpfnWndProc   = dash_proc;     wc.lpszClassName = CLASS_DASH;     RegisterClassExA(&wc);

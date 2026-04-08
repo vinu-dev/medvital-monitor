@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# =============================================================================
+# pre-commit hook — Patient Vital Signs Monitor (IEC 62304 Class B)
+#
+# Enforces:
+#   1. No secrets or credentials in staged files
+#   2. No trailing whitespace in C/H source files
+#   3. No files larger than 1 MB staged (prevents accidental binary commits)
+#
+# Install: ./scripts/install-hooks.sh
+# Bypass:  git commit --no-verify  (requires justification in PR)
+# =============================================================================
+
+set -euo pipefail
+
+ERRORS=0
+
+# ---------- Check for potential secrets ----------
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+
+if [ -n "$STAGED" ]; then
+    # Patterns that suggest secrets or credentials
+    SECRET_PATTERNS="password\s*=|api_key\s*=|secret\s*=|private_key|BEGIN RSA|BEGIN OPENSSH"
+
+    for FILE in $STAGED; do
+        # Skip binary files and known safe files
+        if echo "$FILE" | grep -qE '\.(exe|dll|zip|png|ico|pdf)$'; then
+            continue
+        fi
+        if [ -f "$FILE" ]; then
+            MATCHES=$(grep -inE "$SECRET_PATTERNS" "$FILE" 2>/dev/null | grep -v "// " | grep -v "# " | head -5 || true)
+            if [ -n "$MATCHES" ]; then
+                echo "WARNING: Possible secret in $FILE:"
+                echo "$MATCHES"
+                echo ""
+            fi
+        fi
+    done
+
+    # ---------- Block .env and credential files ----------
+    for FILE in $STAGED; do
+        if echo "$FILE" | grep -qiE '(\.env$|credentials|\.pem$|\.key$|users\.dat$)'; then
+            echo "ERROR: Potentially sensitive file staged: $FILE"
+            echo "  Remove it with: git reset HEAD $FILE"
+            ERRORS=1
+        fi
+    done
+
+    # ---------- Check for large files ----------
+    for FILE in $STAGED; do
+        if [ -f "$FILE" ]; then
+            SIZE=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+            if [ "$SIZE" -gt 1048576 ]; then
+                SIZE_MB=$(echo "scale=1; $SIZE/1048576" | bc 2>/dev/null || echo "?")
+                echo "ERROR: File too large (${SIZE_MB} MB): $FILE"
+                echo "  Max size: 1 MB. Use Git LFS for large files."
+                ERRORS=1
+            fi
+        fi
+    done
+fi
+
+if [ "$ERRORS" -ne 0 ]; then
+    echo ""
+    echo "Pre-commit check failed. Fix the issues above or use --no-verify to bypass."
+    exit 1
+fi
+
+exit 0

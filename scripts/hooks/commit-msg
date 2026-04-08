@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# =============================================================================
+# commit-msg hook — Patient Vital Signs Monitor (IEC 62304 Class B)
+#
+# Validates that commit messages follow the conventional format:
+#   <type>(<scope>): <subject>
+#
+# Valid types: feat, fix, docs, test, ci, refactor, chore
+# Subject line must be ≤ 72 characters.
+#
+# Install: ./scripts/install-hooks.sh
+# Bypass:  git commit --no-verify  (requires justification in PR)
+# =============================================================================
+
+set -euo pipefail
+
+MSG_FILE="$1"
+SUBJECT=$(head -1 "$MSG_FILE")
+
+# ---------- Allowed type prefixes ----------
+TYPES="feat|fix|docs|test|ci|refactor|chore"
+
+# ---------- Validate subject line ----------
+
+# Allow merge commits
+if echo "$SUBJECT" | grep -qE '^Merge '; then
+    exit 0
+fi
+
+# Allow revert commits
+if echo "$SUBJECT" | grep -qE '^Revert '; then
+    exit 0
+fi
+
+# Check type prefix
+if ! echo "$SUBJECT" | grep -qE "^(${TYPES})(\(.+\))?: .+"; then
+    echo ""
+    echo "ERROR: Invalid commit message format."
+    echo ""
+    echo "  Expected: <type>(<scope>): <subject>"
+    echo ""
+    echo "  Valid types: feat, fix, docs, test, ci, refactor, chore"
+    echo ""
+    echo "  Examples:"
+    echo "    feat(vitals): add trend export function"
+    echo "    fix(alerts): clamp HR boundary to 300"
+    echo "    docs: update TRACEABILITY.md"
+    echo "    test(patient): add null-name boundary test"
+    echo ""
+    echo "  Your message:"
+    echo "    $SUBJECT"
+    echo ""
+    exit 1
+fi
+
+# Check subject line length (≤ 72 characters)
+LEN=${#SUBJECT}
+if [ "$LEN" -gt 72 ]; then
+    echo ""
+    echo "ERROR: Subject line too long ($LEN chars, max 72)."
+    echo ""
+    echo "  Move details to the commit body (leave a blank line after the subject)."
+    echo ""
+    echo "  Your subject:"
+    echo "    $SUBJECT"
+    echo ""
+    exit 1
+fi
+
+exit 0

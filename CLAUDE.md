@@ -28,6 +28,13 @@ The pipeline (`.github/workflows/pipeline.yml`) enforces this sequence — each 
 Individual workflows (`ci.yml`, `static-analysis.yml`, `codeql.yml`, `dvt.yml`, `release.yml`)
 are kept for scheduled runs and manual `workflow_dispatch` triggers.
 
+## SCM Documentation
+
+- `docs/SCM_PLAN.md` — Configuration management plan (IEC 62304 §8)
+- `docs/BRANCHING_STRATEGY.md` — Branch naming, commit conventions, merge rules
+- `docs/DEVOPS_WORKFLOWS.md` — Pipeline stages, artefacts, troubleshooting
+- `scripts/install-hooks.sh` — Install local Git hooks (run once per clone)
+
 ## Build
 
 ```bash
