@@ -1,0 +1,157 @@
+name: Release — Build & Publish Assets
+
+# Triggered only when a version tag (v*) is pushed.
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-release:
+    name: Build GUI + Installer, attach to release
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to upload release assets
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # ----------------------------------------------------------------
+      # 1. Checkout full history so the tag is accessible
+      # ----------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # 2. Extract version from tag  (v2.0.0 → 2.0.0)
+      # ----------------------------------------------------------------
+      - name: Extract version
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"          # e.g. v2.0.0
+          VER="${TAG#v}"                    # e.g. 2.0.0
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "ver=${VER}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${VER}"
+
+      # ----------------------------------------------------------------
+      # 3. Build release executable (MinGW-w64, no tests)
+      # ----------------------------------------------------------------
+      - name: Configure CMake
+        run: |
+          cmake -G "MinGW Makefiles" -B build_release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=OFF \
+            -Wno-dev
+
+      - name: Build GUI executable
+        run: cmake --build build_release --target patient_monitor_gui --parallel
+
+      # ----------------------------------------------------------------
+      # 4. Install Inno Setup 6 via Chocolatey and build installer
+      # ----------------------------------------------------------------
+      - name: Install Inno Setup 6
+        shell: pwsh
+        run: choco install innosetup --version 6.2.2 -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          # Patch AppVersion in installer.iss to match tag
+          $ver = "${{ steps.ver.outputs.ver }}"
+          (Get-Content installer.iss) -replace '#define AppVersion\s+"[^"]+"', "#define AppVersion `"$ver`"" |
+            Set-Content installer.iss
+          & $iscc installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # ----------------------------------------------------------------
+      # 5. Create portable ZIP (exe + README)
+      # ----------------------------------------------------------------
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.ver.outputs.ver }}"
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $exeSrc = "build_release\patient_monitor_gui.exe"
+          $exeDst = "PatientMonitor-${tag}.exe"
+          Copy-Item $exeSrc $exeDst
+
+          $readme = @"
+Patient Vital Signs Monitor ${tag}
+===================================
+IEC 62304 Class B Medical Device Software
+
+REQUIREMENTS
+  Windows 10/11 (x86-64). No extra runtime needed.
+
+DEFAULT CREDENTIALS
+  admin    / Monitor@2026   (ADMIN role)
+  clinical / Clinical@2026  (CLINICAL role)
+  Change these before clinical use.
+
+SIMULATION MODE
+  Sim ON  -- synthetic data every 2 s (demo/development)
+  Sim OFF -- all tiles show N/A (connect real hardware)
+
+SECURITY
+  Passwords are SHA-256 hashed in users.dat.
+
+Source: https://github.com/${{ github.repository }}
+"@
+          $readme | Out-File -Encoding utf8 "README.txt"
+
+          Compress-Archive -Path $exeDst, "README.txt" `
+            -DestinationPath "PatientMonitor-${tag}-portable.zip" -Force
+
+      # ----------------------------------------------------------------
+      # 6. Locate installer output
+      # ----------------------------------------------------------------
+      - name: Locate installer
+        id: installer
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $f = Get-ChildItem dist -Filter "*.exe" | Select-Object -First 1
+          if (-not $f) {
+            # Inno Setup may use the version number in the filename
+            $f = Get-ChildItem . -Recurse -Filter "PatientMonitorSetup*.exe" | Select-Object -First 1
+          }
+          echo "path=$($f.FullName)" >> $env:GITHUB_OUTPUT
+          echo "Installer: $($f.FullName)"
+
+      # ----------------------------------------------------------------
+      # 7. Upload assets to the GitHub release
+      # ----------------------------------------------------------------
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release upload "${TAG}" \
+            "PatientMonitor-${TAG}.exe" \
+            "PatientMonitor-${TAG}-portable.zip" \
+            --clobber
+
+          # Upload installer if found
+          INSTALLER="${{ steps.installer.outputs.path }}"
+          if [ -f "$INSTALLER" ]; then
+            gh release upload "${TAG}" "$INSTALLER" --clobber
+          fi
+
+      # ----------------------------------------------------------------
+      # 8. Mark release as non-draft / non-prerelease (optional polish)
+      # ----------------------------------------------------------------
+      - name: Finalise release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ steps.ver.outputs.tag }}" \
+            --draft=false --prerelease=false || true
