@@ -8,7 +8,7 @@
 ; =====================================================================
 
 #define AppName      "Patient Vital Signs Monitor"
-#define AppVersion   "2.0.0"
+#define AppVersion   "2.1.0"
 #define AppPublisher "Medical Device Project"
 #define AppExeName   "patient_monitor_gui.exe"
 [Setup]

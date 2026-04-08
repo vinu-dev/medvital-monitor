@@ -16,9 +16,12 @@ add_executable(test_unit
     unit/test_alerts.cpp
     unit/test_patient.cpp
     unit/test_auth.cpp
+    unit/test_hal.cpp
+    unit/test_config.cpp
     ${PROJECT_SOURCE_DIR}/src/gui_auth.c
     ${PROJECT_SOURCE_DIR}/src/gui_users.c
     ${PROJECT_SOURCE_DIR}/src/pw_hash.c
+    ${PROJECT_SOURCE_DIR}/src/sim_vitals.c
 )
 target_link_libraries(test_unit PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/include)

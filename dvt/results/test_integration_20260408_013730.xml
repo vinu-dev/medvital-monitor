@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="12" failures="0" disabled="0" errors="0" time="0" timestamp="2026-04-08T01:37:30" name="AllTests">
+  <testsuite name="AlertEscalation" tests="6" failures="0" disabled="0" errors="0" time="0" timestamp="2026-04-08T01:37:30">
+    <testcase name="REQ_INT_ESC_001_SpO2_StepwiseEscalation" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+    <testcase name="REQ_INT_ESC_002_Bradycardia_Escalation" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+    <testcase name="REQ_INT_ESC_003_AllParameters_Critical" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+    <testcase name="REQ_INT_ESC_004_Deescalation_CriticalToNormal" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+    <testcase name="REQ_INT_ESC_005_BoundaryTransitions_HeartRate" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+    <testcase name="REQ_INT_ESC_005_BoundaryTransitions_SpO2" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="AlertEscalation" />
+  </testsuite>
+  <testsuite name="PatientMonitoring" tests="6" failures="0" disabled="0" errors="0" time="0" timestamp="2026-04-08T01:37:30">
+    <testcase name="REQ_INT_MON_001_AdmissionWorkflow" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+    <testcase name="REQ_INT_MON_002_DeteriorationTrajectory" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+    <testcase name="REQ_INT_MON_003_RecoveryTrajectory" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+    <testcase name="REQ_INT_MON_004_AlertsConsistentWithStatus" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+    <testcase name="REQ_INT_MON_005_ReadingBufferFull" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+    <testcase name="REQ_INT_MON_006_TwoPatientsIndependent" status="run" result="completed" time="0" timestamp="2026-04-08T01:37:30" classname="PatientMonitoring" />
+  </testsuite>
+</testsuites>

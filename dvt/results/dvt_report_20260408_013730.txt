@@ -1,0 +1,300 @@
+==============================================================================
+  PATIENT VITAL SIGNS MONITOR - DESIGN VERIFICATION TEST REPORT
+==============================================================================
+  Date/Time    : 2026-04-08 01:37:30
+  Git Commit   : 5031694
+  Build Dir    : C:\Users\vinun\claude AI\build_v21
+  Build Step   : skipped (--no-build)
+  OVERALL      : *** PASS ***
+==============================================================================
+
+==============================================================================
+  TEST SUITE SUMMARY
+==============================================================================
+  [PASS]  test_unit
+         Executable : C:\Users\vinun\claude AI\build_v21\tests\test_unit.exe
+         XML Output : C:\Users\vinun\claude AI\dvt\results\test_unit_20260408_013730.xml
+         Return Code : 0
+         Tests       : 158
+         Failures    : 0
+         Errors      : 0
+
+  [PASS]  test_integration
+         Executable : C:\Users\vinun\claude AI\build_v21\tests\test_integration.exe
+         XML Output : C:\Users\vinun\claude AI\dvt\results\test_integration_20260408_013730.xml
+         Return Code : 0
+         Tests       : 12
+         Failures    : 0
+         Errors      : 0
+
+==============================================================================
+  DETAILED RESULTS PER TEST SUITE
+==============================================================================
+  [PASS] test_unit :: ConfigTest  (10 tests, 0 failures)
+    [  OK  ] DefaultWhenFileAbsent  (0s)
+    [  OK  ] SaveZeroThenLoadReturnsZero  (0.008s)
+    [  OK  ] SaveOneThenLoadReturnsOne  (0.001s)
+    [  OK  ] MultipleSaveLoadCyclesPreserveValue  (0.004s)
+    [  OK  ] OverwriteExistingFile  (0s)
+    [  OK  ] MalformedFileReturnsDefault  (0.011s)
+    [  OK  ] EmptyFileReturnsDefault  (0s)
+    [  OK  ] FileWithExtraKeysBeforeTarget  (0.002s)
+    [  OK  ] SetPathNullResetsThenReapply  (0.002s)
+    [  OK  ] NonZeroValueTreatedAsEnabled  (0.003s)
+
+  [PASS] test_unit :: HALTest  (3 tests, 0 failures)
+    [  OK  ] InitDoesNotCrash  (0s)
+    [  OK  ] SingleReadingIsPhysiologicallyValid  (0s)
+    [  OK  ] TenConsecutiveReadingsAreValid  (0s)
+
+  [PASS] test_unit :: HALTestNoInit  (1 tests, 0 failures)
+    [  OK  ] ReadingWithoutInitDoesNotCrash  (0s)
+
+  [PASS] test_unit :: SimSequenceTest  (8 tests, 0 failures)
+    [  OK  ] TwentyReadingsAreUnique  (0s)
+    [  OK  ] SequenceCyclesAfterTwentyReads  (0s)
+    [  OK  ] HwInitResetsIndex  (0s)
+    [  OK  ] MultipleInitCallsAreSafe  (0s)
+    [  OK  ] CycleContainsAtLeastOneCriticalReading  (0s)
+    [  OK  ] CycleContainsAtLeastOneNormalReading  (0s)
+    [  OK  ] TwoFullCyclesAllReadingsValid  (0s)
+    [  OK  ] SecondCycleMatchesFirstCycle  (0s)
+
+  [PASS] test_unit :: UsersTest  (41 tests, 0 failures)
+    [  OK  ] REQ_GUI_001_ValidCredentialsReturnOne  (0s)
+    [  OK  ] REQ_GUI_001_WrongPasswordReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_WrongUsernameReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_BothWrongReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_EmptyUsernameReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_EmptyPasswordReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_BothEmptyReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_NullUsernameReturnsZero  (0s)
+    [  OK  ] REQ_GUI_001_NullPasswordReturnsZero  (0.002s)
+    [  OK  ] REQ_GUI_001_BothNullReturnsZero  (0s)
+    [  OK  ] REQ_GUI_002_KnownUsernameReturnsDisplayName  (0s)
+    [  OK  ] REQ_GUI_002_UnknownUsernameReturnsEmpty  (0s)
+    [  OK  ] REQ_GUI_002_NullUsernameHandledSafely  (0s)
+    [  OK  ] REQ_GUI_002_NullOutputHandledSafely  (0s)
+    [  OK  ] REQ_GUI_002_ZeroLengthBufferHandledSafely  (0s)
+    [  OK  ] REQ_SEC_001_AdminAuthSucceeds  (0s)
+    [  OK  ] REQ_SEC_001_ClinicalAuthSucceeds  (0s)
+    [  OK  ] REQ_SEC_001_WrongPasswordFails  (0s)
+    [  OK  ] REQ_SEC_001_UnknownUserFails  (0s)
+    [  OK  ] REQ_SEC_001_NullUsernameSafe  (0s)
+    [  OK  ] REQ_SEC_001_NullPasswordSafe  (0s)
+    [  OK  ] REQ_SEC_002_RoleOutNullDoesNotCrash  (0s)
+    [  OK  ] REQ_SEC_003_ChangePasswordSuccess  (0s)
+    [  OK  ] REQ_SEC_003_ChangePasswordWrongOldFails  (0s)
+    [  OK  ] REQ_SEC_003_ChangePasswordTooShortFails  (0s)
+    [  OK  ] REQ_SEC_003_ChangePasswordNullSafe  (0s)
+    [  OK  ] REQ_SEC_003_AdminSetPasswordSuccess  (0s)
+    [  OK  ] REQ_SEC_003_AdminSetPasswordTooShortFails  (0s)
+    [  OK  ] REQ_SEC_003_AdminSetPasswordUnknownUserFails  (0s)
+    [  OK  ] REQ_SEC_003_AdminSetPasswordNullSafe  (0s)
+    [  OK  ] REQ_GUI_007_DefaultCountIsTwo  (0s)
+    [  OK  ] REQ_GUI_007_AddUserSucceeds  (0s)
+    [  OK  ] REQ_GUI_007_AddDuplicateUserFails  (0s)
+    [  OK  ] REQ_GUI_007_AddUserPasswordTooShortFails  (0s)
+    [  OK  ] REQ_GUI_007_RemoveClinicianSucceeds  (0s)
+    [  OK  ] REQ_GUI_007_RemoveLastAdminFails  (0s)
+    [  OK  ] REQ_GUI_007_GetByIndexReturnsCorrectAccount  (0s)
+    [  OK  ] REQ_GUI_007_GetByIndexOutOfRangeFails  (0s)
+    [  OK  ] REQ_SEC_004_StoredValueIsNotPlaintext  (0s)
+    [  OK  ] REQ_SEC_004_StoredValueIsSHA256Hex  (0s)
+    [  OK  ] REQ_SEC_004_AuthStillWorksAfterHashing  (0s)
+
+  [PASS] test_unit :: PatientInit  (3 tests, 0 failures)
+    [  OK  ] REQ_PAT_001_FieldsSet  (0s)
+    [  OK  ] REQ_PAT_001_LongNameTruncated  (0s)
+    [  OK  ] REQ_PAT_001_ReadingCountZero  (0s)
+
+  [PASS] test_unit :: PatientAddReading  (5 tests, 0 failures)
+    [  OK  ] REQ_PAT_002_FirstReading  (0s)
+    [  OK  ] REQ_PAT_002_MultipleReadings  (0s)
+    [  OK  ] REQ_PAT_002_FillToCapacity  (0s)
+    [  OK  ] REQ_PAT_002_BeyondCapacity_Returns0  (0s)
+    [  OK  ] REQ_PAT_002_DataPreserved  (0s)
+
+  [PASS] test_unit :: PatientLatestReading  (2 tests, 0 failures)
+    [  OK  ] REQ_PAT_003_NoReadings_ReturnsNull  (0s)
+    [  OK  ] REQ_PAT_003_ReturnsLastAdded  (0s)
+
+  [PASS] test_unit :: PatientStatus  (4 tests, 0 failures)
+    [  OK  ] REQ_PAT_004_NoReadings_Normal  (0s)
+    [  OK  ] REQ_PAT_004_NormalVitals  (0s)
+    [  OK  ] REQ_PAT_004_CriticalVitals  (0s)
+    [  OK  ] REQ_PAT_004_StatusReflectsLatest  (0s)
+
+  [PASS] test_unit :: PatientIsFull  (2 tests, 0 failures)
+    [  OK  ] REQ_PAT_005_NotFull  (0s)
+    [  OK  ] REQ_PAT_005_Full  (0s)
+
+  [PASS] test_unit :: PatientPrintSummary  (3 tests, 0 failures)
+    [  OK  ] REQ_PAT_006_NoReadings  (0s)
+    [  OK  ] REQ_PAT_006_NormalVitals  (0s)
+    [  OK  ] REQ_PAT_006_CriticalVitals_ActiveAlerts  (0s)
+
+  [PASS] test_unit :: GenerateAlerts  (11 tests, 0 failures)
+    [  OK  ] REQ_ALT_001_AllNormal_ZeroAlerts  (0s)
+    [  OK  ] REQ_ALT_002_HeartRate_Warning  (0s)
+    [  OK  ] REQ_ALT_002_SpO2_Critical  (0s)
+    [  OK  ] REQ_ALT_002_Temperature_Warning  (0s)
+    [  OK  ] REQ_ALT_002_BloodPressure_Warning  (0s)
+    [  OK  ] REQ_ALT_003_TwoParams_TwoAlerts  (0s)
+    [  OK  ] REQ_ALT_003_AllParams_FourAlerts  (0s)
+    [  OK  ] REQ_ALT_004_MaxOut_Cap_Zero  (0s)
+    [  OK  ] REQ_ALT_004_MaxOut_Cap_Two  (0s)
+    [  OK  ] REQ_ALT_005_MessageNonEmpty  (0s)
+    [  OK  ] REQ_ALT_005_ParameterNonEmpty  (0s)
+
+  [PASS] test_unit :: HeartRate  (14 tests, 0 failures)
+    [  OK  ] REQ_VIT_001_Normal_Nominal  (0s)
+    [  OK  ] REQ_VIT_001_Normal_LowerBound  (0s)
+    [  OK  ] REQ_VIT_001_Normal_UpperBound  (0s)
+    [  OK  ] REQ_VIT_001_Warning_BelowNormal  (0s)
+    [  OK  ] REQ_VIT_001_Warning_AboveNormal  (0s)
+    [  OK  ] REQ_VIT_001_Warning_LowerEdge  (0s)
+    [  OK  ] REQ_VIT_001_Warning_UpperEdge  (0s)
+    [  OK  ] REQ_VIT_001_Critical_TooLow  (0s)
+    [  OK  ] REQ_VIT_001_Critical_TooLowEdge  (0s)
+    [  OK  ] REQ_VIT_001_Critical_TooHigh  (0s)
+    [  OK  ] REQ_VIT_001_Critical_TooHighEdge  (0s)
+    [  OK  ] REQ_VIT_001_Warning_At40  (0s)
+    [  OK  ] REQ_VIT_001_Warning_At150  (0s)
+    [  OK  ] REQ_VIT_001_Critical_Negative  (0s)
+
+  [PASS] test_unit :: BloodPressure  (12 tests, 0 failures)
+    [  OK  ] REQ_VIT_002_Normal_Typical  (0s)
+    [  OK  ] REQ_VIT_002_Normal_LowerBounds  (0s)
+    [  OK  ] REQ_VIT_002_Normal_UpperBounds  (0s)
+    [  OK  ] REQ_VIT_002_Warning_SystolicLow  (0s)
+    [  OK  ] REQ_VIT_002_Warning_SystolicHigh  (0s)
+    [  OK  ] REQ_VIT_002_Warning_DiastolicLow  (0s)
+    [  OK  ] REQ_VIT_002_Warning_DiastolicHigh  (0s)
+    [  OK  ] REQ_VIT_002_Critical_SystolicLow  (0s)
+    [  OK  ] REQ_VIT_002_Critical_SystolicHigh  (0s)
+    [  OK  ] REQ_VIT_002_Critical_DiastolicLow  (0s)
+    [  OK  ] REQ_VIT_002_Critical_DiastolicHigh  (0s)
+    [  OK  ] REQ_VIT_002_Critical_Both  (0s)
+
+  [PASS] test_unit :: Temperature  (10 tests, 0 failures)
+    [  OK  ] REQ_VIT_003_Normal_Typical  (0s)
+    [  OK  ] REQ_VIT_003_Normal_LowerBound  (0s)
+    [  OK  ] REQ_VIT_003_Normal_UpperBound  (0s)
+    [  OK  ] REQ_VIT_003_Warning_Hypothermia  (0s)
+    [  OK  ] REQ_VIT_003_Warning_LowGradeFever  (0s)
+    [  OK  ] REQ_VIT_003_Warning_JustBelowNormal  (0s)
+    [  OK  ] REQ_VIT_003_Warning_JustAboveNormal  (0s)
+    [  OK  ] REQ_VIT_003_Critical_Hypothermia  (0s)
+    [  OK  ] REQ_VIT_003_Critical_HighFever  (0s)
+    [  OK  ] REQ_VIT_003_Critical_Extreme  (0s)
+
+  [PASS] test_unit :: SpO2  (8 tests, 0 failures)
+    [  OK  ] REQ_VIT_004_Normal_100  (0s)
+    [  OK  ] REQ_VIT_004_Normal_95  (0s)
+    [  OK  ] REQ_VIT_004_Normal_Typical  (0s)
+    [  OK  ] REQ_VIT_004_Warning_94  (0s)
+    [  OK  ] REQ_VIT_004_Warning_90  (0s)
+    [  OK  ] REQ_VIT_004_Critical_89  (0s)
+    [  OK  ] REQ_VIT_004_Critical_Zero  (0s)
+    [  OK  ] REQ_VIT_004_Critical_Neg  (0s)
+
+  [PASS] test_unit :: OverallAlert  (5 tests, 0 failures)
+    [  OK  ] REQ_VIT_005_AllNormal  (0s)
+    [  OK  ] REQ_VIT_005_OneWarning  (0s)
+    [  OK  ] REQ_VIT_005_OneCritical  (0s)
+    [  OK  ] REQ_VIT_005_CriticalOverridesWarning  (0s)
+    [  OK  ] REQ_VIT_005_AllCritical  (0s)
+
+  [PASS] test_unit :: BMI  (12 tests, 0 failures)
+    [  OK  ] REQ_VIT_006_NormalWeight  (0s)
+    [  OK  ] REQ_VIT_006_Underweight  (0s)
+    [  OK  ] REQ_VIT_006_Overweight  (0s)
+    [  OK  ] REQ_VIT_006_Obese  (0s)
+    [  OK  ] REQ_VIT_006_ZeroHeight  (0s)
+    [  OK  ] REQ_VIT_006_NegativeHeight  (0s)
+    [  OK  ] REQ_VIT_006_Category_Underweight  (0s)
+    [  OK  ] REQ_VIT_006_Category_NormalLow  (0s)
+    [  OK  ] REQ_VIT_006_Category_NormalHigh  (0s)
+    [  OK  ] REQ_VIT_006_Category_Overweight  (0s)
+    [  OK  ] REQ_VIT_006_Category_Obese  (0s)
+    [  OK  ] REQ_VIT_006_Category_Invalid  (0s)
+
+  [PASS] test_unit :: AlertStr  (4 tests, 0 failures)
+    [  OK  ] REQ_VIT_007_Normal  (0s)
+    [  OK  ] REQ_VIT_007_Warning  (0s)
+    [  OK  ] REQ_VIT_007_Critical  (0s)
+    [  OK  ] REQ_VIT_007_Unknown  (0s)
+
+  [PASS] test_integration :: AlertEscalation  (6 tests, 0 failures)
+    [  OK  ] REQ_INT_ESC_001_SpO2_StepwiseEscalation  (0s)
+    [  OK  ] REQ_INT_ESC_002_Bradycardia_Escalation  (0s)
+    [  OK  ] REQ_INT_ESC_003_AllParameters_Critical  (0s)
+    [  OK  ] REQ_INT_ESC_004_Deescalation_CriticalToNormal  (0s)
+    [  OK  ] REQ_INT_ESC_005_BoundaryTransitions_HeartRate  (0s)
+    [  OK  ] REQ_INT_ESC_005_BoundaryTransitions_SpO2  (0s)
+
+  [PASS] test_integration :: PatientMonitoring  (6 tests, 0 failures)
+    [  OK  ] REQ_INT_MON_001_AdmissionWorkflow  (0s)
+    [  OK  ] REQ_INT_MON_002_DeteriorationTrajectory  (0s)
+    [  OK  ] REQ_INT_MON_003_RecoveryTrajectory  (0s)
+    [  OK  ] REQ_INT_MON_004_AlertsConsistentWithStatus  (0s)
+    [  OK  ] REQ_INT_MON_005_ReadingBufferFull  (0s)
+    [  OK  ] REQ_INT_MON_006_TwoPatientsIndependent  (0s)
+
+==============================================================================
+  REQUIREMENT TRACEABILITY TABLE
+==============================================================================
+  Requirement     Covered By                                          Description                             Status
+  ------------------------------------------------------------------------------
+  SWR-ALT-001     test_unit/test_alerts:GenerateAlerts                generate_alerts() logic                   PASS
+  SWR-ALT-002     test_unit/test_alerts:OverallAlert                  overall_alert() aggregation               PASS
+  SWR-ALT-003     test_unit/test_alerts:FormatAlert                   format_alert() formatting              NOT_RUN
+  SWR-ALT-004     test_integration/test_integration:AlertEscalation   Alert escalation end-to-end               PASS
+  SWR-GUI-001     MANUAL                                              Login screen display                    MANUAL
+  SWR-GUI-002     MANUAL                                              Dashboard colour coding                 MANUAL
+  SWR-GUI-003     MANUAL                                              Real-time vital signs update            MANUAL
+  SWR-GUI-004     MANUAL                                              Alert banner display                    MANUAL
+  SWR-GUI-005     test_unit/test_hal:HALTest                          HAL interface contract                    PASS
+  SWR-GUI-006     test_unit/test_hal:SimSequenceTest                  Simulator sequence & cycling              PASS
+  SWR-GUI-007     MANUAL                                              Sim/HAL toggle in settings              MANUAL
+  SWR-GUI-008     MANUAL                                              Patient info panel                      MANUAL
+  SWR-GUI-009     MANUAL                                              Historical trend graph                  MANUAL
+  SWR-GUI-010     test_unit/test_config:ConfigTest                    Configuration persistence                 PASS
+  SWR-PAT-001     test_unit/test_patient:PatientTest                  Patient operations (001)               NOT_RUN
+  SWR-PAT-002     test_unit/test_patient:PatientTest                  Patient operations (002)               NOT_RUN
+  SWR-PAT-003     test_unit/test_patient:PatientTest                  Patient operations (003)               NOT_RUN
+  SWR-PAT-004     test_unit/test_patient:PatientTest                  Patient operations (004)               NOT_RUN
+  SWR-PAT-005     test_unit/test_patient:PatientTest                  Patient operations (005)               NOT_RUN
+  SWR-PAT-006     test_unit/test_patient:PatientTest                  Patient operations (006)               NOT_RUN
+  SWR-PAT-007     test_unit/test_patient:PatientTest                  Patient operations (007)               NOT_RUN
+  SWR-PAT-008     test_unit/test_patient:PatientTest                  Patient operations (008)               NOT_RUN
+  SWR-SEC-001     test_unit/test_auth:UsersTest                       authenticate() function                   PASS
+  SWR-SEC-002     test_unit/test_auth:UsersTest.REQ_SEC_004_StoredValueIsNotPlaintextNo plaintext password storage             PASS
+  SWR-SEC-003     test_unit/test_auth:UsersTest                       change_password() function                PASS
+  SWR-SEC-004     test_unit/test_auth:UsersTest.REQ_SEC_004_StoredValueIsSHA256HexSHA-256 password hashing                  PASS
+  SWR-VIT-001     test_unit/test_vitals:HeartRateCheck                HR range check                         NOT_RUN
+  SWR-VIT-002     test_unit/test_vitals:BloodPressureCheck            BP range check                         NOT_RUN
+  SWR-VIT-003     test_unit/test_vitals:TemperatureCheck              Temperature range check                NOT_RUN
+  SWR-VIT-004     test_unit/test_vitals:SpO2Check                     SpO2 range check                       NOT_RUN
+  SWR-VIT-005     test_unit/test_vitals:BMICalc                       BMI calculation                        NOT_RUN
+  SWR-VIT-006     test_unit/test_vitals:BMICategory                   BMI category classification            NOT_RUN
+  SWR-VIT-007     test_unit/test_vitals:AlertStr                      alert_level_str() output                  PASS
+
+==============================================================================
+  Requirements total   : 33
+  Automated PASS       : 11
+  Automated FAIL       : 0
+  Manual (checklist)   : 7
+  Not run / missing    : 15
+
+  DVT OVERALL VERDICT  : PASS
+==============================================================================
+
+  NOTE: SWR-GUI-001/002/003/004/007/008/009 are verified via the manual
+  checklist in dvt/DVT_Protocol.md.  They are not included in the
+  automated pass/fail decision.
+
+==============================================================================
+  END OF REPORT
+==============================================================================

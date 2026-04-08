@@ -1,6 +1,6 @@
 /**
  * @file gui_main.c
- * @brief Win32 GUI — Patient Vital Signs Monitor v2.0.0
+ * @brief Win32 GUI — Patient Vital Signs Monitor v2.1.0
  *
  * Windows:
  *   1. Login (PVM_Login)      — auth with role detection
@@ -32,12 +32,13 @@
 #include "gui_auth.h"
 #include "gui_users.h"
 #include "hw_vitals.h"
+#include "app_config.h"
 
 /* ===================================================================
  * App metadata
  * =================================================================== */
 #define APP_TITLE   "Patient Vital Signs Monitor"
-#define APP_VERSION "v2.0.0"
+#define APP_VERSION "v2.1.0"
 #define IDI_APPICON 101
 
 /* ===================================================================
@@ -85,10 +86,9 @@
 #define IDC_BTN_SCEN1    1200
 #define IDC_BTN_SCEN2    1201
 #define IDC_BTN_LOGOUT   1202
-#define IDC_BTN_PAUSE    1203
+#define IDC_BTN_PAUSE    1203   /**< Only shown when simulation is enabled */
 #define IDC_BTN_SETTINGS 1204
 #define IDC_BTN_ACCOUNT  1205
-#define IDC_BTN_SIM_MODE 1206   /**< Toggle simulation / device mode @req SWR-GUI-010 */
 #define IDC_LIST_ALERTS  1300
 #define IDC_LIST_HISTORY 1301
 #define TIMER_SIM        1
@@ -102,6 +102,9 @@
 #define IDC_BTN_USER_EDIT  1222
 #define IDC_BTN_USER_REM   1223
 #define IDC_BTN_USER_PWD   1224
+/* Simulation tab in Settings @req SWR-GUI-010 */
+#define IDC_BTN_SIM_TOGGLE 1225
+#define IDC_STC_SIM_STATUS 1226
 
 /* ===================================================================
  * Control IDs — Password change dialog
@@ -201,50 +204,10 @@ static LRESULT CALLBACK pwddlg_proc  (HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK adduser_proc (HWND, UINT, WPARAM, LPARAM);
 static void create_dashboard(void);
 static void update_dashboard(HWND w);
+static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
 static void open_adduser(HWND parent);
-
-/* ===================================================================
- * Config persistence — monitor.cfg  @req SWR-GUI-010
- * =================================================================== */
-static void get_cfg_path(char *out, int out_len)
-{
-    char  exe[MAX_PATH];
-    char *sep;
-    GetModuleFileNameA(NULL, exe, MAX_PATH);
-    sep = strrchr(exe, '\\');
-    if (sep) *(sep + 1) = '\0'; else exe[0] = '\0';
-    snprintf(out, (size_t)out_len, "%smonitor.cfg", exe);
-}
-
-static void config_load(void)
-{
-    char  path[MAX_PATH];
-    char  line[64];
-    FILE *f;
-    g_app.sim_enabled = 1;   /* default: simulation ON */
-    get_cfg_path(path, MAX_PATH);
-    f = fopen(path, "r");
-    if (!f) return;
-    while (fgets(line, (int)sizeof(line), f)) {
-        int val;
-        if (sscanf(line, "sim_enabled=%d", &val) == 1)
-            g_app.sim_enabled = (val != 0) ? 1 : 0;
-    }
-    fclose(f);
-}
-
-static void config_save(void)
-{
-    char  path[MAX_PATH];
-    FILE *f;
-    get_cfg_path(path, MAX_PATH);
-    f = fopen(path, "w");
-    if (!f) return;
-    fprintf(f, "sim_enabled=%d\n", g_app.sim_enabled);
-    fclose(f);
-}
 
 /* ===================================================================
  * GDI helpers
@@ -325,22 +288,12 @@ static void paint_header(HDC hdc, int cw)
         draw_pill(hdc, cw - 300, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
     }
 
-    /* Sim / Device mode status — painted text just left of button cluster */
-    {
-        const char *mode_txt;
-        COLORREF    mode_clr;
-        if (!g_app.sim_enabled) {
-            mode_txt = "DEVICE";
-            mode_clr = RGB(148, 163, 184);
-        } else if (g_app.sim_paused) {
-            mode_txt = "PAUSED";
-            mode_clr = RGB(253, 224,  71);
-        } else {
-            mode_txt = "SIM LIVE";
-            mode_clr = RGB(134, 239, 172);
-        }
+    /* Sim status indicator — only shown when simulation is active */
+    if (g_app.sim_enabled) {
+        const char *mode_txt = g_app.sim_paused ? "SIM PAUSED" : "* SIM LIVE";
+        COLORREF    mode_clr = g_app.sim_paused ? RGB(253,224,71) : RGB(134,239,172);
         draw_text_ex(hdc, mode_txt,
-                     cw - 208, 0, 90, HDR_H,
+                     cw - 208, 0, 108, HDR_H,
                      g_app.font_tile_lbl, mode_clr,
                      DT_SINGLELINE | DT_VCENTER | DT_CENTER);
     }
@@ -564,9 +517,8 @@ static void reposition_dash_controls(HWND w, int cw)
 {
     HWND btn;
     /* Header buttons — right-edge anchored */
-    SetWindowPos(GetDlgItem(w, IDC_BTN_LOGOUT),   NULL, cw - 86,  14,  72, 28, SWP_NOZORDER|SWP_NOACTIVATE);
-    SetWindowPos(GetDlgItem(w, IDC_BTN_PAUSE),    NULL, cw - 176, 14,  86, 28, SWP_NOZORDER|SWP_NOACTIVATE);
-    SetWindowPos(GetDlgItem(w, IDC_BTN_SIM_MODE), NULL, cw - 372, 14,  90, 28, SWP_NOZORDER|SWP_NOACTIVATE);
+    SetWindowPos(GetDlgItem(w, IDC_BTN_LOGOUT), NULL, cw - 86,  14, 72, 28, SWP_NOZORDER|SWP_NOACTIVATE);
+    SetWindowPos(GetDlgItem(w, IDC_BTN_PAUSE),  NULL, cw - 176, 14, 86, 28, SWP_NOZORDER|SWP_NOACTIVATE);
 
     btn = GetDlgItem(w, IDC_BTN_SETTINGS);
     if (!btn) btn = GetDlgItem(w, IDC_BTN_ACCOUNT);
@@ -743,6 +695,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
     static HWND hw_tab, hw_list;
     static HWND hw_btn_add, hw_btn_edit, hw_btn_rem, hw_btn_pwd;
+    static HWND sim_ctrls[6];
+    static int  sim_count  = 0;
     static HWND about_ctrls[8];
     static int  about_count = 0;
 
@@ -759,9 +713,11 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         SendMessage(hw_tab, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
 
         ZeroMemory(&ti, sizeof(ti)); ti.mask = TCIF_TEXT;
-        ti.pszText = "Users";  TabCtrl_InsertItem(hw_tab, 0, &ti);
-        ti.pszText = "About";  TabCtrl_InsertItem(hw_tab, 1, &ti);
+        ti.pszText = "Users";       TabCtrl_InsertItem(hw_tab, 0, &ti);
+        ti.pszText = "Simulation";  TabCtrl_InsertItem(hw_tab, 1, &ti);
+        ti.pszText = "About";       TabCtrl_InsertItem(hw_tab, 2, &ti);
 
+        /* --- Users tab controls --- */
         hw_list = CreateWindowExA(WS_EX_CLIENTEDGE,"LISTBOX","",
                       WS_CHILD|WS_VISIBLE|WS_VSCROLL|LBS_NOINTEGRALHEIGHT,
                       16, 52, 390, 340, w, (HMENU)(INT_PTR)IDC_LST_USERS,
@@ -774,13 +730,48 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         EnableWindow(hw_btn_rem,  FALSE);
         EnableWindow(hw_btn_pwd,  FALSE);
 
+        /* --- Simulation tab controls @req SWR-GUI-010 --- */
+        sim_count = 0;
+        sim_ctrls[sim_count++] = make_label(w,
+            "Simulation Mode",
+            16, 58, 520, 22);
+        sim_ctrls[sim_count++] = make_label(w,
+            "When ENABLED: synthetic vital signs are generated every 2 seconds,\r\n"
+            "cycling through a clinical scenario (Normal \x2192 Warning \x2192 Critical \x2192 Recovery).",
+            16, 86, 520, 40);
+        sim_ctrls[sim_count++] = make_label(w,
+            "When DISABLED: all vital tiles show N/A. Connect real hardware\r\n"
+            "(implement hw_driver.c against hw_vitals.h) for live data.",
+            16, 134, 520, 40);
+        {
+            char status_txt[64];
+            snprintf(status_txt, sizeof(status_txt),
+                     "Current status:  %s",
+                     g_app.sim_enabled ? "ENABLED" : "DISABLED");
+            sim_ctrls[sim_count++] = CreateWindowExA(0, "STATIC", status_txt,
+                WS_CHILD|WS_VISIBLE|SS_LEFT,
+                16, 190, 520, 22, w, (HMENU)(INT_PTR)IDC_STC_SIM_STATUS,
+                g_app.inst, NULL);
+        }
+        sim_ctrls[sim_count++] = make_btn(w, IDC_BTN_SIM_TOGGLE,
+            g_app.sim_enabled ? "Disable Simulation" : "Enable Simulation",
+            16, 222, 180, 30);
+        sim_ctrls[sim_count++] = make_label(w,
+            "Note: The selected mode is saved and restored on next launch.",
+            16, 264, 520, 20);
+
+        for (i = 0; i < sim_count; ++i)
+            ShowWindow(sim_ctrls[i], SW_HIDE);
+
+        /* --- About tab controls --- */
         about_count = 0;
         about_ctrls[about_count++] = make_label(w,"Patient Vital Signs Monitor",          16,52,520,24);
         about_ctrls[about_count++] = make_label(w,"Version " APP_VERSION,                 16,84,520,20);
         about_ctrls[about_count++] = make_label(w,"IEC 62304 Class B",                    16,112,520,20);
-        about_ctrls[about_count++] = make_label(w,"Requirements Revision: SWR-001-REV-C", 16,136,520,20);
-        about_ctrls[about_count++] = make_label(w,"Authorized clinical use only.",        16,164,520,20);
-        about_ctrls[about_count++] = make_label(w,"Credentials stored in users.dat (SHA-256 hashed, IEC 62304 SWR-SEC-004).", 16,184,520,20);
+        about_ctrls[about_count++] = make_label(w,"Requirements Revision: SWR-001-REV-E", 16,136,520,20);
+        about_ctrls[about_count++] = make_label(w,"Architecture: docs/ARCHITECTURE.md",   16,156,520,20);
+        about_ctrls[about_count++] = make_label(w,"Authorized clinical use only.",        16,180,520,20);
+        about_ctrls[about_count++] = make_label(w,"Credentials: SHA-256 hashed (SWR-SEC-004).", 16,200,520,20);
         about_ctrls[about_count++] = make_label(w,"(c) 2026 Patient Monitor Project",     16,228,520,20);
 
         for (i = 0; i < about_count; ++i)
@@ -789,6 +780,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         font_children(w, g_app.font_ui);
         if (about_count > 0)
             SendMessage(about_ctrls[0], WM_SETFONT, (WPARAM)g_app.font_status, TRUE);
+        if (sim_count > 0)
+            SendMessage(sim_ctrls[0],   WM_SETFONT, (WPARAM)g_app.font_status, TRUE);
 
         settings_refresh_list(hw_list);
         return 0;
@@ -816,8 +809,10 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(hw_btn_edit,show_users);
             ShowWindow(hw_btn_rem, show_users);
             ShowWindow(hw_btn_pwd, show_users);
+            for (i = 0; i < sim_count;   ++i)
+                ShowWindow(sim_ctrls[i],   (sel==1)?SW_SHOW:SW_HIDE);
             for (i = 0; i < about_count; ++i)
-                ShowWindow(about_ctrls[i], (sel==1)?SW_SHOW:SW_HIDE);
+                ShowWindow(about_ctrls[i], (sel==2)?SW_SHOW:SW_HIDE);
             InvalidateRect(w, NULL, TRUE);
         }
         if (nm->idFrom == IDC_LST_USERS && nm->code == (UINT)LBN_SELCHANGE) {
@@ -839,6 +834,23 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_COMMAND:
         switch (LOWORD(wp)) {
+        case IDC_BTN_SIM_TOGGLE:    /* @req SWR-GUI-010 */
+            g_app.sim_enabled = !g_app.sim_enabled;
+            app_config_save(g_app.sim_enabled);
+            /* Update toggle button label and status label */
+            SetWindowTextA(GetDlgItem(w, IDC_BTN_SIM_TOGGLE),
+                           g_app.sim_enabled ? "Disable Simulation" : "Enable Simulation");
+            {
+                char status_txt[64];
+                snprintf(status_txt, sizeof(status_txt),
+                         "Current status:  %s",
+                         g_app.sim_enabled ? "ENABLED" : "DISABLED");
+                SetWindowTextA(GetDlgItem(w, IDC_STC_SIM_STATUS), status_txt);
+            }
+            /* Propagate to dashboard */
+            if (g_app.hwnd_dash) apply_sim_mode(g_app.hwnd_dash);
+            return 0;
+
         case IDC_LST_USERS:
             if (HIWORD(wp) == LBN_SELCHANGE) {
                 int si = (int)SendMessageA(hw_list, LB_GETCURSEL, 0, 0);
@@ -1157,6 +1169,38 @@ static LRESULT CALLBACK adduser_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 /* ===================================================================
+ * Dashboard: apply current sim_enabled state  @req SWR-GUI-010
+ * Called after sim_enabled changes (from Settings or startup).
+ * =================================================================== */
+static void apply_sim_mode(HWND dash)
+{
+    HWND pause_btn = GetDlgItem(dash, IDC_BTN_PAUSE);
+    ShowWindow(pause_btn, g_app.sim_enabled ? SW_SHOW : SW_HIDE);
+
+    if (g_app.sim_enabled) {
+        VitalSigns sv;
+        if (!g_app.has_patient) {
+            patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
+            g_app.has_patient = 1;
+            set_txt(dash,IDC_PAT_ID,"2001"); set_txt(dash,IDC_PAT_NAME,"James Mitchell");
+            set_txt(dash,IDC_PAT_AGE,"45");  set_txt(dash,IDC_PAT_WEIGHT,"78.0");
+            set_txt(dash,IDC_PAT_HEIGHT,"1.75");
+        }
+        g_app.sim_paused = 0;
+        SetWindowTextA(GetDlgItem(dash, IDC_BTN_PAUSE), "Pause Sim");
+        hw_get_next_reading(&sv);
+        patient_add_reading(&g_app.patient, &sv);
+        SetTimer(dash, TIMER_SIM, 2000, NULL);
+    } else {
+        KillTimer(dash, TIMER_SIM);
+        g_app.sim_paused = 0;
+        ZeroMemory(&g_app.patient, sizeof(g_app.patient));
+        g_app.has_patient = 0;
+    }
+    update_dashboard(dash);
+}
+
+/* ===================================================================
  * Dashboard window procedure
  * =================================================================== */
 static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
@@ -1181,18 +1225,12 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         }
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
 
-        /* Simulation mode toggle button — label set after config_load */
-        btn = make_btn(w, IDC_BTN_SIM_MODE, "Sim: ON", WIN_CW-372, 14, 90, 28);
-        SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
-
-        config_load();   /* restore sim_enabled from previous session */
+        app_config_load(&g_app.sim_enabled);  /* restore from previous session */
         hw_init();
         g_app.sim_paused = 0;
 
-        /* Reflect loaded sim state on button label */
-        SetWindowTextA(GetDlgItem(w, IDC_BTN_SIM_MODE),
-                       g_app.sim_enabled ? "Sim: ON" : "Sim: OFF");
-        EnableWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled);
+        /* Pause Sim button only visible when simulation is active */
+        ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
 
         if (g_app.sim_enabled) {
             patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
@@ -1270,43 +1308,10 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         case IDC_BTN_SCEN1:   do_scenario(w,1);  return 0;
         case IDC_BTN_SCEN2:   do_scenario(w,2);  return 0;
         case IDC_BTN_PAUSE:
-            if (g_app.sim_enabled) {
-                g_app.sim_paused = !g_app.sim_paused;
-                SetWindowTextA(GetDlgItem(w,IDC_BTN_PAUSE),
-                               g_app.sim_paused?"Resume Sim":"Pause Sim");
-                InvalidateRect(w, NULL, FALSE);
-            }
-            return 0;
-
-        case IDC_BTN_SIM_MODE:
-            g_app.sim_enabled = !g_app.sim_enabled;
-            config_save();
-            SetWindowTextA(GetDlgItem(w, IDC_BTN_SIM_MODE),
-                           g_app.sim_enabled ? "Sim: ON" : "Sim: OFF");
-            EnableWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled);
-            if (g_app.sim_enabled) {
-                /* Turning ON — start sim with a default patient if none admitted */
-                VitalSigns sv;
-                if (!g_app.has_patient) {
-                    patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
-                    g_app.has_patient = 1;
-                    set_txt(w,IDC_PAT_ID,"2001"); set_txt(w,IDC_PAT_NAME,"James Mitchell");
-                    set_txt(w,IDC_PAT_AGE,"45");  set_txt(w,IDC_PAT_WEIGHT,"78.0");
-                    set_txt(w,IDC_PAT_HEIGHT,"1.75");
-                }
-                g_app.sim_paused = 0;
-                SetWindowTextA(GetDlgItem(w,IDC_BTN_PAUSE), "Pause Sim");
-                hw_get_next_reading(&sv);
-                patient_add_reading(&g_app.patient, &sv);
-                SetTimer(w, TIMER_SIM, 2000, NULL);
-            } else {
-                /* Turning OFF — stop timer, clear patient data, show N/A */
-                KillTimer(w, TIMER_SIM);
-                g_app.sim_paused = 0;
-                ZeroMemory(&g_app.patient, sizeof(g_app.patient));
-                g_app.has_patient = 0;
-            }
-            update_dashboard(w);
+            g_app.sim_paused = !g_app.sim_paused;
+            SetWindowTextA(GetDlgItem(w,IDC_BTN_PAUSE),
+                           g_app.sim_paused ? "Resume Sim" : "Pause Sim");
+            InvalidateRect(w, NULL, FALSE);
             return 0;
         case IDC_BTN_SETTINGS:
             if (g_app.logged_role == ROLE_ADMIN) open_settings(w);
@@ -1316,7 +1321,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             return 0;
         case IDC_BTN_LOGOUT:
             KillTimer(w, TIMER_SIM);
-            config_save();
+            app_config_save(g_app.sim_enabled);
             ZeroMemory(&g_app.patient, sizeof(g_app.patient));
             g_app.has_patient    = 0;
             g_app.sim_paused     = 0;
