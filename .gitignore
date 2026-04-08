@@ -16,3 +16,4 @@ coverage_report.xml
 .DS_Store
 Thumbs.db
 .claude/
+monitor.cfg
