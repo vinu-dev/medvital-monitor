@@ -42,7 +42,7 @@
  * App metadata
  * =================================================================== */
 #define APP_TITLE   "Patient Vital Signs Monitor"
-#define APP_VERSION "v2.7.0"
+#define APP_VERSION "v2.8.0"
 #define IDI_APPICON 101
 
 /* ===================================================================
@@ -545,7 +545,7 @@ static void paint_status_banner(HDC hdc, int cw)
 
         /* Create a long repeating message for rolling effect */
         snprintf(rolling_msg, sizeof(rolling_msg),
-                 "   ✦  hi lee how are you  ✦   hi lee how are you  ✦   hi lee how are you  ✦   hi lee how are you  ✦");
+                 "   ✦  IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦   IN SIMULATION MODE  ✦");
 
         AlertLevel lvl = g_app.has_patient ? patient_current_status(&g_app.patient) : ALERT_NORMAL;
         switch (lvl) {
