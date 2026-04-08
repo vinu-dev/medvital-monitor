@@ -4,7 +4,7 @@
 
 Medical device software for real-time patient vital sign monitoring and alert generation.
 Built to **IEC 62304 Class B** and **FDA SW Validation Guidance** standards.
-**Version 2.7.0** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, role-based settings access, rolling status message in simulation mode, 275 unit + 12 integration tests (287 total).
+**Version 2.8.1** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, role-based settings access, rolling status message in simulation mode, **multi-language support (4 languages: English, Español, Français, Deutsch)**, 287 unit + 12 integration tests (299 total).
 
 ---
 
