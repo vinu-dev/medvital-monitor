@@ -8,7 +8,7 @@
 ; =====================================================================
 
 #define AppName      "Patient Vital Signs Monitor"
-#define AppVersion   "2.6.0"
+#define AppVersion   "2.7.0"
 #define AppPublisher "Medical Device Project"
 #define AppExeName   "patient_monitor_gui.exe"
 [Setup]
@@ -45,7 +45,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 
 [Files]
 ; Main application -- no external DLLs needed (pure Win32, statically linked)
-Source: "build\patient_monitor_gui.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build_release\patient_monitor_gui.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu
