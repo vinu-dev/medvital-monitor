@@ -501,20 +501,45 @@ jobs:
           retention-days: 90
 
   # ═══════════════════════════════════════════════════════════════════
-  # Stage 5 — DVT (Design Verification Report)
+  # Stage 5 — DVT (Design Verification Tests)
   #
-  # Downloads test results from stage 3, generates the IEC 62304
-  # DVT report with per-suite SWR traceability. Does NOT re-build
-  # or re-run tests — DVT is a report-generation activity.
+  # Builds the final GUI executable, launches it, and runs automated
+  # black-box tests against the running application using pywinauto.
+  # This is SYSTEM-LEVEL verification — NOT unit/integration tests.
   # ═══════════════════════════════════════════════════════════════════
   dvt:
-    name: "5 — DVT Report"
+    name: "5 — DVT"
     needs: coverage
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "*"
 
-      - name: Download test results from stage 3
+      - uses: actions/cache@v4
+        with:
+          path: build_dvt/_deps
+          key: gtest-dvt-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-dvt-
+
+      - name: Build GUI executable for DVT
+        run: |
+          cmake -S . -B build_dvt -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=OFF \
+            -Wno-dev
+          cmake --build build_dvt --target patient_monitor_gui
+
+      - name: Run DVT GUI automation
+        run: |
+          pip install pywinauto
+          python dvt/automation/run_dvt.py build_dvt/patient_monitor_gui.exe
+        continue-on-error: true
+
+      - name: Download unit/integration test results
         uses: actions/download-artifact@v4
         with:
           name: test-results-${{ github.run_number }}
