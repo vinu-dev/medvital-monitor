@@ -23,7 +23,10 @@ The pipeline (`.github/workflows/pipeline.yml`) enforces this sequence — each 
 3. **Unit & Integration Tests** — GTest, 145 test cases
 4. **Code Coverage** — gcovr, source-level line + branch coverage
 5. **DVT** — Design Verification Tests with IEC 62304 report
-6. **Release Artifacts** — GUI + Installer + Portable ZIP (tag pushes only)
+6. **Publish Reports** — GitHub Pages dashboard (main branch only)
+
+Release artifacts (GUI + Installer + ZIP) are built by `release.yml` on tag push (`v*`)
+or manual `workflow_dispatch`. This avoids duplicate pipeline runs.
 
 Individual workflows (`ci.yml`, `static-analysis.yml`, `codeql.yml`, `dvt.yml`, `release.yml`)
 are kept for scheduled runs and manual `workflow_dispatch` triggers.
