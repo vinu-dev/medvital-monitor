@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-F
+**Document ID:** RTM-001-REV-G
 **Project:** Patient Vital Signs Monitor
-**Version:** 2.6.0
+**Version:** 2.7.0
 **Date:** 2026-04-08
 **Status:** Approved
 **Standard:** IEC 62304 §5.7.3 / FDA SW Validation Guidance
@@ -46,6 +46,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-005, UNS-006 | SYS-002, SYS-003 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | `AlarmLimitsTest.*` (31 tests) | — |
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
 | UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | `ConfigTest.*` (27 tests) | — |
+| UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | GUI demo | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -266,3 +267,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | D   | 2026-04-07 | vinu-engineer   | v1.6.0: added UNS-016, SYS-016/017, SWR-SEC-001..003 + SWR-GUI-007..009; 16/16 UNS, 29/29 SWR, 145 tests; 100% branch coverage |
 | E   | 2026-04-08 | vinu-engineer   | v1.7.0: added SWR-SEC-004 (SHA-256 hashing); 30/30 SWR, 148 tests; CodeQL/cppcheck findings resolved |
 | F   | 2026-04-08 | vinu-engineer   | v2.6.0: added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend), SWR-GUI-010 (sim toggle); 35/35 SWR, 287 tests |
+| G   | 2026-04-08 | claude          | v2.7.0: added SWR-GUI-011 (rolling message in simulation mode); 36/36 SWR, 287 tests |

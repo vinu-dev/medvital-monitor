@@ -1,6 +1,6 @@
 /**
  * @file gui_main.c
- * @brief Win32 GUI — Patient Vital Signs Monitor v2.3.0
+ * @brief Win32 GUI — Patient Vital Signs Monitor v2.7.0
  *
  * Windows:
  *   1. Login (PVM_Login)      — auth with role detection
@@ -42,7 +42,7 @@
  * App metadata
  * =================================================================== */
 #define APP_TITLE   "Patient Vital Signs Monitor"
-#define APP_VERSION "v2.6.0"
+#define APP_VERSION "v2.7.0"
 #define IDI_APPICON 101
 
 /* ===================================================================
@@ -201,6 +201,7 @@ typedef struct {
     int           has_patient;
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
+    int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
 
     HFONT font_hdr;
@@ -528,25 +529,42 @@ static void paint_tiles(HDC hdc, int cw)
 static void paint_status_banner(HDC hdc, int cw)
 {
     COLORREF bg, fg; const char *txt;
+    char rolling_msg[256];
+    int offset;
+
     if (!g_app.sim_enabled) {
         bg  = CLR_SLATE;
         fg  = CLR_LIGHT_GRAY;
         txt = "DEVICE MODE — Enable simulation in Settings to use synthetic data";
+        fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
+        draw_text_ex(hdc, txt, 0, STAT_Y, cw, STAT_H,
+                     g_app.font_status, fg, DT_SINGLELINE|DT_VCENTER|DT_CENTER);
     } else {
+        /* In simulation mode, show rolling message */
+        offset = g_app.sim_msg_scroll_offset;
+
+        /* Create a long repeating message for rolling effect */
+        snprintf(rolling_msg, sizeof(rolling_msg),
+                 "   ✦  hi lee how are you  ✦   hi lee how are you  ✦   hi lee how are you  ✦   hi lee how are you  ✦");
+
         AlertLevel lvl = g_app.has_patient ? patient_current_status(&g_app.patient) : ALERT_NORMAL;
         switch (lvl) {
-            case ALERT_CRITICAL: bg=CLR_CR_FG; fg=CLR_WHITE; txt="!! CRITICAL — Immediate clinical action required !!"; break;
-            case ALERT_WARNING:  bg=CLR_WN_FG; fg=CLR_WHITE; txt="WARNING — Clinician review required"; break;
+            case ALERT_CRITICAL: bg=CLR_CR_FG; fg=CLR_WHITE; break;
+            case ALERT_WARNING:  bg=CLR_WN_FG; fg=CLR_WHITE; break;
             default:
                 bg=CLR_OK_FG; fg=CLR_WHITE;
-                txt=g_app.has_patient ? "ALL NORMAL — Patient stable [ SIMULATION MODE ]"
-                                       : "Admit a patient and add a reading to begin monitoring";
                 break;
         }
+
+        fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
+
+        /* Draw rolling message with offset */
+        RECT r = {-offset, STAT_Y, cw + 500, STAT_Y + STAT_H};
+        SetTextColor(hdc, fg);
+        SetBkMode(hdc, TRANSPARENT);
+        SelectObject(hdc, g_app.font_status);
+        DrawTextA(hdc, rolling_msg, -1, &r, DT_SINGLELINE|DT_VCENTER|DT_LEFT);
     }
-    fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
-    draw_text_ex(hdc, txt, 0, STAT_Y, cw, STAT_H,
-                 g_app.font_status, fg, DT_SINGLELINE|DT_VCENTER|DT_CENTER);
 }
 
 /* ===================================================================
@@ -1578,6 +1596,8 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             hw_get_next_reading(&v);
             patient_add_reading(&g_app.patient, &v);
             g_app.has_patient = 1;
+            /* Advance rolling message in simulation mode */
+            g_app.sim_msg_scroll_offset = (g_app.sim_msg_scroll_offset + 3) % 800;
             update_dashboard(w);
         }
         return 0;

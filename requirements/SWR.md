@@ -1,8 +1,8 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-F
+**Document ID:** SWR-001-REV-G
 **Project:** Patient Vital Signs Monitor
-**Version:** 2.6.0
+**Version:** 2.7.0
 **Date:** 2026-04-08
 **Status:** Approved
 **Standard:** IEC 62304 §5.2
@@ -547,6 +547,30 @@ device-mode banners; Sim: ON resumes live data.
 
 ---
 
+### SWR-GUI-011 — Rolling Status Message in Simulation Mode
+
+**Requirement:** When simulation mode is enabled (`sim_enabled = 1`), the status
+banner shall display a continuously scrolling/rolling message that reads:
+`"hi lee how are you"` with decorative separators. The message shall:
+
+1. Scroll horizontally across the status banner from right to left at a steady pace
+2. Repeat indefinitely, looping when it reaches the left edge
+3. Update position every timer tick (approximately 2 seconds per complete scroll)
+4. Be displayed in white text on the current alert-level background color
+5. Only be shown when simulation mode is **ON**; when OFF, the banner shows the
+   device-mode message as per SWR-GUI-010
+
+This feature provides visual feedback that the application is in demonstration/
+simulation mode and adds a personalized greeting element to the UI.
+
+**Traces to:** SYS-005
+**Implemented in:** `src/gui_main.c` — `sim_msg_scroll_offset` state variable,
+WM_TIMER handler (advancing offset), `paint_status_banner()` function
+**Verified by:** Visual GUI demonstration — enable simulation mode and observe
+rolling message in status banner.
+
+---
+
 ## Module UNIT-ALM — Configurable Alarm Limits (`alarm_limits.c`)
 
 ### SWR-ALM-001 — Per-Patient Configurable Alarm Limits
@@ -607,3 +631,4 @@ extract per-parameter arrays from a `VitalSigns` history buffer.
 | D   | 2026-04-07 | vinu-engineer   | Added UNIT-SEC module: SWR-SEC-001/002/003, SWR-GUI-007/008/009 |
 | E   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-010 (simulation mode toggle) — v1.8.0 |
 | F   | 2026-04-08 | vinu-engineer   | Added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend) — v2.6.0 |
+| G   | 2026-04-08 | claude          | Added SWR-GUI-011 (rolling message in simulation mode) — v2.7.0 |
