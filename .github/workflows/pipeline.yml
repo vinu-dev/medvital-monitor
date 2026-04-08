@@ -342,138 +342,48 @@ jobs:
           ./build_cov/tests/test_integration.exe --gtest_brief=1 2>&1; echo "Exit: $?"
 
       - name: Generate coverage report
+        shell: bash
         run: |
+          set +e
           mkdir -p coverage-report
+          pip install gcovr 2>&1 | tail -3
 
           echo "=== .gcno files ==="
-          find build_cov -name '*.gcno' | head -15
+          find build_cov -name '*.gcno' 2>/dev/null | head -5 || true
           echo "=== .gcda files ==="
-          find build_cov -name '*.gcda' | head -15
+          GCDA_COUNT=$(find build_cov -name '*.gcda' 2>/dev/null | tee /dev/stderr | wc -l)
+          echo "Found $GCDA_COUNT .gcda files"
 
-          # Run gcov on each source file's .gcda
-          GCDA_DIR="build_cov/CMakeFiles/monitor_lib.dir/src"
-          echo "=== Running gcov on monitor_lib sources ==="
-          for gcda in "$GCDA_DIR"/*.gcda; do
-            [ -f "$gcda" ] && gcov -o "$GCDA_DIR" "$gcda" 2>/dev/null
-          done
-          ls *.gcov 2>/dev/null | head -10 || echo "(no .gcov files produced)"
+          echo "=== Attempt 1: gcovr with relative paths ==="
+          gcovr --root . \
+            --search-path build_cov \
+            --gcov-executable gcov \
+            --filter 'src/' \
+            --xml coverage-report/coverage.xml \
+            --html-details coverage-report/index.html \
+            --print-summary 2>&1 || true
 
-          # Use Python to parse gcov output → Cobertura XML + HTML
-          python3 - << 'PYEOF'
-          import os, glob, re, json
+          # Check result
+          if [ -f coverage-report/coverage.xml ] && ! grep -q 'lines-valid="0"' coverage-report/coverage.xml 2>/dev/null; then
+            echo "=== Coverage generated successfully ==="
+            head -3 coverage-report/coverage.xml
+          else
+            echo "=== Attempt 2: gcovr without filter ==="
+            gcovr --root . \
+              --search-path build_cov \
+              --gcov-executable gcov \
+              --xml coverage-report/coverage.xml \
+              --html-details coverage-report/index.html \
+              --print-summary 2>&1 || true
+          fi
 
-          src_dir = "src"
-          gcov_files = glob.glob("*.gcov")
-          print(f"Found {len(gcov_files)} .gcov files")
-
-          files_data = {}
-          total_lines = 0
-          covered_lines = 0
-          total_branches = 0
-          covered_branches = 0
-
-          for gcov_file in gcov_files:
-              # gcov files may be named "vitals.c.gcov" or with path mangles
-              # like "src#vitals.c.gcov" on Windows. Extract the base .c name.
-              base = os.path.basename(gcov_file).replace(".gcov", "")
-              # Handle mangled paths: replace # or ^ with /
-              base = base.replace("#", "/").replace("^", "/")
-              # Extract just the filename
-              base = os.path.basename(base)
-              src_path = os.path.join(src_dir, base)
-
-              if not os.path.exists(src_path):
-                  print(f"  skip {gcov_file} -> {src_path} (not found)")
-                  continue
-              print(f"  process {gcov_file} -> {src_path}")
-
-              lines = []
-              with open(gcov_file, "r", errors="replace") as f:
-                  for raw_line in f:
-                      parts = raw_line.split(":", 2)
-                      if len(parts) < 3:
-                          continue
-                      count_str = parts[0].strip()
-                      line_no = parts[1].strip()
-                      if not line_no.isdigit():
-                          continue
-                      ln = int(line_no)
-                      if ln == 0:
-                          continue
-                      if count_str == "-":
-                          continue  # non-executable
-                      elif count_str.startswith("#") or count_str == "0":
-                          lines.append((ln, 0))
-                          total_lines += 1
-                      else:
-                          try:
-                              hits = int(count_str)
-                              lines.append((ln, hits))
-                              total_lines += 1
-                              if hits > 0:
-                                  covered_lines += 1
-                          except ValueError:
-                              continue
-
-              if lines:
-                  files_data[src_path] = lines
-
-          line_rate = covered_lines / total_lines if total_lines > 0 else 0
-          branch_rate = 0  # gcov basic mode doesn't give branch info
-
-          print(f"Coverage: {covered_lines}/{total_lines} lines = {line_rate*100:.1f}%")
-          print(f"Files with coverage: {len(files_data)}")
-
-          # Write Cobertura XML
-          xml_lines = [
-              '<?xml version="1.0" ?>',
-              f'<coverage version="6.0" line-rate="{line_rate:.4f}" branch-rate="{branch_rate:.4f}"',
-              f'  lines-covered="{covered_lines}" lines-valid="{total_lines}"',
-              f'  branches-covered="{covered_branches}" branches-valid="{total_branches}">',
-              '<packages><package name="src" line-rate="{:.4f}"><classes>'.format(line_rate),
-          ]
-          for src_path, lines in files_data.items():
-              fname = os.path.basename(src_path)
-              file_covered = sum(1 for _, h in lines if h > 0)
-              file_total = len(lines)
-              file_rate = file_covered / file_total if file_total > 0 else 0
-              xml_lines.append(f'<class name="{fname}" filename="{src_path}" line-rate="{file_rate:.4f}">')
-              xml_lines.append('<lines>')
-              for ln, hits in lines:
-                  xml_lines.append(f'<line number="{ln}" hits="{hits}"/>')
-              xml_lines.append('</lines></class>')
-          xml_lines.append('</classes></package></packages></coverage>')
-
-          with open("coverage-report/coverage.xml", "w") as f:
-              f.write("\n".join(xml_lines))
-
-          # Write HTML summary
-          html = ['<!DOCTYPE html><html><head><meta charset="utf-8">',
-                  '<title>Code Coverage Report</title>',
-                  '<style>body{font-family:sans-serif;max-width:900px;margin:0 auto;padding:2rem}',
-                  'table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.5rem}',
-                  'th{background:#1e3a8a;color:#fff}.good{color:#16a34a}.bad{color:#dc2626}</style>',
-                  '</head><body>',
-                  f'<h1>Code Coverage: {line_rate*100:.1f}%</h1>',
-                  f'<p>{covered_lines} of {total_lines} lines covered</p>',
-                  '<table><tr><th>File</th><th>Lines</th><th>Covered</th><th>Rate</th></tr>']
-          for src_path, lines in sorted(files_data.items()):
-              fname = os.path.basename(src_path)
-              fc = sum(1 for _, h in lines if h > 0)
-              ft = len(lines)
-              fr = fc / ft * 100 if ft > 0 else 0
-              cls = "good" if fr >= 80 else "bad"
-              html.append(f'<tr><td>{fname}</td><td>{ft}</td><td>{fc}</td>'
-                          f'<td class="{cls}">{fr:.1f}%</td></tr>')
-          html.append('</table></body></html>')
-
-          with open("coverage-report/index.html", "w") as f:
-              f.write("\n".join(html))
-
-          print("Reports written to coverage-report/")
-          PYEOF
-
-          echo "=== coverage-report contents ==="
+          # Placeholder if everything failed
+          if [ ! -s coverage-report/coverage.xml ]; then
+            echo '<?xml version="1.0"?><coverage line-rate="0" branch-rate="0"><packages/></coverage>' > coverage-report/coverage.xml
+          fi
+          if [ ! -f coverage-report/index.html ]; then
+            echo '<html><body><h1>Coverage unavailable</h1></body></html>' > coverage-report/index.html
+          fi
           ls -la coverage-report/
 
       - name: Coverage summary
@@ -701,10 +611,14 @@ jobs:
   publish-reports:
     name: "6 — Publish Reports"
     needs: dvt
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write
       id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -861,12 +775,10 @@ jobs:
           retention-days: 90
 
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
         id: deploy
         uses: actions/deploy-pages@v4
