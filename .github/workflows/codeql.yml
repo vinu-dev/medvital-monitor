@@ -21,12 +21,9 @@
 name: CodeQL SAST
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   schedule:
     - cron: '0 3 * * 1'   # Every Monday 03:00 UTC
+  workflow_dispatch:  # Pipeline handles push/PR triggers
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

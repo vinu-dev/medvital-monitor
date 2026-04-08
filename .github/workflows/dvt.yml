@@ -1,11 +1,7 @@
 name: DVT — Design Verification Tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+  workflow_dispatch:  # Pipeline handles push/PR triggers
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -26,24 +22,37 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------
-      # 2. Configure — MinGW-w64 (matches production toolchain)
+      # 2. Ensure FetchContent can clone GTest
       # ----------------------------------------------------------------
-      - name: Configure CMake (MinGW-w64, BUILD_TESTS=ON)
+      - name: Fix git safe.directory
+        run: git config --global --add safe.directory "*"
+
+      # ----------------------------------------------------------------
+      # 3. Configure — Ninja generator (pre-installed on windows-latest;
+      #    faster than MinGW Makefiles and avoids mingw32-make PATH issues)
+      # ----------------------------------------------------------------
+      - name: Configure CMake (Ninja, BUILD_TESTS=ON)
         run: |
-          cmake -G "MinGW Makefiles" -B build_dvt \
+          cmake -G Ninja -B build_dvt \
             -DCMAKE_C_COMPILER=gcc \
             -DCMAKE_CXX_COMPILER=g++ \
             -DBUILD_TESTS=ON \
             -Wno-dev
 
       # ----------------------------------------------------------------
-      # 3. Build all targets
+      # 4. Build all targets
       # ----------------------------------------------------------------
       - name: Build
         run: cmake --build build_dvt --parallel
 
       # ----------------------------------------------------------------
-      # 4. Run unit tests
+      # 5. Create output directories for test results
+      # ----------------------------------------------------------------
+      - name: Create output directories
+        run: mkdir -p dvt/results
+
+      # ----------------------------------------------------------------
+      # 6. Run unit tests
       # ----------------------------------------------------------------
       - name: Run unit tests
         id: unit
@@ -54,7 +63,7 @@ jobs:
           echo "unit_exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
       # ----------------------------------------------------------------
-      # 5. Run integration tests
+      # 7. Run integration tests
       # ----------------------------------------------------------------
       - name: Run integration tests
         id: integration
@@ -156,17 +165,15 @@ jobs:
 
           status = lambda f: ":white_check_mark: PASS" if f == 0 else ":x: FAIL"
 
-          summary = f"""## DVT — Design Verification Results
-
-| Test Suite | Total | Passed | Failed | Result |
-|-----------|------:|-------:|-------:|--------|
-| Unit tests | {u_t} | {u_p} | {u_f} | {status(u_f)} |
-| Integration tests | {i_t} | {i_p} | {i_f} | {status(i_f)} |
-| **Combined** | **{u_t+i_t}** | **{u_p+i_p}** | **{u_f+i_f}** | {status(u_f+i_f)} |
-
-> Protocol: `dvt/DVT_Protocol.md` (DVT-001-REV-A)
-> Full report: `dvt/results/dvt_report_*.txt` (download artefact)
-"""
+          summary = "## DVT — Design Verification Results\n\n"
+          summary += "| Test Suite | Total | Passed | Failed | Result |\n"
+          summary += "|-----------|------:|-------:|-------:|--------|\n"
+          summary += f"| Unit tests | {u_t} | {u_p} | {u_f} | {status(u_f)} |\n"
+          summary += f"| Integration tests | {i_t} | {i_p} | {i_f} | {status(i_f)} |\n"
+          summary += f"| **Combined** | **{u_t+i_t}** | **{u_p+i_p}** | **{u_f+i_f}** | {status(u_f+i_f)} |\n"
+          summary += "\n"
+          summary += "> Protocol: `dvt/DVT_Protocol.md` (DVT-001-REV-A)\n"
+          summary += "> Full report: `dvt/results/dvt_report_*.txt` (download artefact)\n"
           sumfile = os.environ.get("GITHUB_STEP_SUMMARY", "")
           if sumfile:
               with open(sumfile, "a") as f:

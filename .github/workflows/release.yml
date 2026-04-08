@@ -2,10 +2,7 @@ name: Release — Build & Publish Assets
 
 # Triggered when a version tag (v*) is pushed or manually via workflow_dispatch
 on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+  workflow_dispatch:  # Pipeline handles tag-push triggers
     inputs:
       tag:
         description: 'Tag to build (e.g., v2.7.0)'
@@ -50,11 +47,17 @@ jobs:
           echo "Building version: ${VER}"
 
       # ----------------------------------------------------------------
-      # 3. Build release executable (MinGW-w64)
+      # 3. Ensure FetchContent/submodules work in CI
+      # ----------------------------------------------------------------
+      - name: Fix git safe.directory
+        run: git config --global --add safe.directory "*"
+
+      # ----------------------------------------------------------------
+      # 4. Build release executable (Ninja — avoids mingw32-make PATH issues)
       # ----------------------------------------------------------------
       - name: Configure CMake
         run: |
-          cmake -G "MinGW Makefiles" -B build_release \
+          cmake -G Ninja -B build_release \
             -DCMAKE_C_COMPILER=gcc \
             -DCMAKE_CXX_COMPILER=g++ \
             -DCMAKE_BUILD_TYPE=Release \

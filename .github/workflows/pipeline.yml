@@ -1,0 +1,653 @@
+# =====================================================================
+# Gated Pipeline — Patient Vital Signs Monitor
+#
+# Enforced sequence (each stage gates the next via `needs`):
+#   1. Build All
+#   2. Static Analysis (cppcheck) + SAST (CodeQL)   [parallel]
+#   3. Unit & Integration Tests
+#   4. Code Coverage
+#   5. DVT — Design Verification Tests
+#   6. Release Artifacts                             [tags only]
+#
+# IEC 62304 Class B — full verification pipeline.
+# =====================================================================
+
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 1 — Build All
+  # ═══════════════════════════════════════════════════════════════════
+  build:
+    name: "1 — Build All"
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "*"
+
+      - name: Cache GTest (FetchContent)
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: gtest-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-
+
+      - name: CMake configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=ON \
+            -Wno-dev
+
+      - name: Build all targets
+        run: cmake --build build
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 2a — Static Analysis (cppcheck)
+  # ═══════════════════════════════════════════════════════════════════
+  static-analysis:
+    name: "2a — Static Analysis (cppcheck)"
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cppcheck
+          cppcheck --version
+
+      - name: Run cppcheck
+        run: |
+          mkdir -p build
+          cppcheck \
+            --enable=all \
+            --std=c11 \
+            --suppress=missingIncludeSystem \
+            --suppress=unusedFunction \
+            --suppress=missingInclude \
+            --include=include \
+            --xml --xml-version=2 \
+            src/vitals.c src/alerts.c src/patient.c \
+            src/gui_auth.c src/gui_users.c \
+            2> build/cppcheck.xml
+          cat build/cppcheck.xml
+
+      - name: Convert cppcheck XML to SARIF
+        if: always()
+        run: |
+          python3 << 'PYEOF'
+          import xml.etree.ElementTree as ET
+          import json, os, sys
+
+          SEV_TO_LEVEL = {
+              'error': 'error', 'warning': 'warning', 'style': 'note',
+              'performance': 'note', 'portability': 'warning', 'information': 'none',
+          }
+
+          def to_sarif(xml_path, sarif_path):
+              if not os.path.exists(xml_path):
+                  print(f'No XML at {xml_path}', file=sys.stderr)
+                  return 0
+              tree = ET.parse(xml_path)
+              errors = tree.getroot().findall('.//error')
+              rules, results = {}, []
+              for err in errors:
+                  rule_id  = err.get('id', 'unknown')
+                  severity = err.get('severity', 'style')
+                  msg      = err.get('msg', '(no message)')
+                  verbose  = err.get('verbose', msg)
+                  level    = SEV_TO_LEVEL.get(severity, 'note')
+                  loc = err.find('location')
+                  if loc is None:
+                      continue
+                  raw_file = loc.get('file', 'unknown').replace('\\', '/')
+                  if raw_file.startswith('./'):
+                      raw_file = raw_file[2:]
+                  line = int(loc.get('line', 1))
+                  col  = int(loc.get('column', 1))
+                  if rule_id not in rules:
+                      rules[rule_id] = {
+                          'id': rule_id, 'name': rule_id,
+                          'shortDescription': {'text': rule_id},
+                          'fullDescription':  {'text': verbose},
+                          'defaultConfiguration': {'level': level},
+                          'helpUri': 'https://cppcheck.sourceforge.io/',
+                      }
+                  results.append({
+                      'ruleId': rule_id, 'level': level,
+                      'message': {'text': msg},
+                      'locations': [{'physicalLocation': {
+                          'artifactLocation': {'uri': raw_file, 'uriBaseId': '%SRCROOT%'},
+                          'region': {'startLine': line, 'startColumn': col}
+                      }}]
+                  })
+              sarif = {
+                  'version': '2.1.0',
+                  '$schema': 'https://json.schemastore.org/sarif-2.1.0.json',
+                  'runs': [{'tool': {'driver': {
+                      'name': 'cppcheck',
+                      'informationUri': 'https://cppcheck.sourceforge.io/',
+                      'rules': list(rules.values())
+                  }}, 'results': results}]
+              }
+              with open(sarif_path, 'w') as f:
+                  json.dump(sarif, f, indent=2)
+              print(f'Converted {len(results)} finding(s) -> {sarif_path}')
+              return len(results)
+
+          to_sarif('build/cppcheck.xml', 'build/cppcheck.sarif')
+          PYEOF
+
+      - name: Upload SARIF to Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: build/cppcheck.sarif
+          category: cppcheck
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 2b — SAST (CodeQL)
+  # ═══════════════════════════════════════════════════════════════════
+  sast:
+    name: "2b — SAST (CodeQL)"
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix git safe.directory
+        shell: bash
+        run: git config --global --add safe.directory "*"
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: cpp
+          queries: security-extended
+          config-file: .github/codeql/codeql-config.yml
+
+      - uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: gtest-codeql-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-codeql-
+
+      - name: Build (CodeQL compilation trace)
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=ON \
+            -Wno-dev
+          cmake --build build
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:cpp"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 3 — Unit & Integration Tests
+  # ═══════════════════════════════════════════════════════════════════
+  tests:
+    name: "3 — Unit & Integration Tests"
+    needs: [static-analysis, sast]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "*"
+
+      - uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: gtest-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-
+
+      - name: Build test targets
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=ON \
+            -Wno-dev
+          cmake --build build --target test_unit test_integration
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          build/tests/test_unit.exe \
+            --gtest_output=xml:build/results_unit.xml 2>&1 | tee build/unit_output.txt
+
+      - name: Run integration tests
+        run: |
+          set -o pipefail
+          build/tests/test_integration.exe \
+            --gtest_output=xml:build/results_integration.xml 2>&1 | tee build/integration_output.txt
+
+      - name: Test summary
+        if: always()
+        run: |
+          python3 - << 'PYEOF'
+          import xml.etree.ElementTree as ET, os, sys
+
+          def parse(path):
+              if not os.path.exists(path):
+                  return None
+              root = ET.parse(path).getroot()
+              total    = int(root.get('tests',    0))
+              failures = int(root.get('failures', 0)) + int(root.get('errors', 0))
+              return {'total': total, 'passed': total - failures, 'failed': failures}
+
+          unit = parse('build/results_unit.xml')
+          intg = parse('build/results_integration.xml')
+          summary = os.environ.get('GITHUB_STEP_SUMMARY', '')
+          if not summary:
+              sys.exit(0)
+
+          def row(label, d):
+              if d is None:
+                  return '| ' + label + ' | - | - | - | not run |\n'
+              icon = 'PASS' if d['failed'] == 0 else 'FAIL'
+              return ('| ' + label + ' | ' + str(d['total']) + ' | ' +
+                      str(d['passed']) + ' | ' + str(d['failed']) + ' | ' + icon + ' |\n')
+
+          total_all  = (unit['total']  if unit else 0) + (intg['total']  if intg else 0)
+          passed_all = (unit['passed'] if unit else 0) + (intg['passed'] if intg else 0)
+          failed_all = (unit['failed'] if unit else 0) + (intg['failed'] if intg else 0)
+          icon_all   = 'PASS' if failed_all == 0 else 'FAIL'
+
+          with open(summary, 'a') as f:
+              f.write('## Test Results\n\n')
+              f.write('| Suite | Total | Passed | Failed | Status |\n')
+              f.write('|-------|------:|-------:|-------:|-------:|\n')
+              f.write(row('Unit tests', unit))
+              f.write(row('Integration tests', intg))
+              f.write('| **Total** | **' + str(total_all) + '** | **' +
+                      str(passed_all) + '** | **' + str(failed_all) +
+                      '** | **' + icon_all + '** |\n')
+          PYEOF
+
+      - name: Upload test results (XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_number }}
+          path: build/results_*.xml
+          retention-days: 90
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 4 — Code Coverage
+  # ═══════════════════════════════════════════════════════════════════
+  coverage:
+    name: "4 — Code Coverage"
+    needs: tests
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "*"
+
+      - uses: actions/cache@v4
+        with:
+          path: build_cov/_deps
+          key: gtest-cov-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-cov-
+
+      - name: Build with coverage instrumentation
+        run: |
+          cmake -S . -B build_cov -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=ON \
+            -DENABLE_COVERAGE=ON \
+            -Wno-dev
+          cmake --build build_cov
+
+      - name: Run tests for coverage data
+        run: |
+          ./build_cov/tests/test_unit.exe || true
+          ./build_cov/tests/test_integration.exe || true
+
+      - name: Generate coverage report
+        run: |
+          pip install gcovr
+          gcovr --root . --filter 'src/' \
+            --xml build_cov/coverage.xml \
+            --print-summary
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          python3 - << 'PYEOF'
+          import xml.etree.ElementTree as ET, os, sys
+          path = 'build_cov/coverage.xml'
+          if not os.path.exists(path):
+              sys.exit(0)
+          root = ET.parse(path).getroot()
+          line_rate   = float(root.get('line-rate',   0)) * 100
+          branch_rate = float(root.get('branch-rate', 0)) * 100
+          summary = os.environ.get('GITHUB_STEP_SUMMARY', '')
+          if not summary:
+              sys.exit(0)
+          with open(summary, 'a') as f:
+              f.write('## Code Coverage\n\n')
+              f.write('| Metric | Coverage |\n')
+              f.write('|--------|--------:|\n')
+              f.write(f'| Line coverage | {line_rate:.1f}% |\n')
+              f.write(f'| Branch coverage | {branch_rate:.1f}% |\n')
+          PYEOF
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: build_cov/coverage.xml
+          retention-days: 90
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 5 — DVT (Design Verification Tests)
+  # ═══════════════════════════════════════════════════════════════════
+  dvt:
+    name: "5 — DVT"
+    needs: coverage
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "*"
+
+      - uses: actions/cache@v4
+        with:
+          path: build_dvt/_deps
+          key: gtest-dvt-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-dvt-
+
+      - name: Build
+        run: |
+          cmake -S . -B build_dvt -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DBUILD_TESTS=ON \
+            -Wno-dev
+          cmake --build build_dvt
+
+      - name: Create output directories
+        run: mkdir -p dvt/results
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          ./build_dvt/tests/test_unit.exe \
+            --gtest_output=xml:dvt/results/unit_results.xml \
+            2>&1 | tee dvt/results/unit_raw.txt
+
+      - name: Run integration tests
+        run: |
+          set -o pipefail
+          ./build_dvt/tests/test_integration.exe \
+            --gtest_output=xml:dvt/results/integration_results.xml \
+            2>&1 | tee dvt/results/integration_raw.txt
+
+      - name: Generate DVT report
+        run: |
+          python3 - << 'PYEOF'
+          import os, datetime, xml.etree.ElementTree as ET
+
+          date_str = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+          report_path = f"dvt/results/dvt_report_{date_str}.txt"
+
+          def parse_gtest_xml(path):
+              try:
+                  tree = ET.parse(path)
+                  root = tree.getroot()
+                  tests  = int(root.attrib.get("tests",  0))
+                  fails  = int(root.attrib.get("failures", 0))
+                  errors = int(root.attrib.get("errors", 0))
+                  return tests, tests - fails - errors, fails + errors
+              except Exception:
+                  return 0, 0, -1
+
+          u_total, u_pass, u_fail = parse_gtest_xml("dvt/results/unit_results.xml")
+          i_total, i_pass, i_fail = parse_gtest_xml("dvt/results/integration_results.xml")
+          overall = "PASS" if (u_fail == 0 and i_fail == 0) else "FAIL"
+
+          lines = [
+              "=" * 72,
+              "  PATIENT VITAL SIGNS MONITOR — DVT REPORT",
+              f"  Generated  : {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+              f"  Repository : {os.environ.get('GITHUB_REPOSITORY', 'local')}",
+              f"  Commit     : {os.environ.get('GITHUB_SHA', 'local')[:12]}",
+              f"  Ref        : {os.environ.get('GITHUB_REF', 'local')}",
+              "=" * 72, "",
+              "AUTOMATED TEST RESULTS", "-" * 72,
+              f"  Unit tests        : {u_pass:3d} / {u_total:3d} passed   {'PASS' if u_fail==0 else 'FAIL'}",
+              f"  Integration tests : {i_pass:3d} / {i_total:3d} passed   {'PASS' if i_fail==0 else 'FAIL'}",
+              f"  Total             : {u_pass+i_pass:3d} / {u_total+i_total:3d} passed",
+              "", f"  OVERALL RESULT    : {overall}",
+              "", "PASS CRITERIA", "-" * 72,
+              f"  Unit pass rate 100%       : {'PASS' if u_fail==0 else 'FAIL'} ({u_pass}/{u_total})",
+              f"  Integration pass rate 100%: {'PASS' if i_fail==0 else 'FAIL'} ({i_pass}/{i_total})",
+              "", "NOTES", "-" * 72,
+              "  GUI checklist (DVT_Protocol.md S4) requires manual verification.",
+              "  Static analysis: see static-analysis workflow results.",
+              "  SAST: see codeql workflow results.", "",
+              "  Referenced protocol : dvt/DVT_Protocol.md (DVT-001-REV-A)",
+              "  Traceability matrix : requirements/TRACEABILITY.md",
+              "=" * 72,
+          ]
+          report_text = "\n".join(lines)
+          print(report_text)
+          os.makedirs("dvt/results", exist_ok=True)
+          with open(report_path, "w") as f:
+              f.write(report_text + "\n")
+          print(f"\nReport written to: {report_path}")
+          PYEOF
+
+      - name: DVT summary
+        if: always()
+        run: |
+          python3 - << 'PYEOF'
+          import os, xml.etree.ElementTree as ET
+
+          def parse_xml(path):
+              try:
+                  tree = ET.parse(path)
+                  root = tree.getroot()
+                  tests = int(root.attrib.get("tests", 0))
+                  fails = int(root.attrib.get("failures", 0)) + int(root.attrib.get("errors", 0))
+                  return tests, tests - fails, fails
+              except:
+                  return 0, 0, -1
+
+          u_t, u_p, u_f = parse_xml("dvt/results/unit_results.xml")
+          i_t, i_p, i_f = parse_xml("dvt/results/integration_results.xml")
+          status = lambda f: "PASS" if f == 0 else "FAIL"
+
+          summary = "## DVT Results\n\n"
+          summary += "| Test Suite | Total | Passed | Failed | Result |\n"
+          summary += "|-----------|------:|-------:|-------:|--------|\n"
+          summary += f"| Unit tests | {u_t} | {u_p} | {u_f} | {status(u_f)} |\n"
+          summary += f"| Integration tests | {i_t} | {i_p} | {i_f} | {status(i_f)} |\n"
+          summary += f"| **Combined** | **{u_t+i_t}** | **{u_p+i_p}** | **{u_f+i_f}** | {status(u_f+i_f)} |\n"
+          summary += "\n> Protocol: `dvt/DVT_Protocol.md` (DVT-001-REV-A)\n"
+
+          sumfile = os.environ.get("GITHUB_STEP_SUMMARY", "")
+          if sumfile:
+              with open(sumfile, "a") as f:
+                  f.write(summary)
+          print(summary)
+          PYEOF
+
+      - name: Upload DVT results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dvt-results-${{ github.sha }}
+          path: dvt/results/
+          retention-days: 90
+
+      - name: Check pass criteria
+        run: |
+          python3 - << 'PYEOF'
+          import xml.etree.ElementTree as ET, sys
+
+          def get_failures(path):
+              try:
+                  root = ET.parse(path).getroot()
+                  return int(root.attrib.get("failures", 0)) + int(root.attrib.get("errors", 0))
+              except:
+                  return 1
+          uf = get_failures("dvt/results/unit_results.xml")
+          if_ = get_failures("dvt/results/integration_results.xml")
+          total = uf + if_
+          if total > 0:
+              print(f"DVT FAIL: {total} test(s) failed")
+              sys.exit(1)
+          print("DVT PASS: all tests passed")
+          PYEOF
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Stage 6 — Release Artifacts (tag pushes only)
+  # ═══════════════════════════════════════════════════════════════════
+  release:
+    name: "6 — Release Artifacts"
+    needs: dvt
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git config --global --add safe.directory "*"
+
+      - name: Extract version
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "ver=${VER}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VER}"
+
+      - name: Configure CMake
+        run: |
+          cmake -G Ninja -B build_release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=OFF \
+            -Wno-dev
+
+      - name: Build GUI executable
+        run: cmake --build build_release --target patient_monitor_gui
+
+      - name: Verify Inno Setup 6
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "Installing Inno Setup..."
+            choco install innosetup -y --no-progress
+          } else {
+            Write-Host "Inno Setup already installed"
+            & $iscc /? | head -1
+          }
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.ver.outputs.ver }}"
+          (Get-Content installer.iss) -replace '#define AppVersion\s+"[^"]+"', "#define AppVersion `"$ver`"" | Set-Content installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.ver.outputs.tag }}"
+          Copy-Item "build_release\patient_monitor_gui.exe" "PatientMonitor-$tag.exe"
+          $readme  = "Patient Vital Signs Monitor $tag`r`n"
+          $readme += "===================================`r`n"
+          $readme += "IEC 62304 Class B Medical Device Software`r`n`r`n"
+          $readme += "REQUIREMENTS`r`n"
+          $readme += "  Windows 10/11 (x86-64). No extra runtime needed.`r`n`r`n"
+          $readme += "DEFAULT CREDENTIALS`r`n"
+          $readme += "  admin    / Monitor@2026   (ADMIN role)`r`n"
+          $readme += "  clinical / Clinical@2026  (CLINICAL role)`r`n"
+          $readme += "  Change these before clinical use.`r`n`r`n"
+          $readme += "SIMULATION MODE`r`n"
+          $readme += "  Sim ON  -- synthetic data every 2 s (demo/development)`r`n"
+          $readme += "  Sim OFF -- all tiles show N/A (connect real hardware)`r`n`r`n"
+          $readme += "SECURITY`r`n"
+          $readme += "  Passwords are SHA-256 hashed in users.dat.`r`n`r`n"
+          $readme += "Source: https://github.com/vinu-engineer/medicalUT_IT"
+          $readme | Out-File -Encoding utf8 "README.txt"
+          Compress-Archive -Path "PatientMonitor-$tag.exe", "README.txt" `
+            -DestinationPath "PatientMonitor-$tag-portable.zip" -Force
+
+      - name: Locate installer
+        id: installer
+        shell: pwsh
+        run: |
+          $f = Get-ChildItem . -Recurse -Filter "PatientMonitorSetup*.exe" | Select-Object -First 1
+          if ($f) {
+            echo "path=$($f.FullName)" >> $env:GITHUB_OUTPUT
+            echo "Found: $($f.FullName)"
+          } else {
+            echo "path=" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release create "${TAG}" \
+            "PatientMonitor-${TAG}.exe" \
+            "PatientMonitor-${TAG}-portable.zip" \
+            --title "${TAG}" \
+            --notes "See GitHub releases page for details" \
+            2>/dev/null || true
+          gh release upload "${TAG}" \
+            "PatientMonitor-${TAG}.exe" \
+            "PatientMonitor-${TAG}-portable.zip" \
+            --clobber
+          INSTALLER="${{ steps.installer.outputs.path }}"
+          if [ -n "$INSTALLER" ] && [ -f "$INSTALLER" ]; then
+            gh release upload "${TAG}" "$INSTALLER" --clobber
+          fi

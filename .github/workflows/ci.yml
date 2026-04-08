@@ -20,10 +20,7 @@
 name: CI — Build & Test
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:  # Pipeline handles push/PR triggers
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # use Node.js 24 for all actions
