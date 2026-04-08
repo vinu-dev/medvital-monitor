@@ -1,10 +1,16 @@
 name: Release — Build & Publish Assets
 
-# Triggered only when a version tag (v*) is pushed.
+# Triggered when a version tag (v*) is pushed, or manually via workflow_dispatch
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v2.8.1)'
+        required: true
+        type: string
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -29,11 +35,16 @@ jobs:
 
       # ----------------------------------------------------------------
       # 2. Extract version from tag  (v2.0.0 → 2.0.0)
+      #    Or from workflow input if manually triggered
       # ----------------------------------------------------------------
       - name: Extract version
         id: ver
         run: |
-          TAG="${GITHUB_REF_NAME}"          # e.g. v2.0.0
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
           VER="${TAG#v}"                    # e.g. 2.0.0
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "ver=${VER}" >> "$GITHUB_OUTPUT"
