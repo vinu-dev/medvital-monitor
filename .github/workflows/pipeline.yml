@@ -17,7 +17,6 @@ name: Pipeline
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -339,8 +338,11 @@ jobs:
         run: |
           pip install gcovr
           mkdir -p coverage-report
+
           echo "--- Searching for .gcda files ---"
-          find build_cov -name '*.gcda' 2>/dev/null | head -20 || true
+          find build_cov -name '*.gcda' 2>/dev/null | head -20 || echo "(none found via find)"
+          ls build_cov/CMakeFiles/monitor_lib.dir/src/*.gcda 2>/dev/null || echo "(no gcda in expected dir)"
+
           echo "--- Running gcovr ---"
           gcovr --root . \
             --search-path build_cov \
@@ -348,7 +350,25 @@ jobs:
             --filter 'src/' \
             --xml coverage-report/coverage.xml \
             --html-details coverage-report/index.html \
-            --print-summary || true
+            --print-summary 2>&1 || echo "gcovr exited with error"
+
+          # Ensure coverage artifact always exists (placeholder if gcovr failed)
+          if [ ! -f coverage-report/coverage.xml ]; then
+            echo "--- gcovr produced no output, writing placeholder ---"
+            cat > coverage-report/coverage.xml << 'XMLEOF'
+          <?xml version="1.0" ?>
+          <coverage version="6.0" line-rate="0" branch-rate="0" lines-covered="0" lines-valid="0" branches-covered="0" branches-valid="0">
+            <packages/>
+          </coverage>
+          XMLEOF
+            cat > coverage-report/index.html << 'HTMLEOF'
+          <html><body><h1>Coverage report unavailable</h1>
+          <p>gcovr did not produce output. Check the pipeline coverage step logs.</p>
+          </body></html>
+          HTMLEOF
+          fi
+          echo "--- coverage-report contents ---"
+          ls -la coverage-report/
 
       - name: Coverage summary
         if: always()
@@ -544,121 +564,9 @@ jobs:
           print("DVT PASS: all tests passed")
           PYEOF
 
-  # ═══════════════════════════════════════════════════════════════════
-  # Stage 6 — Release Artifacts (tag pushes only)
-  # ═══════════════════════════════════════════════════════════════════
-  release:
-    name: "6 — Release Artifacts"
-    needs: dvt
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
-    permissions:
-      contents: write
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: git config --global --add safe.directory "*"
-
-      - name: Extract version
-        id: ver
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          VER="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "ver=${VER}" >> "$GITHUB_OUTPUT"
-          echo "Building version: ${VER}"
-
-      - name: Configure CMake
-        run: |
-          cmake -G Ninja -B build_release \
-            -DCMAKE_C_COMPILER=gcc \
-            -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTS=OFF \
-            -Wno-dev
-
-      - name: Build GUI executable
-        run: cmake --build build_release --target patient_monitor_gui
-
-      - name: Verify Inno Setup 6
-        shell: pwsh
-        run: |
-          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            Write-Host "Installing Inno Setup..."
-            choco install innosetup -y --no-progress
-          } else {
-            Write-Host "Inno Setup already installed"
-            & $iscc /? | head -1
-          }
-
-      - name: Build installer
-        shell: pwsh
-        run: |
-          $ver = "${{ steps.ver.outputs.ver }}"
-          (Get-Content installer.iss) -replace '#define AppVersion\s+"[^"]+"', "#define AppVersion `"$ver`"" | Set-Content installer.iss
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Create portable ZIP
-        shell: pwsh
-        run: |
-          $tag = "${{ steps.ver.outputs.tag }}"
-          Copy-Item "build_release\patient_monitor_gui.exe" "PatientMonitor-$tag.exe"
-          $readme  = "Patient Vital Signs Monitor $tag`r`n"
-          $readme += "===================================`r`n"
-          $readme += "IEC 62304 Class B Medical Device Software`r`n`r`n"
-          $readme += "REQUIREMENTS`r`n"
-          $readme += "  Windows 10/11 (x86-64). No extra runtime needed.`r`n`r`n"
-          $readme += "DEFAULT CREDENTIALS`r`n"
-          $readme += "  admin    / Monitor@2026   (ADMIN role)`r`n"
-          $readme += "  clinical / Clinical@2026  (CLINICAL role)`r`n"
-          $readme += "  Change these before clinical use.`r`n`r`n"
-          $readme += "SIMULATION MODE`r`n"
-          $readme += "  Sim ON  -- synthetic data every 2 s (demo/development)`r`n"
-          $readme += "  Sim OFF -- all tiles show N/A (connect real hardware)`r`n`r`n"
-          $readme += "SECURITY`r`n"
-          $readme += "  Passwords are SHA-256 hashed in users.dat.`r`n`r`n"
-          $readme += "Source: https://github.com/vinu-engineer/medicalUT_IT"
-          $readme | Out-File -Encoding utf8 "README.txt"
-          Compress-Archive -Path "PatientMonitor-$tag.exe", "README.txt" `
-            -DestinationPath "PatientMonitor-$tag-portable.zip" -Force
-
-      - name: Locate installer
-        id: installer
-        shell: pwsh
-        run: |
-          $f = Get-ChildItem . -Recurse -Filter "PatientMonitorSetup*.exe" | Select-Object -First 1
-          if ($f) {
-            echo "path=$($f.FullName)" >> $env:GITHUB_OUTPUT
-            echo "Found: $($f.FullName)"
-          } else {
-            echo "path=" >> $env:GITHUB_OUTPUT
-          }
-
-      - name: Create or update release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ steps.ver.outputs.tag }}"
-          gh release create "${TAG}" \
-            "PatientMonitor-${TAG}.exe" \
-            "PatientMonitor-${TAG}-portable.zip" \
-            --title "${TAG}" \
-            --notes "See GitHub releases page for details" \
-            2>/dev/null || true
-          gh release upload "${TAG}" \
-            "PatientMonitor-${TAG}.exe" \
-            "PatientMonitor-${TAG}-portable.zip" \
-            --clobber
-          INSTALLER="${{ steps.installer.outputs.path }}"
-          if [ -n "$INSTALLER" ] && [ -f "$INSTALLER" ]; then
-            gh release upload "${TAG}" "$INSTALLER" --clobber
-          fi
+  # Note: Release artifacts are built via .github/workflows/release.yml
+  # (manual workflow_dispatch). This avoids duplicate pipeline runs when
+  # a tag is pushed to the same commit that's already on main.
 
   # ═══════════════════════════════════════════════════════════════════
   # Reports — Publish test, coverage, and analysis reports
@@ -680,25 +588,30 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download coverage report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: coverage-report-${{ github.run_number }}
           path: site/coverage
 
       - name: Download test results
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: test-results-${{ github.run_number }}
           path: site/test-results
 
       - name: Download DVT results
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: dvt-results-${{ github.sha }}
           path: site/dvt
 
-      - name: Debug artifact structure
-        run: find site -type f | head -40 || true
+      - name: Ensure site directories exist
+        run: |
+          mkdir -p site/coverage site/test-results site/dvt
+          find site -type f | head -40 || echo "(no files yet)"
 
       - name: Generate index page
         run: |
