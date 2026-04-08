@@ -1,3 +1,0 @@
-C:/Users/vinun/claude AI/build_v21/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
-C:/Users/vinun/claude AI/build_v21/_deps/googletest-subbuild/CMakeFiles/edit_cache.dir
-C:/Users/vinun/claude AI/build_v21/_deps/googletest-subbuild/CMakeFiles/rebuild_cache.dir

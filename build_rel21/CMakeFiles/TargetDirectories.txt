@@ -1,5 +1,0 @@
-C:/Users/vinun/claude AI/build_rel21/CMakeFiles/monitor_lib.dir
-C:/Users/vinun/claude AI/build_rel21/CMakeFiles/patient_monitor.dir
-C:/Users/vinun/claude AI/build_rel21/CMakeFiles/patient_monitor_gui.dir
-C:/Users/vinun/claude AI/build_rel21/CMakeFiles/edit_cache.dir
-C:/Users/vinun/claude AI/build_rel21/CMakeFiles/rebuild_cache.dir

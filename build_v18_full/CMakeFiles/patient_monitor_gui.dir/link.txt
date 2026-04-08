@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\patient_monitor_gui.dir/objects.a
-C:\MinGW\bin\ar.exe qc CMakeFiles\patient_monitor_gui.dir/objects.a @CMakeFiles\patient_monitor_gui.dir\objects1.rsp
-C:\MinGW\bin\gcc.exe -mwindows -Wl,--whole-archive CMakeFiles\patient_monitor_gui.dir/objects.a -Wl,--no-whole-archive -o patient_monitor_gui.exe -Wl,--out-implib,libpatient_monitor_gui.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\patient_monitor_gui.dir\linkLibs.rsp

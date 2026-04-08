@@ -1,2 +1,0 @@
-C:\MinGW\bin\ar.exe qc libmonitor_lib.a CMakeFiles/monitor_lib.dir/src/vitals.c.obj CMakeFiles/monitor_lib.dir/src/alerts.c.obj CMakeFiles/monitor_lib.dir/src/patient.c.obj CMakeFiles/monitor_lib.dir/src/pw_hash.c.obj CMakeFiles/monitor_lib.dir/src/app_config.c.obj
-C:\MinGW\bin\ranlib.exe libmonitor_lib.a

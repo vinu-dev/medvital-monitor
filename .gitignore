@@ -1,5 +1,6 @@
-# Build output
+# Build output (any build directory)
 build/
+build_*/
 dist/
 
 # Coverage artifacts
@@ -9,8 +10,9 @@ coverage_combined/
 coverage_unit.cov
 coverage_report.xml
 
-# IDE / OS
+# IDE / OS / tooling
 .vs/
 *.user
 .DS_Store
 Thumbs.db
+.claude/
