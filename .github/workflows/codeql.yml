@@ -63,8 +63,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/_deps
-          key: gtest-codeql-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-codeql-
+          # Scope by repository: build/_deps/*-subbuild/CMakeCache.txt stores
+          # absolute workspace paths, so a cache populated under one repo name
+          # poisons builds under another (e.g. after a repo rename).
+          key: gtest-codeql-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-codeql-${{ github.repository }}-
 
       - name: Build (CodeQL compilation trace)
         shell: bash
