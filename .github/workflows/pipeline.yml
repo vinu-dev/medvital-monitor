@@ -43,8 +43,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/_deps
-          key: gtest-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-
+          # Scope by repository: build/_deps/*-subbuild/CMakeCache.txt stores
+          # absolute workspace paths, so a cache populated under one repo name
+          # poisons builds under another (e.g. after a repo rename).
+          key: gtest-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-${{ github.repository }}-
 
       - name: CMake configure
         run: |
@@ -191,8 +194,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build/_deps
-          key: gtest-codeql-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-codeql-
+          key: gtest-codeql-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-codeql-${{ github.repository }}-
 
       - name: Build (CodeQL compilation trace)
         shell: bash
@@ -225,8 +228,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build/_deps
-          key: gtest-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-
+          key: gtest-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-${{ github.repository }}-
 
       - name: Build test targets
         run: |
@@ -321,8 +324,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build_cov/_deps
-          key: gtest-cov-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-cov-
+          key: gtest-cov-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-cov-${{ github.repository }}-
 
       - name: Build with coverage instrumentation
         run: |
@@ -437,8 +440,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build_dvt/_deps
-          key: gtest-dvt-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: gtest-dvt-
+          key: gtest-dvt-${{ github.repository }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: gtest-dvt-${{ github.repository }}-
 
       - name: Build GUI executable for DVT
         run: |
