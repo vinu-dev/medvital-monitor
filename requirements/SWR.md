@@ -624,15 +624,16 @@ extract per-parameter arrays from a `VitalSigns` history buffer.
 ### SWR-GUI-012 - Localization Selection and Persistence
 
 **Requirement:** The application shall support exactly four static UI languages:
-English, Spanish, French, and German. The Settings dialog shall provide a
-language selector that:
+English, Spanish, French, and German. The localization layer and Settings
+dialog language selector shall:
 
 1. Lists the four approved language options.
-2. Applies the selected language to dashboard and settings control text at
-   runtime without requiring an application restart.
-3. Persists the selected language to `monitor.cfg` using `language=0..3`.
-4. Restores the persisted language when the application is next launched.
-5. Uses only static storage for localization strings and state; no heap
+2. Expose localized strings and language names for the selected language
+   through the static localization API.
+3. Persist the selected language to `monitor.cfg` using `language=0..3`.
+4. Load the persisted language value from `monitor.cfg` for reuse by the
+   application.
+5. Use only static storage for localization strings and state; no heap
    allocation is permitted in the localization layer.
 
 Invalid or missing persisted language values shall fall back to English.
@@ -640,8 +641,8 @@ Invalid or missing persisted language values shall fall back to English.
 **Traces to:** SYS-014
 **Implemented in:** `src/localization.c` - `localization_set_language()`,
 `localization_get_language()`, `localization_get_string()`,
-`localization_get_language_name()`; `src/gui_main.c` - Settings Language tab,
-apply handler, dashboard refresh, startup restore; `src/app_config.c` -
+`localization_get_language_name()`; `src/gui_main.c` - Settings Language tab
+and language selector population; `src/app_config.c` -
 `app_config_load_language()`, `app_config_save_language()`
 **Verified by:** `tests/unit/test_localization.cpp` - `LocalizationTest.*`
 (8 tests); supplemental GUI automation `DVT-GUI-16`

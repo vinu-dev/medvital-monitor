@@ -47,7 +47,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
 | UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | Manual GUI review + `ConfigTest.*` support (10 persistence checks) | — |
 | UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | Manual visual review | — |
-| UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, runtime refresh, `monitor.cfg` restore | `LocalizationTest.*` (8 tests) + supplemental `DVT-GUI-16` | — |
+| UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, selector strings, `monitor.cfg` persistence/load | `LocalizationTest.*` (8 tests) + supplemental `DVT-GUI-16` | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -200,7 +200,7 @@ Supporting implementation checks:
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : mode toggle + persistence | Manual GUI review + `ConfigTest.*` support (10) | — | ✓ |
 | SWR-GUI-011 | `gui_main.c` : `paint_status_banner()`, scroll offset | Manual visual review | — | ✓ |
-| SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector, refresh, persistence | `LocalizationTest.*` (8) + supplemental `DVT-GUI-16` | — | ✓ |
+| SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector strings, persistence/load | `LocalizationTest.*` (8) + supplemental `DVT-GUI-16` | — | ✓ |
 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
