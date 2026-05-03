@@ -41,3 +41,13 @@ Approve only if:
 - Any clinical-behavior change has human-approved acceptance criteria.
 
 Never merge. Human code-owner approval and merge remain separate.
+
+## Writeback Rules
+
+- If GitHub accepts a formal review, use it.
+- If GitHub refuses owner/self-review, post a PR comment beginning
+  `Agentry review outcome: APPROVED` or `Agentry review outcome: REQUEST CHANGES`.
+- Approved PRs must have `agent-approved` and must not have `ready-for-review`
+  or `blocked`.
+- Request-changes PRs must not have `agent-approved`; they must have `blocked`,
+  and the linked issue must move to `changes-requested`.
