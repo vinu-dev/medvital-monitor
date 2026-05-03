@@ -13,8 +13,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 TARGET_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV="$SCRIPT_DIR/.venv"
+INSTALL_REF_FILE="$VENV/.agentry-install-ref"
 AGENTRY_REPO="https://github.com/vinu-dev/agentry.git"
-AGENTRY_REF="${AGENTRY_INSTALL_REF:-2d199daf8e337f5c9db05ccee84876a8af65cd4d}"
+AGENTRY_REF="${AGENTRY_INSTALL_REF:-123645478367652c5a513e4a5c45e51c2da78c7c}"
 
 PYTHON=""
 for name in python3 python; do
@@ -34,9 +35,17 @@ if [[ ! -x "$VENV/bin/python" ]]; then
     echo "==> First-time setup: creating venv at $VENV"
     "$PYTHON" -m venv "$VENV"
     "$VENV/bin/python" -m pip install --upgrade pip
+fi
+
+INSTALLED_REF=""
+if [[ -f "$INSTALL_REF_FILE" ]]; then
+    INSTALLED_REF="$(tr -d '[:space:]' < "$INSTALL_REF_FILE")"
+fi
+if [[ "$INSTALLED_REF" != "$AGENTRY_REF" ]]; then
     echo "==> Installing agentry from GitHub at $AGENTRY_REF"
-    "$VENV/bin/python" -m pip install "git+$AGENTRY_REPO@$AGENTRY_REF"
-    echo "==> Setup complete"
+    "$VENV/bin/python" -m pip install --upgrade --force-reinstall "git+$AGENTRY_REPO@$AGENTRY_REF"
+    printf '%s\n' "$AGENTRY_REF" > "$INSTALL_REF_FILE"
+    echo "==> Agentry install complete"
 fi
 
 if [[ ! -x "$VENV/bin/agentry" ]]; then

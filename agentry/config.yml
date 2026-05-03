@@ -4,7 +4,8 @@ agents:
   researcher:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
-    interval_min: 60
+    run_on_start: false
+    interval_min: 1440
     total_min: 30
     stall_min: 30
     prompt: |
@@ -17,6 +18,8 @@ agents:
   architect:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
+    trigger:
+      issue_labels: ["ready-for-design"]
     interval_min: 10
     total_min: 30
     stall_min: 30
@@ -31,6 +34,8 @@ agents:
   implementer:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
+    trigger:
+      issue_labels: ["ready-for-implementation", "tests-failed"]
     interval_min: 10
     total_min: 60
     stall_min: 60
@@ -46,6 +51,8 @@ agents:
   tester:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
+    trigger:
+      issue_labels: ["ready-for-test"]
     interval_min: 10
     total_min: 45
     stall_min: 45
@@ -59,6 +66,8 @@ agents:
   reviewer:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
+    trigger:
+      pr_labels: ["ready-for-review"]
     interval_min: 10
     total_min: 30
     stall_min: 30
@@ -72,6 +81,8 @@ agents:
   release:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "--dangerously-bypass-approvals-and-sandbox"]
+    trigger:
+      issue_labels: ["release-approved"]
     interval_min: 1440
     total_min: 60
     stall_min: 60

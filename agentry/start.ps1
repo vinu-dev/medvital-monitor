@@ -26,8 +26,9 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TargetRoot = Split-Path -Parent $ScriptDir
 $Venv = Join-Path $ScriptDir '.venv'
+$InstallRefFile = Join-Path $Venv '.agentry-install-ref'
 $AgentryRepo = 'https://github.com/vinu-dev/agentry.git'
-$AgentryRef = '2d199daf8e337f5c9db05ccee84876a8af65cd4d'
+$AgentryRef = '123645478367652c5a513e4a5c45e51c2da78c7c'
 if ($env:AGENTRY_INSTALL_REF) { $AgentryRef = $env:AGENTRY_INSTALL_REF }
 
 $python = $null
@@ -50,13 +51,21 @@ if (-not (Test-Path (Join-Path $Venv 'Scripts\python.exe'))) {
         exit 1
     }
     & (Join-Path $Venv 'Scripts\python.exe') -m pip install --upgrade pip
+}
+
+$InstalledRef = ''
+if (Test-Path $InstallRefFile) {
+    $InstalledRef = (Get-Content $InstallRefFile -Raw).Trim()
+}
+if ($InstalledRef -ne $AgentryRef) {
     Write-Host "==> Installing agentry from GitHub at $AgentryRef" -ForegroundColor Cyan
-    & (Join-Path $Venv 'Scripts\python.exe') -m pip install "git+$AgentryRepo@$AgentryRef"
+    & (Join-Path $Venv 'Scripts\python.exe') -m pip install --upgrade --force-reinstall "git+$AgentryRepo@$AgentryRef"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "agentry install failed" -ForegroundColor Red
         exit 1
     }
-    Write-Host "==> Setup complete" -ForegroundColor Green
+    Set-Content -Path $InstallRefFile -Value $AgentryRef -Encoding ASCII
+    Write-Host "==> Agentry install complete" -ForegroundColor Green
 }
 
 $AgentryExe = Join-Path $Venv 'Scripts\agentry.exe'
