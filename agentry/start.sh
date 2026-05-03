@@ -15,7 +15,7 @@ TARGET_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV="$SCRIPT_DIR/.venv"
 INSTALL_REF_FILE="$VENV/.agentry-install-ref"
 AGENTRY_REPO="https://github.com/vinu-dev/agentry.git"
-AGENTRY_REF="${AGENTRY_INSTALL_REF:-f6e9bf6d369cb5dee3b03bf53c3985603c02c289}"
+AGENTRY_REF="${AGENTRY_INSTALL_REF:-2f70c6e2192a1b67010ccebaf12718c93f18cffd}"
 
 PYTHON=""
 for name in python3 python; do
@@ -55,6 +55,11 @@ if [[ ! -x "$VENV/bin/agentry" ]]; then
 fi
 
 echo "==> Starting agentry against $TARGET_ROOT"
+if [[ "$#" -gt 0 ]]; then
+    echo "==> Running agentry $*"
+    exec "$VENV/bin/agentry" "$@"
+fi
+
 echo "==> Running doctor"
 "$VENV/bin/agentry" doctor --target "$TARGET_ROOT"
 exec "$VENV/bin/agentry" start --target "$TARGET_ROOT"

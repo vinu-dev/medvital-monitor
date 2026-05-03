@@ -19,7 +19,10 @@
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$AgentryArgs
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -28,7 +31,7 @@ $TargetRoot = Split-Path -Parent $ScriptDir
 $Venv = Join-Path $ScriptDir '.venv'
 $InstallRefFile = Join-Path $Venv '.agentry-install-ref'
 $AgentryRepo = 'https://github.com/vinu-dev/agentry.git'
-$AgentryRef = 'f6e9bf6d369cb5dee3b03bf53c3985603c02c289'
+$AgentryRef = '2f70c6e2192a1b67010ccebaf12718c93f18cffd'
 if ($env:AGENTRY_INSTALL_REF) { $AgentryRef = $env:AGENTRY_INSTALL_REF }
 
 $python = $null
@@ -76,6 +79,12 @@ if (-not (Test-Path $AgentryExe)) {
 }
 
 Write-Host "==> Starting agentry against $TargetRoot" -ForegroundColor Cyan
+if ($AgentryArgs.Count -gt 0) {
+    Write-Host "==> Running agentry $($AgentryArgs -join ' ')" -ForegroundColor Cyan
+    & $AgentryExe @AgentryArgs
+    exit $LASTEXITCODE
+}
+
 Write-Host "==> Running doctor" -ForegroundColor Cyan
 & $AgentryExe doctor --target $TargetRoot
 if ($LASTEXITCODE -ne 0) {
