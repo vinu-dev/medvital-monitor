@@ -15,7 +15,7 @@ TARGET_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV="$SCRIPT_DIR/.venv"
 INSTALL_REF_FILE="$VENV/.agentry-install-ref"
 AGENTRY_REPO="https://github.com/vinu-dev/agentry.git"
-AGENTRY_REF="${AGENTRY_INSTALL_REF:-c8fb7d0282e4d0d1509266661de538e43a746d1b}"
+AGENTRY_REF="${AGENTRY_INSTALL_REF:-266559e3a1cffc96b7a8a4a24192fdda3e3dedb3}"
 
 PYTHON=""
 for name in python3 python; do

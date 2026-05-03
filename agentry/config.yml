@@ -62,9 +62,10 @@ agents:
       You are the Tester for this repository. Read docs/ai/roles/tester.md first.
       Process the oldest open issue labeled `ready-for-test`. Rebase the shared feature branch,
       inspect changed files, run the matching validation rows, and record exact commands and
-      results. If green, open a PR to main, label it `ready-for-review`, remove `ready-for-test`
-      from the issue, and comment with the PR URL; if red, label the issue `tests-failed` with
-      trimmed failure output. Never suppress or lower tests.
+      results. If green, reuse any existing open PR for the feature branch or open one if needed,
+      label it `ready-for-review`, remove `blocked` from that PR, remove `ready-for-test` from
+      the issue, and comment with the PR URL; if red, label the issue `tests-failed` with trimmed
+      failure output. Never suppress or lower tests.
 
   reviewer:
     cli: npx.cmd
@@ -80,9 +81,9 @@ agents:
       requirements traceability, sensitive paths, security, and medical-safety impact.
       Approve only if the work is scoped, validated, and traceable. Request changes for
       any safety, auth, CI, traceability, or release-risk gap. If approval succeeds, remove
-      `ready-for-review` from the PR. If changes are needed, remove `ready-for-review`, add
-      `blocked` to the PR, move the linked issue to `changes-requested`, and comment with the
-      exact findings. Never merge.
+      `ready-for-review` and `blocked` from the PR. If changes are needed, remove
+      `ready-for-review`, add `blocked` to the PR, move the linked issue to `changes-requested`,
+      and comment with the exact findings. Never merge.
 
   release:
     cli: npx.cmd
