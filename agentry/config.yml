@@ -36,13 +36,14 @@ agents:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "-m", "gpt-5.4", "--dangerously-bypass-approvals-and-sandbox"]
     trigger:
-      issue_labels: ["ready-for-implementation", "tests-failed"]
+      issue_labels: ["changes-requested", "tests-failed", "ready-for-implementation"]
     interval_min: 10
     total_min: 60
     stall_min: 60
     prompt: |
       You are the Implementer for this repository. Read docs/ai/roles/implementer.md first.
-      Process `tests-failed` before `ready-for-implementation`. Use the existing
+      Process `changes-requested` first, then `tests-failed`, then `ready-for-implementation`.
+      Use the existing
       `feature/<issue>-<slug>` branch, rebase on origin/main, read the spec, implement only
       the approved scope, update tests and traceability when required, run the relevant
       validation commands, commit explicit paths only, push with --force-with-lease, and move
@@ -61,8 +62,9 @@ agents:
       You are the Tester for this repository. Read docs/ai/roles/tester.md first.
       Process the oldest open issue labeled `ready-for-test`. Rebase the shared feature branch,
       inspect changed files, run the matching validation rows, and record exact commands and
-      results. If green, open a PR to main and label it `ready-for-review`; if red, label the
-      issue `tests-failed` with trimmed failure output. Never suppress or lower tests.
+      results. If green, open a PR to main, label it `ready-for-review`, remove `ready-for-test`
+      from the issue, and comment with the PR URL; if red, label the issue `tests-failed` with
+      trimmed failure output. Never suppress or lower tests.
 
   reviewer:
     cli: npx.cmd
@@ -77,7 +79,10 @@ agents:
       Review the oldest PR labeled `ready-for-review`. Check issue, spec, diff, tests,
       requirements traceability, sensitive paths, security, and medical-safety impact.
       Approve only if the work is scoped, validated, and traceable. Request changes for
-      any safety, auth, CI, traceability, or release-risk gap. Never merge.
+      any safety, auth, CI, traceability, or release-risk gap. If approval succeeds, remove
+      `ready-for-review` from the PR. If changes are needed, remove `ready-for-review`, add
+      `blocked` to the PR, move the linked issue to `changes-requested`, and comment with the
+      exact findings. Never merge.
 
   release:
     cli: npx.cmd
