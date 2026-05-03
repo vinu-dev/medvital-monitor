@@ -1,4 +1,8 @@
-# Design Spec: Issue 12 - Traceability Reconcile v2.7.0 SWR Counts
+# Design Spec: Traceability reconcile v2.7.0 SWR counts and missing requirement links
+
+Issue: #12
+Branch: `feature/12-traceability-reconcile-v2-7-0-swr-counts`
+Spec path: `docs/history/specs/12-traceability-reconcile-v2-7-0-swr-counts.md`
 
 ## Problem
 
