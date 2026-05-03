@@ -12,7 +12,7 @@ Usage:
 Requirements:
     pip install pywinauto
 
-Reference: dvt/DVT_Protocol.md (DVT-001-REV-B)
+Reference: dvt/DVT_Protocol.md (DVT-001-REV-C)
 """
 
 import sys
@@ -413,8 +413,8 @@ def run_dvt(exe_path):
 
         lang_cmb = GetDlgItem(settings, IDC_CMB_LANG)
         lang_count = SendMessageA(lang_cmb, CB_GETCOUNT, 0, 0) if lang_cmb else 0
-        results.record("DVT-GUI-16", "PENDING-RTM (legacy SWR-GUI-012)",
-            "Language selector with 4 languages available; pending approved SWR/RTM traceability",
+        results.record("DVT-GUI-16", "SWR-GUI-012",
+            "Language selector exposes the four approved localization options",
             lang_count == 4,
             f"Languages in combo: {lang_count}")
 
@@ -483,7 +483,7 @@ def generate_report(results, exe_path, output_dir):
         "=" * 80,
         f"  Generated  : {now.strftime('%Y-%m-%d %H:%M:%S')} UTC",
         f"  Executable : {exe_path}",
-        f"  Protocol   : dvt/DVT_Protocol.md (DVT-001-REV-B)",
+        f"  Protocol   : dvt/DVT_Protocol.md (DVT-001-REV-C)",
         "=" * 80,
         "",
         f"  OVERALL RESULT: {results.overall()}",
@@ -511,11 +511,11 @@ def generate_report(results, exe_path, output_dir):
         "  - GUI-ROLLING : SWR-GUI-011 rolling status banner content/motion",
         "  - GUI-RESIZE  : Window resize - zones scale, no clipping",
         "  - GUI-MAXIMIZE: Maximize - all zones fill screen",
-        "  - GUI-L10N-RTM: DVT-GUI-16 is informational only until SWR/RTM approve localization traceability",
+        "  - GUI-L10N-SEL: DVT-GUI-16 verifies the four-option localization selector",
         "",
         "  REFERENCES",
         "  " + "-" * 76,
-        "  Protocol     : dvt/DVT_Protocol.md (DVT-001-REV-B)",
+        "  Protocol     : dvt/DVT_Protocol.md (DVT-001-REV-C)",
         "  Traceability : requirements/TRACEABILITY.md",
         "  SWR          : requirements/SWR.md",
         "=" * 80,

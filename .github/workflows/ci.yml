@@ -8,7 +8,7 @@
 # What is validated:
 #   • CMake configure (GTest fetched from GitHub via FetchContent)
 #   • Build: test_unit + test_integration targets
-#   • Run: all 145 GTest cases; any failure fails the workflow
+#   • Run: all 295 GTest cases; any failure fails the workflow
 #   • Test result summary written to the Actions job summary page
 #   • Test result XML uploaded as artifact (IEC 62304 audit trail)
 #
@@ -83,7 +83,7 @@ jobs:
         run: cmake --build build --target test_unit test_integration
 
       # ------------------------------------------------------------------
-      # 6. Run unit tests (133 tests across 15 suites)
+      # 6. Run unit tests (283 tests across 30 suites)
       #    Exit code non-zero → step fails → workflow fails.
       #    set -o pipefail ensures the exit code is preserved through tee.
       # ------------------------------------------------------------------
@@ -147,7 +147,7 @@ jobs:
               f.write('## Test Results\n\n')
               f.write('| Suite | Total | Passed | Failed | Status |\n')
               f.write('|-------|------:|-------:|-------:|-------:|\n')
-              f.write(row('Unit tests (15 suites)', unit))
+              f.write(row('Unit tests (30 suites)', unit))
               f.write(row('Integration tests (2 suites)', intg))
               f.write('| **Total** | **' + str(total_all) + '** | **' +
                       str(passed_all) + '** | **' + str(failed_all) +
