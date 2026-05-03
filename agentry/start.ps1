@@ -27,7 +27,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TargetRoot = Split-Path -Parent $ScriptDir
 $Venv = Join-Path $ScriptDir '.venv'
 $AgentryRepo = 'https://github.com/vinu-dev/agentry.git'
-$AgentryRef = '7176fca18819fdc0f848841a6f6d471eac69ebed'
+$AgentryRef = '56f54e48e4fadea6cab2911099a00fcbb89aef7f'
 if ($env:AGENTRY_INSTALL_REF) { $AgentryRef = $env:AGENTRY_INSTALL_REF }
 
 $python = $null

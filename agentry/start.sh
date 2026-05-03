@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 TARGET_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV="$SCRIPT_DIR/.venv"
 AGENTRY_REPO="https://github.com/vinu-dev/agentry.git"
-AGENTRY_REF="${AGENTRY_INSTALL_REF:-7176fca18819fdc0f848841a6f6d471eac69ebed}"
+AGENTRY_REF="${AGENTRY_INSTALL_REF:-56f54e48e4fadea6cab2911099a00fcbb89aef7f}"
 
 PYTHON=""
 for name in python3 python; do
