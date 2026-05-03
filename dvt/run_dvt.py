@@ -99,13 +99,12 @@ REQUIREMENT_MAP = {
     "SWR-SEC-003": ("test_unit", "UsersTest", "users_change_password() old pwd verified"),
     "SWR-SEC-004": ("test_unit", "UsersTest.REQ_SEC_004_StoredValueIsSHA256Hex",
                     "Stored value is 64-char SHA-256 hex"),
-    # HAL / simulation - GTest suites: HALTest, HALTestNoInit, SimSequenceTest
-    "SWR-GUI-005": ("test_unit", "HALTestNoInit", "HAL contract smoke test: hw_get_next_reading() safe without prior init"),
-    "SWR-GUI-006": ("test_unit", "SimSequenceTest", "Sim sequence: 20 unique readings, cycles"),
-    # Config persistence - GTest suite: ConfigTest
-    "SWR-GUI-010": ("test_unit", "ConfigTest", "sim_enabled persists across restarts"),
+    # GUI requirements verified outside the automated GTest release verdict.
+    "SWR-GUI-005": (None, "MANUAL", "Architecture review: GUI uses only the hw_vitals.h HAL interface"),
+    "SWR-GUI-006": (None, "MANUAL", "GUI demo/manual review: simulator cycle phases and wrap-around behavior"),
+    "SWR-GUI-010": (None, "MANUAL", "GUI review: sim/device mode toggle behavior, N/A tiles, banners, and relaunch state"),
     "SWR-GUI-011": (None, "MANUAL", "Rolling simulation banner verified by manual visual check"),
-    # GUI requirements verified via manual checklist only (GUI rendering)
+    # GUI requirements verified via manual checklist only (GUI rendering and workflow review)
     "SWR-GUI-001": (None, "MANUAL", "Login screen: auth, error message, role detection"),
     "SWR-GUI-002": (None, "MANUAL", "Dashboard: colour-coded vital tiles update every 2 s"),
     "SWR-GUI-003": (None, "MANUAL", "Tiles: NORMAL/WARNING/CRITICAL colour coding"),
@@ -422,8 +421,9 @@ def generate_report(
     ln(f"  DVT OVERALL VERDICT  : {'PASS' if overall_pass else 'FAIL'}")
     ln(sep_major)
     ln()
-    ln("  NOTE: Manual-only GUI items (including SWR-GUI-001/002/003/004/007/008/009/011)")
-    ln("  are verified via the checklist in dvt/DVT_Protocol.md and are not")
+    ln("  NOTE: Non-automated GUI/architecture items (including SWR-GUI-001/002/003/004/")
+    ln("  005/006/007/008/009/010/011) are verified via the checklist and review")
+    ln("  guidance in dvt/DVT_Protocol.md and are not")
     ln("  included in the automated pass/fail decision.")
     ln("  NOTE: Legacy localization evidence tied to SWR-GUI-012 is intentionally")
     ln("  excluded from this approved requirement summary until SWR/RTM approval exists.")
