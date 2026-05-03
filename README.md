@@ -451,11 +451,11 @@ requirements revision.
 | `tests/unit/test_news2.cpp`                     | 53     | SWR-NEW-001                       |
 | `tests/unit/test_alarm_limits.cpp`              | 31     | SWR-ALM-001                       |
 | `tests/unit/test_trend.cpp`                     | 18     | SWR-TRD-001                       |
-| `tests/unit/test_hal.cpp`                       | 12     | SWR-GUI-005, SWR-GUI-006          |
-| `tests/unit/test_config.cpp`                    | 10     | SWR-GUI-010                       |
+| `tests/unit/test_hal.cpp`                       | 12     | Supporting HAL / simulator checks only |
+| `tests/unit/test_config.cpp`                    | 10     | Supporting config persistence checks only |
 | `tests/integration/test_patient_monitoring.cpp` | 6      | SWR-PAT-*, SWR-VIT-*              |
 | `tests/integration/test_alert_escalation.cpp`   | 6      | SWR-VIT-*, SWR-ALT-*              |
-| **Total**                                       | **287** | **36 SWRs covered**              |
+| **Total**                                       | **287** | **36 SWRs covered across automated and manual evidence** |
 
 ### Test techniques applied
 

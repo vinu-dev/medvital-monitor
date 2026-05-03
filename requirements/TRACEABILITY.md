@@ -45,8 +45,8 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | `News2HR.*`, `News2RR.*`, `News2SpO2.*`, `News2SBP.*`, `News2Temp.*`, `News2Calc.*` (53 tests) | — |
 | UNS-005, UNS-006 | SYS-002, SYS-003 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | `AlarmLimitsTest.*` (31 tests) | — |
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
-| UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | `ConfigTest.*` (27 tests) | — |
-| UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | GUI demo | — |
+| UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | Manual GUI review + `ConfigTest.*` support (10 persistence checks) | — |
+| UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | Manual visual review | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -110,8 +110,10 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `News2HR`, `News2RR`, etc. | `News2*.*` | SWR-NEW-001 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `AlarmLimitsTest` | `AlarmLimitsTest.*` | SWR-ALM-001 | SYS-002, SYS-003 | UNS-005, UNS-006 |
 | `TrendDirection`, `TrendExtract` | `Trend*.*` | SWR-TRD-001 | SYS-001, SYS-002 | UNS-001, UNS-009 |
-| `HALTestNoInit` | `HALTestNoInit.*` | SWR-GUI-005 | SYS-015 | UNS-015 |
-| `ConfigTest` | `ConfigTest.*` | SWR-GUI-010 | SYS-015 | UNS-015 |
+
+Supporting implementation checks:
+- `HALTest`, `HALTestNoInit`, and `SimSequenceTest` exercise HAL safety and simulator sequencing, but approved verification for `SWR-GUI-005` and `SWR-GUI-006` remains architecture review / GUI demonstration.
+- `ConfigTest.*` exercises configuration persistence, but approved verification for `SWR-GUI-010` remains manual GUI review of the mode-toggle behavior.
 
 ### Integration Tests
 
@@ -151,7 +153,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-012 | Platform compatibility | SYS-012 | SWR-PAT-001, SWR-ALT-003 | ✓ |
 | UNS-013 | User authentication | SYS-013 | SWR-GUI-001, SWR-GUI-002 | ✓ |
 | UNS-014 | Graphical dashboard | SYS-014 | SWR-GUI-003, SWR-GUI-004 | ✓ |
-| UNS-015 | Live monitoring feed | SYS-015 | SWR-GUI-005, SWR-GUI-006 | ✓ |
+| UNS-015 | Live monitoring feed | SYS-015 | SWR-GUI-005, SWR-GUI-006, SWR-GUI-010, SWR-GUI-011 | ✓ |
 | UNS-016 | Role-based access / multi-user | SYS-016, SYS-017 | SWR-SEC-001, SWR-SEC-002, SWR-SEC-003, SWR-GUI-007, SWR-GUI-008, SWR-GUI-009 | ✓ |
 
 **Result: 16 / 16 User Needs covered ✓**
@@ -194,7 +196,8 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | SWR-GUI-007 | `users_add()`, `users_remove()`, `users_count()`, `users_get_by_index()` | 8 | — | ✓ |
 | SWR-GUI-008 | Role-conditional `WM_CREATE`, `draw_pill()`, `IDC_BTN_SETTINGS` | GUI demo | — | ✓ |
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
-| SWR-GUI-010 | `app_config.c` : `app_config_save()`, `app_config_load()` | 27 | — | ✓ |
+| SWR-GUI-010 | `gui_main.c`, `app_config.c` : mode toggle + persistence | Manual GUI review + `ConfigTest.*` support (10) | — | ✓ |
+| SWR-GUI-011 | `gui_main.c` : `paint_status_banner()`, scroll offset | Manual visual review | — | ✓ |
 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
@@ -249,11 +252,11 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_news2.cpp` | 53 | SWR-NEW-001 |
 | `tests/unit/test_alarm_limits.cpp` | 31 | SWR-ALM-001 |
 | `tests/unit/test_trend.cpp` | 18 | SWR-TRD-001 |
-| `tests/unit/test_hal.cpp` | 12 | SWR-GUI-005, SWR-GUI-006 |
-| `tests/unit/test_config.cpp` | 10 | SWR-GUI-010 |
+| `tests/unit/test_hal.cpp` | 12 | Supporting HAL / simulator checks only; no direct SWR verification claim |
+| `tests/unit/test_config.cpp` | 10 | Supporting config persistence checks only; no direct SWR verification claim |
 | `tests/integration/test_patient_monitoring.cpp` | 6 | SWR-PAT-*, SWR-VIT-* |
 | `tests/integration/test_alert_escalation.cpp` | 6 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004 |
-| **Total** | **287** | **36 SWRs covered across automated and GUI-demo evidence** |
+| **Total** | **287** | **36 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
