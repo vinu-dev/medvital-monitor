@@ -1,4 +1,5 @@
 target_repo: vinu-dev/medvital-monitor
+isolate_worktrees: true
 
 agents:
   researcher:
