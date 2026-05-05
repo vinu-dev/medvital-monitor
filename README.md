@@ -583,7 +583,8 @@ Opens `docs\html\index.html` automatically.
 | SWR-GUI-005–006 | `hw_vitals.h`/`sim_vitals.c` | `test_hal.cpp` + GUI demo     |
 | SWR-SEC-001–004 | `gui_users.c`, `pw_hash.c`| `test_auth.cpp`                  |
 | SWR-GUI-007     | `gui_users.c`/`gui_main.c`| `test_auth.cpp` — UserManagement |
-| SWR-GUI-008–011 | `gui_main.c`, `app_config.c`| `test_config.cpp` + visual    |
+| SWR-GUI-008-010 | `gui_main.c`, `app_config.c`| `test_config.cpp` + visual    |
+| SWR-GUI-011     | `gui_main.c`              | GUI demonstration                |
 | SWR-INT-MON     | All modules               | `test_patient_monitoring.cpp`    |
 | SWR-INT-ESC     | All modules               | `test_alert_escalation.cpp`      |
 
@@ -643,13 +644,13 @@ medicalUT_IT/
 │       └── test_alert_escalation.cpp    # 6 tests — SWR-VIT-*, SWR-ALT-*
 │
 ├── requirements/
-│   ├── UNS.md                       # User Needs (15 items)
-│   ├── SYS.md                       # System Requirements (15 items)
+|   |-- UNS.md                       # User Needs (16 items)
+|   |-- SYS.md                       # System Requirements (17 items)
 │   ├── SWR.md                       # Software Requirements (36 items)
 │   └── TRACEABILITY.md              # RTM — 16/16 UNS, 36/36 SWR, 287 tests
 │
 ├── build.bat                        # Configure + build + launch GUI
-├── run_tests.bat                    # Run all 144 tests
+|-- run_tests.bat                    # Run all 287 tests
 ├── run_coverage.bat                 # GCC coverage report (gcov + gcovr)
 ├── generate_docs.bat                # Doxygen HTML + XML documentation
 ├── create_installer.bat             # Build release + compile Windows installer
@@ -666,3 +667,4 @@ medicalUT_IT/
 │
 └── dist/                            # Release artifacts (exe, zip, installer)
 ```
+

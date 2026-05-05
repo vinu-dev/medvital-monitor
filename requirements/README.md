@@ -74,7 +74,7 @@ Open `TRACEABILITY.md` and:
 git add requirements/ src/ tests/
 git commit -m "Add SWR-VIT-008: <description>
 
-Traces: UNS-001 -> SYS-001 -> SWR-VIT-008
+Traces: UNS-005 -> SYS-005 -> SWR-VIT-008
 Implemented in: src/vitals.c
 Verified by: tests/unit/test_vitals.cpp"
 ```

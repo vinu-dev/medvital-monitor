@@ -41,7 +41,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-005, UNS-006 | SYS-006 | SWR-VIT-005 | `vitals.c` : `overall_alert_level()` | `OverallAlert.*` (5 tests) | `REQ_INT_MON_002`, `REQ_INT_MON_003`, `REQ_INT_MON_004` |
 | UNS-007 | SYS-007 | SWR-VIT-006 | `vitals.c` : `calculate_bmi()`, `bmi_category()` | `BMI.*` (12 tests) | `REQ_INT_MON_001` |
 | UNS-005, UNS-006, UNS-010 | SYS-005, SYS-011 | SWR-VIT-007 | `vitals.c` : `alert_level_str()` | `AlertStr.*` (4 tests) | All integration tests |
-| UNS-001 | SYS-001 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | `RespRate.*` (12 tests), `OverallAlert.SWR_VIT_008_*` (3 tests) | — |
+| UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | `RespRate.*` (12 tests), `OverallAlert.SWR_VIT_008_*` (3 tests) | none |
 | UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | `News2HR.*`, `News2RR.*`, `News2SpO2.*`, `News2SBP.*`, `News2Temp.*`, `News2Calc.*` (53 tests) | — |
 | UNS-005, UNS-006 | SYS-002, SYS-003 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | `AlarmLimitsTest.*` (31 tests) | — |
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
@@ -106,7 +106,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `UsersTest` | `REQ_SEC_003_*` | SWR-SEC-003 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_SEC_004_*` | SWR-SEC-004 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_GUI_007_*` | SWR-GUI-007 | SYS-016 | UNS-016 |
-| `RespRate` | `REQ_VIT_008_*` | SWR-VIT-008 | SYS-001 | UNS-001 |
+| `RespRate` | `REQ_VIT_008_*` | SWR-VIT-008 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `News2HR`, `News2RR`, etc. | `News2*.*` | SWR-NEW-001 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `AlarmLimitsTest` | `AlarmLimitsTest.*` | SWR-ALM-001 | SYS-002, SYS-003 | UNS-005, UNS-006 |
 | `TrendDirection`, `TrendExtract` | `Trend*.*` | SWR-TRD-001 | SYS-001, SYS-002 | UNS-001, UNS-009 |
@@ -203,7 +203,7 @@ Supporting implementation checks:
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | 18 | — | ✓ |
 
-**Result: 36 / 36 SWRs implemented and tested ✓**
+**Result: 36 / 36 SWRs implemented and verified**
 
 ---
 
@@ -271,3 +271,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | E   | 2026-04-08 | vinu-engineer   | v1.7.0: added SWR-SEC-004 (SHA-256 hashing); 30/30 SWR, 148 tests; CodeQL/cppcheck findings resolved |
 | F   | 2026-04-08 | vinu-engineer   | v2.6.0: added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend), SWR-GUI-010 (sim toggle); 35/35 SWR, 287 tests |
 | G   | 2026-04-08 | claude          | v2.7.0: added SWR-GUI-011 (rolling message in simulation mode); 36/36 SWR, 287 tests |
+| H   | 2026-05-03 | codex           | Reconciled v2.7.0 SWR counts and existing SYS mappings; 36/36 SWR, 287 tests |

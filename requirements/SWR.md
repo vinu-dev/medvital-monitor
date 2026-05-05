@@ -130,7 +130,7 @@ realistic RR values (12–20 in the normal phase, 21–24 in deterioration, 26�
 in the critical phase, recovering to 14–19).
 
 **Threshold source:** Royal College of Physicians NEWS2 / NICE guidelines.
-**Traces to:** SYS-003 (IEC 80601-2-49 multifunction patient monitor requirements)
+**Traces to:** SYS-005, SYS-006
 **Implemented in:** `src/vitals.c` — `check_respiration_rate()`, `overall_alert_level()`;
 `src/sim_vitals.c` — respiration_rate in all 20 SIM_SEQUENCE entries;
 `src/gui_main.c` — RESP RATE tile, IDC_VIT_RR field;
@@ -172,7 +172,7 @@ as defined by the Royal College of Physicians (2017). `news2_calculate()` shall:
 The dashboard shall display the NEWS2 score in the 6th tile (3rd column, 2nd row)
 colour-coded: green (LOW/LOW_M), amber (MEDIUM), red (HIGH).
 
-**Traces to:** SYS-018 (NEWS2 clinical decision support — RCP 2017 standard)
+**Traces to:** SYS-005, SYS-006
 **Implemented in:** `src/news2.c` — `news2_score_hr()`, `news2_score_rr()`,
 `news2_score_spo2()`, `news2_score_sbp()`, `news2_score_temp()`, `news2_calculate()`;
 `src/gui_main.c` — 6th tile (NEWS2 SCORE)
@@ -632,3 +632,4 @@ extract per-parameter arrays from a `VitalSigns` history buffer.
 | E   | 2026-04-07 | vinu-engineer   | Added SWR-GUI-010 (simulation mode toggle) — v1.8.0 |
 | F   | 2026-04-08 | vinu-engineer   | Added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend) — v2.6.0 |
 | G   | 2026-04-08 | claude          | Added SWR-GUI-011 (rolling message in simulation mode) — v2.7.0 |
+| H   | 2026-05-03 | codex           | Reconciled SWR-VIT-008 and SWR-NEW-001 to existing alerting and aggregate-risk SYS links; no clinical behavior changes |
