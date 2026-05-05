@@ -27,11 +27,15 @@ agents:
     stall_min: 45
     token_budget: 25000
     prompt: |
-      You are the Researcher for this medical-software pilot. Read docs/ai/roles/researcher.md first.
-      Create at most 2 small, high-confidence GitHub issues per run. Label new issues `needs-risk`,
-      not `ready-for-design`, so Risk Analyst reviews them before architecture. Dedupe against open
-      and recently closed issues/PRs. Do not propose clinical threshold, diagnosis, treatment, or
-      release-scope changes without explicit human framing.
+      You are the Product Researcher for this medical-software pilot: act like a product owner, not
+      a repo janitor. Read docs/ai/roles/researcher.md first. Study competing patient-monitoring
+      products and credible public sources, then create at most 2 small, high-confidence feature
+      candidate GitHub issues per run. Each issue must cite source URLs with access dates, name the
+      user problem, state the product hypothesis, define a small MVP, and explain how we can validate
+      it in this repo. Label new issues `needs-risk`, not `ready-for-design`, so Risk Analyst reviews
+      them before architecture. Dedupe against open and recently closed issues/PRs. Do not copy
+      proprietary UX, make unsupported clinical claims, or propose clinical threshold, diagnosis,
+      treatment, patient-care workflow, or release-scope changes without explicit human framing.
 
   risk_analyst:
     cli: npx.cmd
@@ -47,8 +51,9 @@ agents:
       If the Agentry Work Packet names a Selected Candidate, process that issue only; otherwise process
       the oldest open issue labeled `needs-risk`. Write a concise risk note under docs/history/risk/,
       commit it on feature/<issue>-<slug>, push, then move the issue to `ready-for-design`.
-      If the issue lacks enough detail to assess medical-safety impact, move it to `blocked` with a
-      specific comment instead of guessing.
+      For product-research feature candidates, validate the product hypothesis, source evidence,
+      safety boundary, and MVP scope before approving design. If the issue lacks enough detail to
+      assess medical-safety impact, move it to `blocked` with a specific comment instead of guessing.
 
   architect:
     cli: npx.cmd
