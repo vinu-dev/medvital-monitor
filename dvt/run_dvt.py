@@ -104,6 +104,7 @@ REQUIREMENT_MAP = {
     "SWR-GUI-006": (None, "MANUAL", "GUI demo/manual review: simulator cycle phases and wrap-around behavior"),
     "SWR-GUI-010": (None, "MANUAL", "GUI review: sim/device mode toggle behavior, N/A tiles, banners, and relaunch state"),
     "SWR-GUI-011": (None, "MANUAL", "Rolling simulation banner verified by manual visual check"),
+    "SWR-GUI-012": ("test_unit", "LocalizationTest", "Localization API, selector list, and monitor.cfg persistence"),
     # GUI requirements verified via manual checklist only (GUI rendering and workflow review)
     "SWR-GUI-001": (None, "MANUAL", "Login screen: auth, error message, role detection"),
     "SWR-GUI-002": (None, "MANUAL", "Dashboard: colour-coded vital tiles update every 2 s"),
@@ -425,8 +426,8 @@ def generate_report(
     ln("  005/006/007/008/009/010/011) are verified via the checklist and review")
     ln("  guidance in dvt/DVT_Protocol.md and are not")
     ln("  included in the automated pass/fail decision.")
-    ln("  NOTE: Legacy localization evidence tied to SWR-GUI-012 is intentionally")
-    ln("  excluded from this approved requirement summary until SWR/RTM approval exists.")
+    ln("  NOTE: SWR-GUI-012 automated coverage comes from LocalizationTest.*.")
+    ln("  DVT-GUI-16 remains supplemental GUI evidence for selector presence.")
     ln()
     ln(sep_major)
     ln("  END OF REPORT")

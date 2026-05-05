@@ -1,9 +1,9 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-G
+**Document ID:** RTM-001-REV-I
 **Project:** Patient Vital Signs Monitor
 **Version:** 2.7.0
-**Date:** 2026-04-08
+**Date:** 2026-05-03
 **Status:** Approved
 **Standard:** IEC 62304 §5.7.3 / FDA SW Validation Guidance
 
@@ -41,12 +41,13 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-005, UNS-006 | SYS-006 | SWR-VIT-005 | `vitals.c` : `overall_alert_level()` | `OverallAlert.*` (5 tests) | `REQ_INT_MON_002`, `REQ_INT_MON_003`, `REQ_INT_MON_004` |
 | UNS-007 | SYS-007 | SWR-VIT-006 | `vitals.c` : `calculate_bmi()`, `bmi_category()` | `BMI.*` (12 tests) | `REQ_INT_MON_001` |
 | UNS-005, UNS-006, UNS-010 | SYS-005, SYS-011 | SWR-VIT-007 | `vitals.c` : `alert_level_str()` | `AlertStr.*` (4 tests) | All integration tests |
-| UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | `RespRate.*` (12 tests), `OverallAlert.SWR_VIT_008_*` (3 tests) | none |
+| UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | `RespRate.*` (12 tests), `OverallAlert.SWR_VIT_008_*` (3 tests) | — |
 | UNS-005, UNS-006 | SYS-005, SYS-006 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | `News2HR.*`, `News2RR.*`, `News2SpO2.*`, `News2SBP.*`, `News2Temp.*`, `News2Calc.*` (53 tests) | — |
 | UNS-005, UNS-006 | SYS-002, SYS-003 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | `AlarmLimitsTest.*` (31 tests) | — |
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
 | UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | Manual GUI review + `ConfigTest.*` support (10 persistence checks) | — |
 | UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | Manual visual review | — |
+| UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, selector strings, `monitor.cfg` persistence/load | `LocalizationTest.*` (8 tests) + supplemental `DVT-GUI-16` | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -106,6 +107,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `UsersTest` | `REQ_SEC_003_*` | SWR-SEC-003 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_SEC_004_*` | SWR-SEC-004 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_GUI_007_*` | SWR-GUI-007 | SYS-016 | UNS-016 |
+| `LocalizationTest` | `LocalizationTest.*` | SWR-GUI-012 | SYS-014 | UNS-014 |
 | `RespRate` | `REQ_VIT_008_*` | SWR-VIT-008 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `News2HR`, `News2RR`, etc. | `News2*.*` | SWR-NEW-001 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `AlarmLimitsTest` | `AlarmLimitsTest.*` | SWR-ALM-001 | SYS-002, SYS-003 | UNS-005, UNS-006 |
@@ -152,7 +154,7 @@ Supporting implementation checks:
 | UNS-011 | Data integrity | SYS-010, SYS-012 | SWR-PAT-002, SWR-PAT-005, SWR-ALT-003, SWR-PAT-001 | ✓ |
 | UNS-012 | Platform compatibility | SYS-012 | SWR-PAT-001, SWR-ALT-003 | ✓ |
 | UNS-013 | User authentication | SYS-013 | SWR-GUI-001, SWR-GUI-002 | ✓ |
-| UNS-014 | Graphical dashboard | SYS-014 | SWR-GUI-003, SWR-GUI-004 | ✓ |
+| UNS-014 | Graphical dashboard | SYS-014 | SWR-GUI-003, SWR-GUI-004, SWR-GUI-012 | ✓ |
 | UNS-015 | Live monitoring feed | SYS-015 | SWR-GUI-005, SWR-GUI-006, SWR-GUI-010, SWR-GUI-011 | ✓ |
 | UNS-016 | Role-based access / multi-user | SYS-016, SYS-017 | SWR-SEC-001, SWR-SEC-002, SWR-SEC-003, SWR-GUI-007, SWR-GUI-008, SWR-GUI-009 | ✓ |
 
@@ -198,12 +200,13 @@ Supporting implementation checks:
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : mode toggle + persistence | Manual GUI review + `ConfigTest.*` support (10) | — | ✓ |
 | SWR-GUI-011 | `gui_main.c` : `paint_status_banner()`, scroll offset | Manual visual review | — | ✓ |
+| SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector strings, persistence/load | `LocalizationTest.*` (8) + supplemental `DVT-GUI-16` | — | ✓ |
 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | 18 | — | ✓ |
 
-**Result: 36 / 36 SWRs implemented and verified**
+**Result: 37 / 37 SWRs implemented and tested ✓**
 
 ---
 
@@ -254,9 +257,10 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_trend.cpp` | 18 | SWR-TRD-001 |
 | `tests/unit/test_hal.cpp` | 12 | Supporting HAL / simulator checks only; no direct SWR verification claim |
 | `tests/unit/test_config.cpp` | 10 | Supporting config persistence checks only; no direct SWR verification claim |
+| `tests/unit/test_localization.cpp` | 8 | SWR-GUI-012 |
 | `tests/integration/test_patient_monitoring.cpp` | 6 | SWR-PAT-*, SWR-VIT-* |
 | `tests/integration/test_alert_escalation.cpp` | 6 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004 |
-| **Total** | **287** | **36 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total** | **295** | **37 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
@@ -272,3 +276,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | F   | 2026-04-08 | vinu-engineer   | v2.6.0: added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend), SWR-GUI-010 (sim toggle); 35/35 SWR, 287 tests |
 | G   | 2026-04-08 | claude          | v2.7.0: added SWR-GUI-011 (rolling message in simulation mode); 36/36 SWR, 287 tests |
 | H   | 2026-05-03 | codex           | Reconciled v2.7.0 SWR counts and existing SYS mappings; 36/36 SWR, 287 tests |
+| I   | 2026-05-03 | Codex implementer | Added SWR-GUI-012 localization traceability and 8 automated localization tests; 37/37 SWR, 295 tests |

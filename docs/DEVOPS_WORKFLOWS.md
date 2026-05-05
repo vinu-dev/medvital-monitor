@@ -27,7 +27,7 @@ dispatch.
  │  ┌───────────┐    ┌──────────────────┐    ┌───────────────────────┐     │
  │  │ 1. BUILD  │───▸│ 2a. CPPCHECK     │───▸│ 3. UNIT & INTEGRATION │     │
  │  │   ALL     │    │    (ubuntu)       │    │    TESTS              │     │
- │  │ (windows) │    ├──────────────────┤    │    145 GTest cases    │     │
+ │  │ (windows) │    ├──────────────────┤    │    295 GTest cases    │     │
  │  └───────────┘    │ 2b. CODEQL       │───▸│    (windows)          │     │
  │                   │    (windows)      │    └───────────┬───────────┘     │
  │                   └──────────────────┘                │                 │
@@ -129,27 +129,27 @@ activity for Class B software.
 |-------------|-----------------------------------------------|
 | Runner      | `windows-latest`                              |
 | Framework   | Google Test (release-1.10.0)                   |
-| Unit tests  | 133 tests across 15 suites                     |
+| Unit tests  | 283 tests across 30 suites                     |
 | Integration | 12 tests across 2 suites                       |
 | Output      | JUnit XML → artefact (90-day retention)        |
 | Summary     | Pass/fail table in Actions job summary         |
 
-**Test suites:**
+**Automated test files / suite groups:**
 
-| Suite                    | Tests | Covers                          |
+| Group                    | Tests | Covers                          |
 |--------------------------|------:|----------------------------------|
-| VitalsTest               | 14    | SWR-VIT-001..007                 |
-| AlertsTest               | 11    | SWR-ALT-001..004                 |
-| PatientTest              | 19    | SWR-PAT-001..006                 |
-| NEWS2Test                | 27    | SWR-NEW-001..005                 |
-| AlarmLimitsTest          | 14    | SWR-ALM-001..006                 |
-| TrendTest                | 9     | SWR-TRD-001..004                 |
-| AuthTest                 | 15    | SWR-SEC-001..003, SWR-GUI-001..002|
-| UserManagementTest       | 4     | SWR-GUI-007                      |
-| LocalizationTest         | 8     | SWR-GUI-012                      |
-| AppConfigTest            | 12    | Config persistence               |
-| MonitoringIntegration    | 6     | End-to-end vital → alert flow    |
-| EscalationIntegration    | 6     | Alert → NEWS2 → alarm escalation |
+| `test_vitals.cpp`        | 80    | SWR-VIT-001..008                 |
+| `test_alerts.cpp`        | 11    | SWR-ALT-001..004                 |
+| `test_patient.cpp`       | 19    | SWR-PAT-001..006                 |
+| `test_news2.cpp`         | 53    | SWR-NEW-001                      |
+| `test_alarm_limits.cpp`  | 31    | SWR-ALM-001                      |
+| `test_trend.cpp`         | 18    | SWR-TRD-001                      |
+| `test_auth.cpp`          | 41    | SWR-GUI-001..002, SWR-GUI-007, SWR-SEC-001..004 |
+| `test_hal.cpp`           | 12    | Supporting HAL / simulator checks |
+| `test_config.cpp`        | 10    | Supporting config persistence checks |
+| `test_localization.cpp`  | 8     | SWR-GUI-012                      |
+| `test_patient_monitoring.cpp` | 6 | End-to-end vital to alert flow  |
+| `test_alert_escalation.cpp` | 6  | Alert to NEWS2 to alarm escalation |
 
 **Gate:** 100% pass rate required. Any failure blocks downstream stages.
 

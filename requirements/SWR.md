@@ -1,9 +1,9 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-G
+**Document ID:** SWR-001-REV-I
 **Project:** Patient Vital Signs Monitor
 **Version:** 2.7.0
-**Date:** 2026-04-08
+**Date:** 2026-05-03
 **Status:** Approved
 **Standard:** IEC 62304 §5.2
 
@@ -130,7 +130,7 @@ realistic RR values (12–20 in the normal phase, 21–24 in deterioration, 26�
 in the critical phase, recovering to 14–19).
 
 **Threshold source:** Royal College of Physicians NEWS2 / NICE guidelines.
-**Traces to:** SYS-005, SYS-006
+**Traces to:** SYS-003 (IEC 80601-2-49 multifunction patient monitor requirements)
 **Implemented in:** `src/vitals.c` — `check_respiration_rate()`, `overall_alert_level()`;
 `src/sim_vitals.c` — respiration_rate in all 20 SIM_SEQUENCE entries;
 `src/gui_main.c` — RESP RATE tile, IDC_VIT_RR field;
@@ -172,7 +172,7 @@ as defined by the Royal College of Physicians (2017). `news2_calculate()` shall:
 The dashboard shall display the NEWS2 score in the 6th tile (3rd column, 2nd row)
 colour-coded: green (LOW/LOW_M), amber (MEDIUM), red (HIGH).
 
-**Traces to:** SYS-005, SYS-006
+**Traces to:** SYS-018 (NEWS2 clinical decision support — RCP 2017 standard)
 **Implemented in:** `src/news2.c` — `news2_score_hr()`, `news2_score_rr()`,
 `news2_score_spo2()`, `news2_score_sbp()`, `news2_score_temp()`, `news2_calculate()`;
 `src/gui_main.c` — 6th tile (NEWS2 SCORE)
@@ -621,6 +621,34 @@ extract per-parameter arrays from a `VitalSigns` history buffer.
 
 ---
 
+### SWR-GUI-012 - Localization Selection and Persistence
+
+**Requirement:** The application shall support exactly four static UI languages:
+English, Spanish, French, and German. The localization layer and Settings
+dialog language selector shall:
+
+1. Lists the four approved language options.
+2. Expose localized strings and language names for the selected language
+   through the static localization API.
+3. Persist the selected language to `monitor.cfg` using `language=0..3`.
+4. Load the persisted language value from `monitor.cfg` for reuse by the
+   application.
+5. Use only static storage for localization strings and state; no heap
+   allocation is permitted in the localization layer.
+
+Invalid or missing persisted language values shall fall back to English.
+
+**Traces to:** SYS-014
+**Implemented in:** `src/localization.c` - `localization_set_language()`,
+`localization_get_language()`, `localization_get_string()`,
+`localization_get_language_name()`; `src/gui_main.c` - Settings Language tab
+and language selector population; `src/app_config.c` -
+`app_config_load_language()`, `app_config_save_language()`
+**Verified by:** `tests/unit/test_localization.cpp` - `LocalizationTest.*`
+(8 tests); supplemental GUI automation `DVT-GUI-16`
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -633,3 +661,4 @@ extract per-parameter arrays from a `VitalSigns` history buffer.
 | F   | 2026-04-08 | vinu-engineer   | Added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend) — v2.6.0 |
 | G   | 2026-04-08 | claude          | Added SWR-GUI-011 (rolling message in simulation mode) — v2.7.0 |
 | H   | 2026-05-03 | codex           | Reconciled SWR-VIT-008 and SWR-NEW-001 to existing alerting and aggregate-risk SYS links; no clinical behavior changes |
+| I   | 2026-05-03 | Codex implementer | Added SWR-GUI-012 (localization selection and persistence) |
