@@ -199,6 +199,18 @@ reconstruction from raw reading history.
 
 ---
 
+### UNS-018 â€” Session Review Snapshot Export
+**Need:** The system shall allow an authenticated operator to manually export a
+bounded snapshot of the active patient session to a local review artifact for
+handoff, design verification evidence, and product demonstrations.
+**Rationale:** The dashboard and console summary expose the current session only
+while the application is running. A reusable snapshot reduces manual
+transcription and supports traceable review, but it must remain explicitly
+session-scoped and privacy-aware because it persists patient data to disk.
+**Priority:** High
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -208,3 +220,4 @@ reconstruction from raw reading history.
 | C   | 2026-04-07 | vinu-engineer   | Added UNS-015 (live monitoring feed / HAL) |
 | D   | 2026-04-07 | vinu-engineer   | Added UNS-016 (role-based access / multi-user) |
 | E   | 2026-05-05 | Codex implementer | Added UNS-017 (session alarm event review) |
+| F   | 2026-05-05 | Codex implementer | Added UNS-018 (manual session review snapshot export) |

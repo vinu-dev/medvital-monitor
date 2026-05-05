@@ -57,6 +57,7 @@ static const char* g_strings_english[STR_COUNT] = {
     "Clear Session",                /* STR_CLEAR_SESSION */
     "Demo: Deterioration",          /* STR_DEMO_DETERIORATION */
     "Demo: Bradycardia",            /* STR_DEMO_BRADYCARDIA */
+    "Export Session Review",        /* STR_EXPORT_SESSION_REVIEW */
     "Pause Sim",                    /* STR_PAUSE_SIM */
     "Resume Sim",                   /* STR_RESUME_SIM */
 
@@ -130,6 +131,7 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "Limpiar Sesión",
     "Demo: Deterioro",
     "Demo: Bradicardia",
+    "Exportar Revision de Sesion",
     "Pausar Sim",
     "Reanudar Sim",
 
@@ -203,6 +205,7 @@ static const char* g_strings_french[STR_COUNT] = {
     "Effacer la Session",
     "Démo: Détérioration",
     "Démo: Bradycardie",
+    "Exporter la Revue de Session",
     "Pause Sim",
     "Reprendre Sim",
 
@@ -276,6 +279,7 @@ static const char* g_strings_german[STR_COUNT] = {
     "Sitzung Löschen",
     "Demo: Verschlechterung",
     "Demo: Bradykardie",
+    "Sitzungsprufung Exportieren",
     "Sim Pausieren",
     "Sim Fortsetzen",
 

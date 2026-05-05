@@ -32,6 +32,7 @@ add_library(monitor_lib STATIC
     src/vitals.c
     src/alerts.c
     src/patient.c
+    src/session_export.c
     src/pw_hash.c
     src/app_config.c
     src/news2.c

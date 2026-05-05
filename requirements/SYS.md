@@ -256,6 +256,39 @@ events have been recorded.
 
 ---
 
+### SYS-022 â€” Manual Session Review Snapshot Export
+**Requirement:** The system shall allow authenticated dashboard users to
+manually export the current admitted patient session to a UTF-8 text
+`Session Review Snapshot`. Export shall be permitted only when a patient is
+admitted and at least one reading exists. The snapshot shall include patient
+demographics, the latest vital signs with existing domain classifications, the
+overall patient status, active alerts, and the recorded session history.
+**Traces to:** UNS-018, UNS-013
+
+---
+
+### SYS-023 â€” Deterministic Local Snapshot Storage
+**Requirement:** The session review snapshot shall be stored in the executable
+directory using the deterministic filename
+`session-review-patient-<patient-id>.txt`. If that file already exists, the
+system shall require an explicit user-confirmed overwrite before replacement.
+Snapshot files shall be created with restrictive local permissions at least as
+strict as the `users.dat` account store.
+**Traces to:** UNS-018, UNS-011
+
+---
+
+### SYS-024 â€” Snapshot Boundary And Context Disclosure
+**Requirement:** Every exported session review snapshot shall identify itself as
+a point-in-time snapshot rather than a live monitoring feed, and shall include
+its format version, generation timestamp, current simulation/device context,
+current alarm-limit context, and an explicit statement that history is limited
+to the current admitted session and at most `MAX_READINGS` readings. Exporting
+shall remain read-only and shall not modify monitoring or patient state.
+**Traces to:** UNS-018, UNS-009, UNS-010, UNS-011
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -266,3 +299,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-05 | Codex implementer | Added SYS-022..024 for manual session review snapshot export |

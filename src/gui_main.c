@@ -14,7 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
- * @req SWR-VIT-008  @req SWR-NEW-001
+ * @req SWR-VIT-008  @req SWR-NEW-001  @req SWR-GUI-013
  */
 #ifdef _MSC_VER
 #  define _CRT_SECURE_NO_WARNINGS
@@ -38,6 +38,7 @@
 #include "hw_vitals.h"
 #include "app_config.h"
 #include "localization.h"
+#include "session_export.h"
 
 /* ===================================================================
  * App metadata
@@ -85,6 +86,7 @@
 #define IDC_VIT_RR      1106  /**< Respiration rate field @req SWR-VIT-008 */
 #define IDC_BTN_ADD     1110
 #define IDC_BTN_CLEAR   1111
+#define IDC_BTN_EXPORT  1112
 
 /* ===================================================================
  * Control IDs — Dashboard header buttons + lists
@@ -644,6 +646,7 @@ static void create_dash_controls(HWND w)
 
     make_btn(w,IDC_BTN_SCEN1,"Demo: Deterioration",20, CY+124,175,26);
     make_btn(w,IDC_BTN_SCEN2,"Demo: Bradycardia",  205,CY+124,160,26);
+    make_btn(w,IDC_BTN_EXPORT, localization_get_string(STR_EXPORT_SESSION_REVIEW), 377, CY+124, 245, 26);
 
     make_label(w,localization_get_string(STR_ACTIVE_ALERTS),20,CY+162,160,18);
     CreateWindowExA(WS_EX_CLIENTEDGE,"LISTBOX","",
@@ -703,20 +706,10 @@ static void update_dashboard(HWND w)
         return;
     }
     for (i = 0; i < g_app.patient.reading_count; ++i) {
-        const VitalSigns *r = &g_app.patient.readings[i];
-        if (r->respiration_rate != 0)
-            snprintf(buf, sizeof(buf),
-                     "#%d  HR %d | BP %d/%d | Temp %.1f C | SpO2 %d%% | RR %d br/min  [%s]",
-                     i+1, r->heart_rate, r->systolic_bp, r->diastolic_bp,
-                     r->temperature, r->spo2, r->respiration_rate,
-                     alert_level_str(overall_alert_level(r)));
-        else
-            snprintf(buf, sizeof(buf),
-                     "#%d  HR %d | BP %d/%d | Temp %.1f C | SpO2 %d%%  [%s]",
-                     i+1, r->heart_rate, r->systolic_bp, r->diastolic_bp,
-                     r->temperature, r->spo2,
-                     alert_level_str(overall_alert_level(r)));
-        SendMessageA(GetDlgItem(w,IDC_LIST_HISTORY),LB_ADDSTRING,0,(LPARAM)buf);
+        if (session_export_format_history_row(&g_app.patient.readings[i], i + 1,
+                                              buf, sizeof(buf))) {
+            SendMessageA(GetDlgItem(w,IDC_LIST_HISTORY),LB_ADDSTRING,0,(LPARAM)buf);
+        }
     }
     latest = patient_latest_reading(&g_app.patient);
     if (latest) ac = generate_alerts(latest, alerts, MAX_ALERTS);
@@ -725,9 +718,9 @@ static void update_dashboard(HWND w)
                      (LPARAM)"No active alerts — all parameters within normal range.");
     } else {
         for (i = 0; i < ac; ++i) {
-            const char *sev = (alerts[i].level==ALERT_CRITICAL)?"CRITICAL":"WARNING ";
-            snprintf(buf, sizeof(buf), "[%s]  %s", sev, alerts[i].message);
-            SendMessageA(GetDlgItem(w,IDC_LIST_ALERTS),LB_ADDSTRING,0,(LPARAM)buf);
+            if (session_export_format_alert_row(&alerts[i], buf, sizeof(buf))) {
+                SendMessageA(GetDlgItem(w,IDC_LIST_ALERTS),LB_ADDSTRING,0,(LPARAM)buf);
+            }
         }
     }
 
@@ -834,6 +827,62 @@ static void do_clear(HWND w)
     set_txt(w,IDC_VIT_TEMP, "36.7");  set_txt(w,IDC_VIT_SPO2,"98");
     set_txt(w,IDC_VIT_RR,   "15");
     update_dashboard(w);
+}
+static void do_export_session_review(HWND w)
+{
+    SessionExportResult result;
+    char path[SESSION_EXPORT_PATH_MAX];
+
+    result = session_export_write_snapshot(&g_app.patient, g_app.has_patient,
+                                           &g_app.alarm_limits,
+                                           g_app.sim_enabled, g_app.sim_paused,
+                                           NULL, 0, path, sizeof(path));
+
+    if (result == SESSION_EXPORT_RESULT_EXISTS) {
+        char confirm[768];
+
+        snprintf(confirm, sizeof(confirm),
+                 "A session review snapshot already exists:\n\n%s\n\nReplace it?",
+                 path);
+        if (MessageBoxA(w, confirm, APP_TITLE,
+                        MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES) {
+            return;
+        }
+
+        result = session_export_write_snapshot(&g_app.patient, g_app.has_patient,
+                                               &g_app.alarm_limits,
+                                               g_app.sim_enabled, g_app.sim_paused,
+                                               NULL, 1, path, sizeof(path));
+    }
+
+    switch (result) {
+    case SESSION_EXPORT_RESULT_OK: {
+        char success[768];
+        snprintf(success, sizeof(success),
+                 "Session review snapshot exported to:\n\n%s", path);
+        MessageBoxA(w, success, APP_TITLE, MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+    case SESSION_EXPORT_RESULT_NO_PATIENT:
+        MessageBoxA(w,
+                    "Admit a patient before exporting a session review snapshot.",
+                    APP_TITLE, MB_OK | MB_ICONWARNING);
+        return;
+    case SESSION_EXPORT_RESULT_NO_READINGS:
+        MessageBoxA(w,
+                    "Add at least one reading before exporting a session review snapshot.",
+                    APP_TITLE, MB_OK | MB_ICONWARNING);
+        return;
+    case SESSION_EXPORT_RESULT_PATH_ERROR:
+    case SESSION_EXPORT_RESULT_IO_ERROR:
+    case SESSION_EXPORT_RESULT_TIME_ERROR:
+    case SESSION_EXPORT_RESULT_ARGUMENT_ERROR:
+    default:
+        MessageBoxA(w,
+                    "Session review snapshot export failed. No file was written.",
+                    APP_TITLE, MB_OK | MB_ICONERROR);
+        return;
+    }
 }
 static void do_scenario(HWND w, int s)
 {
@@ -1827,6 +1876,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         case IDC_BTN_ADMIT:   do_admit(w);       return 0;
         case IDC_BTN_ADD:     do_add_reading(w); return 0;
         case IDC_BTN_CLEAR:   do_clear(w);       return 0;
+        case IDC_BTN_EXPORT:  do_export_session_review(w); return 0;
         case IDC_BTN_SCEN1:   do_scenario(w,1);  return 0;
         case IDC_BTN_SCEN2:   do_scenario(w,2);  return 0;
         case IDC_BTN_PAUSE:

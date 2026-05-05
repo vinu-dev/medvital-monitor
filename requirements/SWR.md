@@ -717,6 +717,69 @@ session event label string
 
 ---
 
+## Module UNIT-EXP â€” Session Review Snapshot Export (`session_export.c`)
+
+### SWR-EXP-001 â€” Deterministic Snapshot Path And Restricted File Creation
+**Requirement:** `session_export_build_path()` shall resolve the default export
+target to the executable directory plus
+`session-review-patient-<patient-id>.txt`, unless a test path override is
+supplied. `session_export_write_snapshot()` shall create snapshot files with
+restrictive local permissions owned by the export module and shall fail without
+writing if path resolution or restricted file creation cannot be completed.
+**Traces to:** SYS-023, SYS-024
+**Implemented in:** `src/session_export.c`, `include/session_export.h`
+**Verified by:** `tests/unit/test_session_export.cpp` â€” `SessionExportTest.SWR_EXP_001_*`
+
+---
+
+### SWR-EXP-002 â€” Snapshot Content Serialization And Formatting Parity
+**Requirement:** `session_export_write_snapshot()` shall serialize a UTF-8 text
+artifact containing: `Session Review Snapshot` title, format version, generation
+timestamp, patient demographics, mode context, alarm-limit context, latest
+vitals with existing classifications, overall patient status, active alerts or
+an explicit no-alert statement, reading history, and retention-boundary text.
+`session_export_format_history_row()` and `session_export_format_alert_row()`
+shall provide shared row formatting so the export artifact and dashboard list
+content do not drift.
+**Traces to:** SYS-022, SYS-024
+**Implemented in:** `src/session_export.c`, `include/session_export.h`
+**Verified by:** `tests/unit/test_session_export.cpp` â€” `SessionExportTest.SWR_EXP_002_*`;
+`tests/integration/test_session_export.cpp` â€” `REQ_INT_EXP_001`, `REQ_INT_EXP_002`
+
+---
+
+### SWR-EXP-003 â€” Export Preconditions And Overwrite Control
+**Requirement:** `session_export_write_snapshot()` shall return a distinct
+refusal status when no patient is admitted or when no readings exist. When the
+deterministic target file already exists and overwrite has not been approved,
+the function shall return `SESSION_EXPORT_RESULT_EXISTS` and write nothing. When
+overwrite is approved, the function may replace the existing file but shall not
+modify the in-memory patient session or monitoring state.
+**Traces to:** SYS-022, SYS-023
+**Implemented in:** `src/session_export.c`, `include/session_export.h`
+**Verified by:** `tests/unit/test_session_export.cpp` â€” `SessionExportTest.SWR_EXP_003_*`;
+`tests/integration/test_session_export.cpp` â€” `REQ_INT_EXP_003`
+
+---
+
+### SWR-GUI-014 â€” Dashboard Session Review Export Action
+
+**Requirement:** The dashboard shall provide an `Export Session Review` control
+visible to both admin and clinical users. Activating the control shall attempt
+to export the current session review snapshot, prompt before replacing an
+existing deterministic snapshot file, and provide clear success, refusal, or
+failure feedback for no-patient, no-reading, overwrite, and file-write
+outcomes.
+
+**Traces to:** SYS-022, SYS-023
+**Implemented in:** `src/gui_main.c` - `create_dash_controls()`,
+`do_export_session_review()`; `src/localization.c` - export button label
+strings
+**Verified by:** Manual GUI review with supporting `tests/unit/test_session_export.cpp`
+and `tests/integration/test_session_export.cpp`
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -734,3 +797,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-05 | Codex implementer | Added SWR-EXP-001..003 and SWR-GUI-014 for session review snapshot export |
