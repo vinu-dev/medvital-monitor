@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-and-test:
-    name: Windows / MinGW-w64 / 145 tests
+    name: Windows / MinGW-w64 / 295 tests
     runs-on: windows-latest
 
     steps:
