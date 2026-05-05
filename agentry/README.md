@@ -75,11 +75,13 @@ Foreground. Ctrl-C to stop. Close the terminal to stop. Reboot kills it. **No se
 
 ## Token controls in this repo
 
-This repo pins Agentry to `v0.1.1`. That release adds two token-burn controls
+This repo pins Agentry to `v0.1.2`. That release adds token-burn controls
 used here:
 
 - `context.work_packets: true` writes a bounded
   `agentry/state/workpackets/<role>.md` file before a role starts.
+- Each work packet names one `Selected Candidate`; the role must process only
+  that item and treat the rest of the queue as read-only awareness.
 - Reviewer uses `trigger.pr_check_gate: settled`, so it does not launch while
   all matching `ready-for-review` PR checks are still pending or queued.
 

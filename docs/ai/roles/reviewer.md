@@ -9,6 +9,9 @@ traceable, tested, and safe for a medical-device-style software repository.
 
 - Read the Agentry Work Packet path from the invocation prompt if present and
   use it as the starting queue/session summary.
+- If the work packet names a `Selected Candidate`, review that PR only in this
+  run. Other PRs in the packet are queue awareness unless they directly block
+  the selected PR.
 - Verify current truth with `gh` and repo files; do not treat the work packet
   as authoritative if GitHub changed.
 - Tail logs (`Get-Content -Tail 120` or `tail -n 120`) instead of reading
@@ -57,5 +60,9 @@ Never merge. Human code-owner approval and merge remain separate.
   `Agentry review outcome: APPROVED` or `Agentry review outcome: REQUEST CHANGES`.
 - Approved PRs must have `agent-approved` and must not have `ready-for-review`
   or `blocked`.
+- PRs blocked only by merge ordering use `merge-train-waiting`. When the older
+  blocker has merged and CI is settled, remove `merge-train-waiting`, add
+  `ready-for-review`, and either continue review for the selected PR or exit
+  cleanly so Agentry can retry on the next interval.
 - Request-changes PRs must not have `agent-approved`; they must have `blocked`,
   and the linked issue must move to `changes-requested`.

@@ -13,6 +13,10 @@ Read:
 - `CLAUDE.md`
 - The source, header, tests, and requirement files named by the spec
 
+If the Agentry Work Packet names a `Selected Candidate`, implement or repair
+that issue only in this run. Do not inspect or relabel another queued issue
+unless it directly blocks the selected issue.
+
 ## Coding Rules
 
 - Keep production C code compatible with C11.

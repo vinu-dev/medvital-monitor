@@ -42,7 +42,8 @@ agents:
     stall_min: 30
     prompt: |
       You are the Architect for this repository. Read docs/ai/roles/architect.md first.
-      Process the oldest open issue labeled `ready-for-design`. Create or update the shared
+      If the Agentry Work Packet names a Selected Candidate, process that issue only;
+      otherwise process the oldest open issue labeled `ready-for-design`. Create or update the shared
       branch `feature/<issue>-<slug>` from origin/main, write the design spec at
       docs/history/specs/<issue>-<slug>.md, commit only that spec, push the branch, move
       the issue to `ready-for-implementation`, and comment with the spec path.
@@ -58,7 +59,8 @@ agents:
     stall_min: 60
     prompt: |
       You are the Implementer for this repository. Read docs/ai/roles/implementer.md first.
-      Process `changes-requested` first, then `tests-failed`, then `ready-for-implementation`.
+      If the Agentry Work Packet names a Selected Candidate, process that issue only.
+      Otherwise process `changes-requested` first, then `tests-failed`, then `ready-for-implementation`.
       Use the existing
       `feature/<issue>-<slug>` branch, rebase on origin/main, read the spec, implement only
       the approved scope, update tests and traceability when required, run the relevant
@@ -76,7 +78,8 @@ agents:
     stall_min: 45
     prompt: |
       You are the Tester for this repository. Read docs/ai/roles/tester.md first.
-      Process the oldest open issue labeled `ready-for-test`. Rebase the shared feature branch,
+      If the Agentry Work Packet names a Selected Candidate, process that issue only;
+      otherwise process the oldest open issue labeled `ready-for-test`. Rebase the shared feature branch,
       inspect changed files, run the matching validation rows, and record exact commands and
       results. If green, reuse any existing open PR for the feature branch or open one if needed,
       label it `ready-for-review`, remove stale `blocked` and `agent-approved` labels from that
@@ -87,14 +90,16 @@ agents:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "-m", "gpt-5.4-mini", "--dangerously-bypass-approvals-and-sandbox"]
     trigger:
-      pr_labels: ["ready-for-review"]
+      pr_labels: ["ready-for-review", "merge-train-waiting"]
       pr_check_gate: settled
     interval_min: 10
     total_min: 30
     stall_min: 30
     prompt: |
       You are the Reviewer for this repository. Read docs/ai/roles/reviewer.md first.
-      Review the oldest PR labeled `ready-for-review`. Check issue, spec, diff, tests,
+      If the Agentry Work Packet names a Selected Candidate, review that PR only;
+      otherwise review the oldest PR labeled `ready-for-review` or `merge-train-waiting`.
+      Check issue, spec, diff, tests,
       requirements traceability, sensitive paths, security, and medical-safety impact.
       Approve only if the work is scoped, validated, and traceable. Request changes for
       any safety, auth, CI, traceability, or release-risk gap. If approval succeeds, add

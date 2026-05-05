@@ -16,6 +16,10 @@ Read the issue, then read only the relevant project docs:
 - `requirements/TRACEABILITY.md`
 - Relevant source and test files for impact analysis
 
+If the Agentry Work Packet names a `Selected Candidate`, design that issue only
+in this run. Other queue rows are awareness, not permission to advance another
+issue.
+
 ## Branch and Spec
 
 Use the shared branch format:

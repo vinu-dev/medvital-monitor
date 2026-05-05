@@ -7,8 +7,9 @@ This plan is for measuring Agentry model cost/performance on
 
 The first integration run uses only Codex models and defaults every role to
 `gpt-5.4-mini`. This is the cheapest pilot profile and is intended to validate
-queue movement, work packets, label transitions, PR creation, review gating, and
-wrapper behavior before spending larger-model tokens.
+queue movement, selected-candidate work packets, label transitions, PR
+creation, review gating, and wrapper behavior before spending larger-model
+tokens.
 
 ## Profiles To Compare
 
@@ -18,7 +19,8 @@ wrapper behavior before spending larger-model tokens.
 | balanced | gpt-5.4-mini | gpt-5.4-mini | gpt-5.4 | gpt-5.4-mini | gpt-5.4 | gpt-5.4-mini |
 | review-heavy | gpt-5.4-mini | gpt-5.4 | gpt-5.4 | gpt-5.4-mini | gpt-5.4 | gpt-5.4-mini |
 
-Keep the same Agentry version, trigger labels, timeout settings, and target
+Keep the same Agentry version (`v0.1.3` for the current pilot), trigger labels,
+timeout settings, and target
 issue complexity when comparing profiles. Change only the `-m` values in
 `agentry/config.yml`.
 
@@ -33,6 +35,7 @@ Collect these for every role session:
 - final label transition
 - validation commands run and pass/fail outcome
 - whether a human had to repair code, tests, docs, labels, or Git state
+- whether the role stayed on the selected candidate
 - whether the role read full logs or stayed within work-packet/tail guidance
 
 ## Procedure
@@ -53,6 +56,7 @@ Use the cheapest profile that completes the flow with:
 
 - no missed safety, traceability, auth, or validation gaps
 - no repeated label churn or merge-conflict churn caused by the agent
+- no multi-candidate work in a single invocation
 - no human repair beyond normal review judgment
 
 Escalate individual roles, not the whole pipeline. For this repo, Implementer
