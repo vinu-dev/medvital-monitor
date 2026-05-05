@@ -75,7 +75,8 @@ Foreground. Ctrl-C to stop. Close the terminal to stop. Reboot kills it. **No se
 
 ## Token controls in this repo
 
-This repo pins Agentry to `v0.1.2`. That release adds token-burn controls
+This repo pins Agentry to the version declared in `start.ps1` and `start.sh`.
+Current releases add token-burn controls
 used here:
 
 - `context.work_packets: true` writes a bounded
@@ -84,6 +85,9 @@ used here:
   that item and treat the rest of the queue as read-only awareness.
 - Reviewer uses `trigger.pr_check_gate: settled`, so it does not launch while
   all matching `ready-for-review` PR checks are still pending or queued.
+- Researcher uses the platform backlog guard and this repo's
+  `research.backlog_labels: ["ready-for-design", "needs-risk"]`, so it is not
+  launched while the pre-design supply is already at two issues.
 
 Role prompts should read the work packet first, tail logs instead of reading
 full historical logs, inspect PR file lists before full diffs, and use targeted

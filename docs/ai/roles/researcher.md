@@ -11,6 +11,15 @@ test evidence, security, and clinical-safety boundaries.
 
 ## Before Filing Issues
 
+Start with a cheap GitHub queue check:
+
+- Count open issues labeled `ready-for-design`.
+- Count open issues labeled `needs-risk`.
+- If the combined count is 2 or more, do not browse the web and do not create
+  issues; report that the design supply is already full.
+- If the combined count is below 2, create only enough issues to restore the
+  combined supply to 2, with a hard maximum of 2 new issues per run.
+
 Read:
 
 - `README.md`
@@ -74,4 +83,4 @@ review snapshot export`. Keep each issue small enough for one normal Agentry
 pipeline pass.
 
 Use `needs-risk` on new issues so the Risk Analyst runs before design. Cap each
-run at 2 issues.
+run at 2 issues and stop early once the two-item design supply is restored.

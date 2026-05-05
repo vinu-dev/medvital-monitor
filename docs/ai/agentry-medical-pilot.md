@@ -41,7 +41,10 @@ only after the full path is proven.
 
 ## Safety Rules
 
-- Researcher creates at most two issues per run and labels them `needs-risk`.
+- Researcher maintains a two-item pre-design supply for Architect by counting
+  open `ready-for-design` plus `needs-risk` issues. It creates at most enough
+  new `needs-risk` issues to restore that supply to two, with a hard cap of two
+  new issues per run.
 - Risk Analyst writes a lightweight risk note under `docs/history/risk/`.
 - Clinical thresholds, diagnosis logic, treatment advice, and real patient-care
   workflow changes require explicit human acceptance criteria.

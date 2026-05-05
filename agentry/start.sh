@@ -15,7 +15,7 @@ TARGET_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV="$SCRIPT_DIR/.venv"
 INSTALL_REF_FILE="$VENV/.agentry-install-ref"
 AGENTRY_REPO="https://github.com/vinu-dev/agentry.git"
-AGENTRY_REF="${AGENTRY_INSTALL_REF:-v0.1.5}"
+AGENTRY_REF="${AGENTRY_INSTALL_REF:-v0.1.6}"
 AGENTRY_BIN="$VENV/bin/agentry"
 FORCE_INSTALL="${AGENTRY_FORCE_INSTALL:-}"
 

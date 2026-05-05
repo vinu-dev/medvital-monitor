@@ -9,6 +9,7 @@ automation:
 research:
   allow_create_issues: true
   max_open_ready_for_design: 2
+  backlog_labels: ["ready-for-design", "needs-risk"]
 
 context:
   work_packets: true
@@ -22,15 +23,19 @@ agents:
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "-m", "gpt-5.4", "--dangerously-bypass-approvals-and-sandbox"]
     run_on_start: true
-    interval_min: 720
+    interval_min: 10
     total_min: 45
     stall_min: 45
     token_budget: 25000
     prompt: |
       You are the Product Researcher for this medical-software pilot: act like a product owner, not
       a repo janitor. Read docs/ai/roles/researcher.md first. Study competing patient-monitoring
-      products and credible public sources, then create at most 2 small, high-confidence feature
-      candidate GitHub issues per run. Each issue must cite source URLs with access dates, name the
+      products and credible public sources only when the design supply is below target.
+      First run a cheap GitHub check for open issues labeled `ready-for-design` or `needs-risk`.
+      If that combined supply is already 2 or more, exit without web research or new issues.
+      If it is below 2, create only enough small, high-confidence feature candidate issues to
+      bring the combined supply back to 2, with a hard maximum of 2 new issues per run.
+      Each issue must cite source URLs with access dates, name the
       user problem, state the product hypothesis, define a small MVP, and explain how we can validate
       it in this repo. Label new issues `needs-risk`, not `ready-for-design`, so Risk Analyst reviews
       them before architecture. Dedupe against open and recently closed issues/PRs. Do not copy
