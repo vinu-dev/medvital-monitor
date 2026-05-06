@@ -1,10 +1,10 @@
-# Patient Vital Signs Monitor
+﻿# Patient Vital Signs Monitor
 
-[![CI — Build & Test](https://github.com/vinu-dev/medvital-monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vinu-dev/medvital-monitor/actions/workflows/ci.yml)
+[![CI â€” Build & Test](https://github.com/vinu-dev/medvital-monitor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vinu-dev/medvital-monitor/actions/workflows/ci.yml)
 
 Medical device software for real-time patient vital sign monitoring and alert generation.
 Built to **IEC 62304 Class B** and **FDA SW Validation Guidance** standards.
-**Version 2.7.0** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, a session alarm event review log, role-based settings access, rolling status message in simulation mode, 293 unit + 14 integration tests (307 total).
+**Version 2.8.0** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, a session alarm event review log, configurable clinician idle-session locking, role-based settings access, rolling status message in simulation mode, 307 unit + 14 integration tests (321 total).
 
 ---
 
@@ -40,15 +40,15 @@ sparkline graphs.  A console demonstration executable is also included.
 | Heart rate         | bpm     | AHA/ACC 2019                          |
 | Systolic BP        | mmHg    | JNC-8 / ESC 2018                      |
 | Diastolic BP       | mmHg    | JNC-8 / ESC 2018                      |
-| Body temperature   | °C      | WHO Clinical References               |
+| Body temperature   | Â°C      | WHO Clinical References               |
 | SpO2               | %       | British Thoracic Society              |
 | Respiration rate   | br/min  | IEC 80601-2-49 / NEWS2 (RCP 2017)     |
-| BMI (derived)      | kg/m²   | WHO BMI categories                    |
-| NEWS2 score        | 0–20    | Royal College of Physicians 2017      |
+| BMI (derived)      | kg/mÂ²   | WHO BMI categories                    |
+| NEWS2 score        | 0â€“20    | Royal College of Physicians 2017      |
 
 **Design constraints (IEC 62304 Class B):**
 
-- No heap allocation — all storage is stack or statically sized.
+- No heap allocation â€” all storage is stack or statically sized.
 - Patient record holds up to `MAX_READINGS` (10) readings per monitoring cycle;
   the GUI resets and continues automatically when the buffer is full.
 - Hardware acquisition isolated behind a HAL (`hw_vitals.h`) so the simulation
@@ -123,35 +123,35 @@ No heap allocation is used anywhere in production code.
 
 | Structure       | Storage                                       |
 |-----------------|-----------------------------------------------|
-| `VitalSigns`    | 6 fields — ~24 bytes                          |
-| `Alert`         | level + message strings — ~132 bytes          |
-| `PatientRecord` | PatientInfo + 10 × VitalSigns + int           |
+| `VitalSigns`    | 6 fields â€” ~24 bytes                          |
+| `Alert`         | level + message strings â€” ~132 bytes          |
+| `PatientRecord` | PatientInfo + 10 Ã— VitalSigns + int           |
 | Simulation      | 20-entry static table in `sim_vitals.c`       |
 
 ---
 
 ## Modules
 
-### `vitals.c` / `vitals.h` — UNIT-VIT
+### `vitals.c` / `vitals.h` â€” UNIT-VIT
 
 Core classification engine.  Validates each vital sign parameter against
 AHA/ACC-derived clinical thresholds and returns an `AlertLevel`.
 
 | Function                 | Description                                           |
 |--------------------------|-------------------------------------------------------|
-| `check_heart_rate()`     | Classifies bpm → NORMAL / WARNING / CRITICAL          |
+| `check_heart_rate()`     | Classifies bpm â†’ NORMAL / WARNING / CRITICAL          |
 | `check_blood_pressure()` | Classifies systolic + diastolic together              |
-| `check_temperature()`    | Classifies °C → NORMAL / WARNING / CRITICAL           |
-| `check_spo2()`           | Classifies SpO2 % → NORMAL / WARNING / CRITICAL       |
-| `check_respiration_rate()`| Classifies br/min → NORMAL / WARNING / CRITICAL      |
+| `check_temperature()`    | Classifies Â°C â†’ NORMAL / WARNING / CRITICAL           |
+| `check_spo2()`           | Classifies SpO2 % â†’ NORMAL / WARNING / CRITICAL       |
+| `check_respiration_rate()`| Classifies br/min â†’ NORMAL / WARNING / CRITICAL      |
 | `overall_alert_level()`  | Returns the highest level across all six parameters   |
-| `calculate_bmi()`        | BMI = weight / height²; returns -1.0 for invalid input|
-| `bmi_category()`         | Maps BMI float → WHO category string                  |
-| `alert_level_str()`      | Maps `AlertLevel` → "NORMAL" / "WARNING" / "CRITICAL" |
+| `calculate_bmi()`        | BMI = weight / heightÂ²; returns -1.0 for invalid input|
+| `bmi_category()`         | Maps BMI float â†’ WHO category string                  |
+| `alert_level_str()`      | Maps `AlertLevel` â†’ "NORMAL" / "WARNING" / "CRITICAL" |
 
 ---
 
-### `alerts.c` / `alerts.h` — UNIT-ALT
+### `alerts.c` / `alerts.h` â€” UNIT-ALT
 
 Translates a `VitalSigns` snapshot into a list of human-readable `Alert`
 records, one per out-of-range parameter.
@@ -162,7 +162,7 @@ records, one per out-of-range parameter.
 
 ---
 
-### `patient.c` / `patient.h` — UNIT-PAT
+### `patient.c` / `patient.h` â€” UNIT-PAT
 
 Top-level patient record management.  Stores demographics and a history of
 up to `MAX_READINGS` (10) vital sign readings.
@@ -178,7 +178,7 @@ up to `MAX_READINGS` (10) vital sign readings.
 
 ---
 
-### `gui_auth.c` / `gui_auth.h` — UNIT-GUI (auth)
+### `gui_auth.c` / `gui_auth.h` â€” UNIT-GUI (auth)
 
 Fixed-credential authentication for the desktop GUI.
 
@@ -191,7 +191,7 @@ Default credential: **admin / Monitor@2026**
 
 ---
 
-### `hw_vitals.h` — UNIT-HAL
+### `hw_vitals.h` â€” UNIT-HAL
 
 Hardware Abstraction Layer interface.  The GUI calls only these two functions;
 replacing `sim_vitals.c` with a hardware driver is the only change needed to
@@ -204,33 +204,33 @@ connect real sensors.
 
 ---
 
-### `sim_vitals.c` — UNIT-SIM
+### `sim_vitals.c` â€” UNIT-SIM
 
 Simulation back-end for the HAL.  Cycles through a 20-entry clinical scenario
 table covering four phases:
 
 | Phase         | Indices | Status   | Description                          |
 |---------------|---------|----------|--------------------------------------|
-| Stable        | 0–4     | NORMAL   | All parameters within clinical range |
-| Deteriorating | 5–8     | WARNING  | Gradual rise towards threshold       |
-| Critical      | 9–11    | CRITICAL | Life-threatening values              |
-| Recovering    | 12–19   | WARNING→NORMAL | Progressive return to stable  |
+| Stable        | 0â€“4     | NORMAL   | All parameters within clinical range |
+| Deteriorating | 5â€“8     | WARNING  | Gradual rise towards threshold       |
+| Critical      | 9â€“11    | CRITICAL | Life-threatening values              |
+| Recovering    | 12â€“19   | WARNINGâ†’NORMAL | Progressive return to stable  |
 
 ---
 
-### `news2.c` / `news2.h` — UNIT-NEW
+### `news2.c` / `news2.h` â€” UNIT-NEW
 
 NEWS2 Early Warning Score per Royal College of Physicians 2017.
 
 | Function            | Description                                                  |
 |---------------------|--------------------------------------------------------------|
-| `news2_calculate()` | Computes aggregate NEWS2 score (0–20) from 5 vitals + AVPU   |
+| `news2_calculate()` | Computes aggregate NEWS2 score (0â€“20) from 5 vitals + AVPU   |
 
-Risk classifications: LOW (0–4), LOW_MEDIUM (any single param = 3), MEDIUM (5–6), HIGH (≥ 7).
+Risk classifications: LOW (0â€“4), LOW_MEDIUM (any single param = 3), MEDIUM (5â€“6), HIGH (â‰¥ 7).
 
 ---
 
-### `alarm_limits.c` / `alarm_limits.h` — UNIT-ALM
+### `alarm_limits.c` / `alarm_limits.h` â€” UNIT-ALM
 
 Configurable per-patient alarm limits per IEC 60601-1-8.
 
@@ -243,7 +243,7 @@ Configurable per-patient alarm limits per IEC 60601-1-8.
 
 ---
 
-### `trend.c` / `trend.h` — UNIT-TRD
+### `trend.c` / `trend.h` â€” UNIT-TRD
 
 Trend direction detection and sparkline data extraction.
 
@@ -258,12 +258,12 @@ Trend direction detection and sparkline data extraction.
 
 | Parameter    | NORMAL           | WARNING                          | CRITICAL              |
 |--------------|------------------|----------------------------------|-----------------------|
-| Heart Rate   | 60–100 bpm       | 41–59 bpm / 101–150 bpm          | ≤ 40 / ≥ 151 bpm      |
-| Systolic BP  | 90–140 mmHg      | 71–89 mmHg / 141–180 mmHg        | ≤ 70 / ≥ 181 mmHg     |
-| Diastolic BP | 60–90 mmHg       | 41–59 mmHg / 91–120 mmHg         | ≤ 40 / ≥ 121 mmHg     |
-| Temperature  | 36.1–37.2 °C     | 35.0–36.0 °C / 37.3–39.5 °C     | < 35.0 / > 39.5 °C   |
-| SpO2         | 95–100 %         | 90–94 %                          | < 90 %                |
-| Resp Rate    | 12–20 br/min     | 9–11 / 21–24 br/min             | ≤ 8 / ≥ 25 br/min     |
+| Heart Rate   | 60â€“100 bpm       | 41â€“59 bpm / 101â€“150 bpm          | â‰¤ 40 / â‰¥ 151 bpm      |
+| Systolic BP  | 90â€“140 mmHg      | 71â€“89 mmHg / 141â€“180 mmHg        | â‰¤ 70 / â‰¥ 181 mmHg     |
+| Diastolic BP | 60â€“90 mmHg       | 41â€“59 mmHg / 91â€“120 mmHg         | â‰¤ 40 / â‰¥ 121 mmHg     |
+| Temperature  | 36.1â€“37.2 Â°C     | 35.0â€“36.0 Â°C / 37.3â€“39.5 Â°C     | < 35.0 / > 39.5 Â°C   |
+| SpO2         | 95â€“100 %         | 90â€“94 %                          | < 90 %                |
+| Resp Rate    | 12â€“20 br/min     | 9â€“11 / 21â€“24 br/min             | â‰¤ 8 / â‰¥ 25 br/min     |
 
 *Sources: AHA/ACC 2019, JNC-8, ESC 2018, WHO, British Thoracic Society, IEC 80601-2-49*
 
@@ -273,13 +273,13 @@ Trend direction detection and sparkline data extraction.
 
 ### End-user install (no development tools needed)
 
-Download **`PatientMonitorSetup-2.7.0.exe`** from the
+Download **`PatientMonitorSetup-2.8.0.exe`** from the
 [Releases](https://github.com/vinu-dev/medvital-monitor/releases) page and
 double-click to run the setup wizard.
 
 If you want the standalone executable instead, download
-**`PatientMonitor-v2.7.0.exe`**. The portable bundle is
-**`PatientMonitor-v2.7.0-portable.zip`**.
+**`PatientMonitor-v2.8.0.exe`**. The portable bundle is
+**`PatientMonitor-v2.8.0-portable.zip`**.
 
 | Step | What happens |
 |------|-------------|
@@ -287,11 +287,11 @@ If you want the standalone executable instead, download
 | 2. Select shortcuts | Start Menu group created automatically; optional desktop shortcut |
 | 3. Finish | App launches immediately after install |
 
-**Uninstall:** Settings → Apps → Patient Vital Signs Monitor → Uninstall
-*(or Control Panel → Programs → Uninstall a program)*
+**Uninstall:** Settings â†’ Apps â†’ Patient Vital Signs Monitor â†’ Uninstall
+*(or Control Panel â†’ Programs â†’ Uninstall a program)*
 
 **System requirements:** Windows 10 or later (32-bit or 64-bit). No additional
-runtimes or redistributables required — the executable depends only on standard
+runtimes or redistributables required â€” the executable depends only on standard
 Windows system DLLs (`GDI32`, `KERNEL32`, `USER32`).
 
 ### Build your own installer (developers)
@@ -300,7 +300,7 @@ Windows system DLLs (`GDI32`, `KERNEL32`, `USER32`).
 :: One-time: install Inno Setup 6
 winget install --id JRSoftware.InnoSetup
 
-:: Build app + compile installer  ->  dist\PatientMonitorSetup-2.7.0.exe
+:: Build app + compile installer  ->  dist\PatientMonitorSetup-2.8.0.exe
 create_installer.bat
 ```
 
@@ -313,7 +313,7 @@ create_installer.bat
 | Tool    | Minimum   | Install                                                      |
 |---------|-----------|--------------------------------------------------------------|
 | CMake   | 3.15      | `winget install Kitware.CMake`                               |
-| MinGW GCC | 6.3+   | https://sourceforge.net/projects/mingw/ — select gcc-g++, mingw32-make |
+| MinGW GCC | 6.3+   | https://sourceforge.net/projects/mingw/ â€” select gcc-g++, mingw32-make |
 | Git     | Any       | `winget install Git.Git`  (needed by CMake FetchContent)     |
 
 > **Note:** MSVC is **not** required.  The project uses MinGW GCC exclusively.
@@ -321,13 +321,13 @@ create_installer.bat
 
 ### Scripts
 
-Five scripts cover the full workflow — double-click in File Explorer or run
+Five scripts cover the full workflow â€” double-click in File Explorer or run
 from a terminal.
 
 | Script                 | What it does                                                          |
 |------------------------|-----------------------------------------------------------------------|
 | `build.bat`            | Configure + build everything (first run or incremental). Launches GUI.|
-| `run_tests.bat`        | Rebuild test targets and run all 307 tests. Exits non-zero on failure.|
+| `run_tests.bat`        | Rebuild test targets and run all 321 tests. Exits non-zero on failure.|
 | `run_coverage.bat`     | Build with `--coverage`, run tests, generate HTML + XML reports.      |
 | `generate_docs.bat`    | Run Doxygen to produce HTML + XML design documentation.               |
 | `create_installer.bat` | Build release exe + compile Windows installer (`dist\` folder).       |
@@ -391,7 +391,7 @@ build\patient_monitor_gui.exe
 1. Write `src/hw_driver.c` implementing `hw_init()` and `hw_get_next_reading()`
    (see `include/hw_vitals.h` for the interface contract).
 2. Replace `src/sim_vitals.c` with `src/hw_driver.c` in `CMakeLists.txt`.
-3. Rebuild — no other source file changes are needed.
+3. Rebuild â€” no other source file changes are needed.
 
 ---
 
@@ -419,8 +419,8 @@ persisted in `users.dat` in the same directory as the executable.
 | Settings panel             | Yes   | Yes      |
 | Simulation toggle          | Yes   | Yes      |
 | Alarm limits config        | Yes   | Yes      |
-| Add / Remove users         | Yes   | —        |
-| Set any user's password    | Yes   | —        |
+| Add / Remove users         | Yes   | â€”        |
+| Set any user's password    | Yes   | â€”        |
 
 The header bar shows a **gold ADMIN** or **teal CLINICAL** pill badge next to
 the logged-in user's name.
@@ -432,21 +432,26 @@ Tabs visible depend on role.
 
 **Users tab** (Admin only)
 - Lists all accounts with username, display name, and role.
-- **Add User** — create a new account with username, display name, initial
+- **Add User** â€” create a new account with username, display name, initial
   password (min 8 chars), and role selection.
-- **Remove** — delete a selected account.  The last admin account and the
+- **Remove** â€” delete a selected account.  The last admin account and the
   currently logged-in user cannot be removed.
-- **Set Password** — override any user's password without requiring the
+- **Set Password** â€” override any user's password without requiring the
   current password.
 
-**Simulation tab** — toggle simulation mode on/off, persisted to `monitor.cfg`.
+**Simulation tab** â€” toggle simulation mode on/off, persisted to `monitor.cfg`.
 
-**Alarm Limits tab** — per-patient alarm thresholds per IEC 60601-1-8.
+**Session tab** (Admin only) â€” configure the clinician idle timeout in the
+approved range `1..30` minutes. The value is persisted to `monitor.cfg`,
+applied immediately, and idle expiry locks the dashboard until the same user
+re-authenticates.
+
+**Alarm Limits tab** â€” per-patient alarm thresholds per IEC 60601-1-8.
 Edit limits for HR, SBP, DBP, Temp, SpO2, RR. Apply & Save or Reset Defaults.
 
-**My Account tab** — change own password (current + new + confirm).
+**My Account tab** â€” change own password (current + new + confirm).
 
-**About tab** — application version, standard (IEC 62304 Class B), and
+**About tab** â€” application version, standard (IEC 62304 Class B), and
 requirements revision.
 
 ---
@@ -459,28 +464,29 @@ requirements revision.
 
 | File                                            | Tests  | Requirements                      |
 |-------------------------------------------------|--------|-----------------------------------|
-| `tests/unit/test_vitals.cpp`                    | 80     | SWR-VIT-001 – 008                 |
-| `tests/unit/test_alerts.cpp`                    | 11     | SWR-ALT-001 – 004                 |
-| `tests/unit/test_patient.cpp`                   | 29     | SWR-PAT-001 – 008                 |
-| `tests/unit/test_auth.cpp`                      | 41     | SWR-GUI-001–002, SWR-SEC-001–004  |
+| `tests/unit/test_vitals.cpp`                    | 80     | SWR-VIT-001 â€“ 008                 |
+| `tests/unit/test_alerts.cpp`                    | 11     | SWR-ALT-001 â€“ 004                 |
+| `tests/unit/test_patient.cpp`                   | 29     | SWR-PAT-001 â€“ 008                 |
+| `tests/unit/test_auth.cpp`                      | 41     | SWR-GUI-001â€“002, SWR-SEC-001â€“004  |
 | `tests/unit/test_news2.cpp`                     | 53     | SWR-NEW-001                       |
 | `tests/unit/test_alarm_limits.cpp`              | 31     | SWR-ALM-001                       |
 | `tests/unit/test_trend.cpp`                     | 18     | SWR-TRD-001                       |
 | `tests/unit/test_hal.cpp`                       | 12     | Supporting HAL / simulator checks only |
-| `tests/unit/test_config.cpp`                    | 10     | Supporting config persistence checks only |
+| `tests/unit/test_config.cpp`                    | 17     | SWR-GUI-014 + supporting config persistence evidence for SWR-GUI-010 |
+| `tests/unit/test_session_timeout.cpp`           | 7      | SWR-SEC-005                       |
 | `tests/unit/test_localization.cpp`              | 8      | SWR-GUI-012                       |
 | `tests/integration/test_patient_monitoring.cpp` | 7      | SWR-PAT-*, SWR-VIT-*, SWR-ALT-*   |
 | `tests/integration/test_alert_escalation.cpp`   | 7      | SWR-VIT-*, SWR-ALT-*, SWR-PAT-007 |
-| **Total**                                       | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total**                                       | **321** | **42 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ### Test techniques applied
 
 | Technique                   | Applied to                                      |
 |-----------------------------|-------------------------------------------------|
 | Equivalence Partitioning    | All six vital sign classification functions     |
-| Boundary Value Analysis     | Every threshold boundary (±1 from each limit)  |
+| Boundary Value Analysis     | Every threshold boundary (Â±1 from each limit)  |
 | Boundary Sweep Tables       | Heart rate and SpO2 full boundary sweep         |
-| Escalation / Deescalation   | NORMAL → WARNING → CRITICAL and back            |
+| Escalation / Deescalation   | NORMAL â†’ WARNING â†’ CRITICAL and back            |
 | Multi-parameter crisis      | All six parameters critical simultaneously      |
 | Capacity enforcement        | `patient_add_reading()` beyond MAX_READINGS     |
 | Independence verification   | Two patients with different statuses            |
@@ -509,7 +515,7 @@ ctest --test-dir build --output-on-failure
 ### Setup
 
 ```bat
-pip install gcovr      :: once — for HTML + Cobertura XML output
+pip install gcovr      :: once â€” for HTML + Cobertura XML output
 run_coverage.bat
 ```
 
@@ -532,7 +538,7 @@ run_coverage.bat
 |---------------|---------|---------------------------------------------|
 | Statement     | 100%    | 100%                                        |
 | Branch        | 100%    | 100%                                        |
-| MC/DC         | N/A     | 100% — requires VectorCAST / BullseyeCoverage |
+| MC/DC         | N/A     | 100% â€” requires VectorCAST / BullseyeCoverage |
 
 ---
 
@@ -566,7 +572,7 @@ Opens `docs\html\index.html` automatically.
 | Call graphs              | Per-function call and caller diagrams (SVG)                       |
 | Include dependency graph | Module dependency visualisation                                   |
 | Source browser           | Annotated source with cross-references                            |
-| Warnings log             | `docs\doxygen_warnings.log` — undocumented items                  |
+| Warnings log             | `docs\doxygen_warnings.log` â€” undocumented items                  |
 
 ---
 
@@ -588,18 +594,19 @@ Opens `docs\html\index.html` automatically.
 
 | Requirement ID  | Module                    | Test File                        |
 |-----------------|---------------------------|----------------------------------|
-| SWR-VIT-001–008 | `vitals.c`                | `test_vitals.cpp`                |
+| SWR-VIT-001â€“008 | `vitals.c`                | `test_vitals.cpp`                |
 | SWR-NEW-001     | `news2.c`                 | `test_news2.cpp`                 |
 | SWR-ALM-001     | `alarm_limits.c`          | `test_alarm_limits.cpp`          |
 | SWR-TRD-001     | `trend.c`                 | `test_trend.cpp`                 |
-| SWR-ALT-001–004 | `alerts.c`                | `test_alerts.cpp`                |
-| SWR-PAT-001–006 | `patient.c`               | `test_patient.cpp`               |
-| SWR-GUI-001–002 | `gui_auth.c`              | `test_auth.cpp`                  |
-| SWR-GUI-003–004 | `gui_main.c`              | GUI demonstration                |
-| SWR-GUI-005–006 | `hw_vitals.h`/`sim_vitals.c` | `test_hal.cpp` + GUI demo     |
-| SWR-SEC-001–004 | `gui_users.c`, `pw_hash.c`| `test_auth.cpp`                  |
-| SWR-GUI-007     | `gui_users.c`/`gui_main.c`| `test_auth.cpp` — UserManagement |
-| SWR-GUI-008-010 | `gui_main.c`, `app_config.c`| `test_config.cpp` + visual    |
+| SWR-ALT-001â€“004 | `alerts.c`                | `test_alerts.cpp`                |
+| SWR-PAT-001â€“006 | `patient.c`               | `test_patient.cpp`               |
+| SWR-GUI-001â€“002 | `gui_auth.c`              | `test_auth.cpp`                  |
+| SWR-GUI-003â€“004 | `gui_main.c`              | GUI demonstration                |
+| SWR-GUI-005â€“006 | `hw_vitals.h`/`sim_vitals.c` | `test_hal.cpp` + GUI demo     |
+| SWR-SEC-001â€“004 | `gui_users.c`, `pw_hash.c`| `test_auth.cpp`                  |
+| SWR-SEC-005     | `session_timeout.c`, `gui_main.c` | `test_session_timeout.cpp` + GUI review |
+| SWR-GUI-007     | `gui_users.c`/`gui_main.c`| `test_auth.cpp` â€” UserManagement |
+| SWR-GUI-008-010, SWR-GUI-014 | `gui_main.c`, `app_config.c`| `test_config.cpp` + visual    |
 | SWR-GUI-011     | `gui_main.c`              | GUI demonstration                |
 | SWR-INT-MON     | All modules               | `test_patient_monitoring.cpp`    |
 | SWR-INT-ESC     | All modules               | `test_alert_escalation.cpp`      |
@@ -612,76 +619,79 @@ Full traceability matrix: `requirements/TRACEABILITY.md`
 
 ```
 medvital-monitor/
-├── CMakeLists.txt                   # Root build configuration
-├── Doxyfile                         # Doxygen documentation configuration
-├── README.md                        # This file
-│
-├── include/
-│   ├── vitals.h                     # Vital signs types and validation API
-│   ├── alerts.h                     # Alert record structure and generation API
-│   ├── patient.h                    # Patient record management API
-│   ├── gui_auth.h                   # GUI authentication API
-│   ├── gui_users.h                  # Multi-user account management API
-│   ├── hw_vitals.h                  # Hardware Abstraction Layer interface
-│   ├── news2.h                      # NEWS2 Early Warning Score API
-│   ├── alarm_limits.h               # Configurable alarm limits API
-│   ├── trend.h                      # Trend direction + sparkline API
-│   └── app_config.h                 # Application configuration persistence
-│
-├── src/
-│   ├── vitals.c                     # Vital sign validation + BMI  (UNIT-VIT)
-│   ├── alerts.c                     # Alert record generation      (UNIT-ALT)
-│   ├── patient.c                    # Patient record management     (UNIT-PAT)
-│   ├── gui_auth.c                   # Auth delegation layer         (UNIT-GUI)
-│   ├── gui_users.c                  # Multi-user account management (UNIT-USR)
-│   ├── pw_hash.c                    # SHA-256 password hashing      (UNIT-SEC)
-│   ├── sim_vitals.c                 # Simulation HAL back-end       (UNIT-SIM)
-│   ├── news2.c                      # NEWS2 scoring engine          (UNIT-NEW)
-│   ├── alarm_limits.c               # Alarm limit config + check    (UNIT-ALM)
-│   ├── trend.c                      # Trend analysis + extraction   (UNIT-TRD)
-│   ├── app_config.c                 # Config persistence            (UNIT-CFG)
-│   ├── gui_main.c                   # Win32 GUI (5 windows)         (UNIT-GUI)
-│   └── main.c                       # Console entry point
-│
-├── tests/
-│   ├── CMakeLists.txt
-│   ├── unit/
-│   │   ├── test_vitals.cpp          # 80 tests — SWR-VIT-001–008
-│   │   ├── test_alerts.cpp          # 11 tests — SWR-ALT
-│   │   ├── test_patient.cpp         # 29 tests — SWR-PAT
-│   │   ├── test_auth.cpp            # 41 tests — SWR-GUI/SEC
-│   │   ├── test_news2.cpp           # 53 tests — SWR-NEW-001
-│   │   ├── test_alarm_limits.cpp    # 31 tests — SWR-ALM-001
-│   │   ├── test_trend.cpp           # 18 tests — SWR-TRD-001
-│   │   ├── test_hal.cpp             # 12 tests — SWR-GUI-005/006
-│   │   ├── test_config.cpp          # 10 tests — SWR-GUI-010
-│   │   └── test_localization.cpp    # 8 tests — SWR-GUI-012
-│   └── integration/
-│       ├── test_patient_monitoring.cpp  # 7 tests — SWR-PAT-*, SWR-VIT-*, SWR-ALT-*
-│       └── test_alert_escalation.cpp    # 7 tests — SWR-VIT-*, SWR-ALT-*, SWR-PAT-007
-│
-├── requirements/
+â”œâ”€â”€ CMakeLists.txt                   # Root build configuration
+â”œâ”€â”€ Doxyfile                         # Doxygen documentation configuration
+â”œâ”€â”€ README.md                        # This file
+â”‚
+â”œâ”€â”€ include/
+â”‚   â”œâ”€â”€ vitals.h                     # Vital signs types and validation API
+â”‚   â”œâ”€â”€ alerts.h                     # Alert record structure and generation API
+â”‚   â”œâ”€â”€ patient.h                    # Patient record management API
+â”‚   â”œâ”€â”€ gui_auth.h                   # GUI authentication API
+â”‚   â”œâ”€â”€ gui_users.h                  # Multi-user account management API
+â”‚   â”œâ”€â”€ hw_vitals.h                  # Hardware Abstraction Layer interface
+â”‚   â”œâ”€â”€ news2.h                      # NEWS2 Early Warning Score API
+â”‚   â”œâ”€â”€ alarm_limits.h               # Configurable alarm limits API
+â”‚   â”œâ”€â”€ trend.h                      # Trend direction + sparkline API
+â”‚   â”œâ”€â”€ app_config.h                 # Application configuration persistence
+â”‚   â””â”€â”€ session_timeout.h            # Idle session-timeout policy helpers
+â”‚
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ vitals.c                     # Vital sign validation + BMI  (UNIT-VIT)
+â”‚   â”œâ”€â”€ alerts.c                     # Alert record generation      (UNIT-ALT)
+â”‚   â”œâ”€â”€ patient.c                    # Patient record management     (UNIT-PAT)
+â”‚   â”œâ”€â”€ gui_auth.c                   # Auth delegation layer         (UNIT-GUI)
+â”‚   â”œâ”€â”€ gui_users.c                  # Multi-user account management (UNIT-USR)
+â”‚   â”œâ”€â”€ pw_hash.c                    # SHA-256 password hashing      (UNIT-SEC)
+â”‚   â”œâ”€â”€ sim_vitals.c                 # Simulation HAL back-end       (UNIT-SIM)
+â”‚   â”œâ”€â”€ news2.c                      # NEWS2 scoring engine          (UNIT-NEW)
+â”‚   â”œâ”€â”€ alarm_limits.c               # Alarm limit config + check    (UNIT-ALM)
+â”‚   â”œâ”€â”€ trend.c                      # Trend analysis + extraction   (UNIT-TRD)
+â”‚   â”œâ”€â”€ app_config.c                 # Config persistence            (UNIT-CFG)
+â”‚   â”œâ”€â”€ session_timeout.c            # Idle session-timeout policy  (UNIT-SEC)
+â”‚   â”œâ”€â”€ gui_main.c                   # Win32 GUI (5 windows)         (UNIT-GUI)
+â”‚   â””â”€â”€ main.c                       # Console entry point
+â”‚
+â”œâ”€â”€ tests/
+â”‚   â”œâ”€â”€ CMakeLists.txt
+â”‚   â”œâ”€â”€ unit/
+â”‚   â”‚   â”œâ”€â”€ test_vitals.cpp          # 80 tests â€” SWR-VIT-001â€“008
+â”‚   â”‚   â”œâ”€â”€ test_alerts.cpp          # 11 tests â€” SWR-ALT
+â”‚   â”‚   â”œâ”€â”€ test_patient.cpp         # 29 tests â€” SWR-PAT
+â”‚   â”‚   â”œâ”€â”€ test_auth.cpp            # 41 tests â€” SWR-GUI/SEC
+â”‚   â”‚   â”œâ”€â”€ test_news2.cpp           # 53 tests â€” SWR-NEW-001
+â”‚   â”‚   â”œâ”€â”€ test_alarm_limits.cpp    # 31 tests â€” SWR-ALM-001
+â”‚   â”‚   â”œâ”€â”€ test_trend.cpp           # 18 tests â€” SWR-TRD-001
+â”‚   â”‚   â”œâ”€â”€ test_hal.cpp             # 12 tests â€” SWR-GUI-005/006
+â”‚   â”‚   â”œâ”€â”€ test_config.cpp          # 17 tests â€” SWR-GUI-014 + SWR-GUI-010 support
+â”‚   â”‚   â””â”€â”€ test_session_timeout.cpp # 7 tests â€” SWR-SEC-005
+â”‚   â”‚   â””â”€â”€ test_localization.cpp    # 8 tests â€” SWR-GUI-012
+â”‚   â””â”€â”€ integration/
+â”‚       â”œâ”€â”€ test_patient_monitoring.cpp  # 7 tests â€” SWR-PAT-*, SWR-VIT-*, SWR-ALT-*
+â”‚       â””â”€â”€ test_alert_escalation.cpp    # 7 tests â€” SWR-VIT-*, SWR-ALT-*, SWR-PAT-007
+â”‚
+â”œâ”€â”€ requirements/
 |   |-- UNS.md                       # User Needs (17 items)
-|   |-- SYS.md                       # System Requirements (21 items)
-│   ├── SWR.md                       # Software Requirements (40 items)
-│   └── TRACEABILITY.md              # RTM — 17/17 UNS, 40/40 SWR, 307 tests
-│
-├── build.bat                        # Configure + build + launch GUI
-|-- run_tests.bat                    # Run all 307 tests
-├── run_coverage.bat                 # GCC coverage report (gcov + gcovr)
-├── generate_docs.bat                # Doxygen HTML + XML documentation
-├── create_installer.bat             # Build release + compile Windows installer
-├── installer.iss                    # Inno Setup 6 installer script
-├── make_icon.py                     # Regenerate resources/app.ico from source
-│
-├── resources/
-│   ├── app.ico                      # Medical cross icon (16/32/48 px)
-│   └── app.rc                       # Windows resource script (icon + version info)
-│
-├── dvt/
-│   ├── run_dvt.py                   # DVT automation script
-│   └── results/                     # DVT execution reports
-│
-└── dist/                            # Release artifacts (exe, zip, installer)
+|   |-- SYS.md                       # System Requirements (22 items)
+â”‚   â”œâ”€â”€ SWR.md                       # Software Requirements (42 items)
+â”‚   â””â”€â”€ TRACEABILITY.md              # RTM â€” 17/17 UNS, 42/42 SWR, 321 tests
+â”‚
+â”œâ”€â”€ build.bat                        # Configure + build + launch GUI
+|-- run_tests.bat                    # Run all 321 tests
+â”œâ”€â”€ run_coverage.bat                 # GCC coverage report (gcov + gcovr)
+â”œâ”€â”€ generate_docs.bat                # Doxygen HTML + XML documentation
+â”œâ”€â”€ create_installer.bat             # Build release + compile Windows installer
+â”œâ”€â”€ installer.iss                    # Inno Setup 6 installer script
+â”œâ”€â”€ make_icon.py                     # Regenerate resources/app.ico from source
+â”‚
+â”œâ”€â”€ resources/
+â”‚   â”œâ”€â”€ app.ico                      # Medical cross icon (16/32/48 px)
+â”‚   â””â”€â”€ app.rc                       # Windows resource script (icon + version info)
+â”‚
+â”œâ”€â”€ dvt/
+â”‚   â”œâ”€â”€ run_dvt.py                   # DVT automation script
+â”‚   â””â”€â”€ results/                     # DVT execution reports
+â”‚
+â””â”€â”€ dist/                            # Release artifacts (exe, zip, installer)
 ```
 

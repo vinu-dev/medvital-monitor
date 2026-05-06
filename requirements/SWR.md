@@ -1,8 +1,8 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-M
+**Document ID:** SWR-001-REV-N
 **Project:** Patient Vital Signs Monitor
-**Version:** 2.7.0
+**Version:** 2.8.0
 **Date:** 2026-05-06
 **Status:** Approved
 **Standard:** IEC 62304 §5.2
@@ -717,6 +717,55 @@ session event label string
 
 ---
 
+### SWR-SEC-005 â€” Idle Timeout Enforcement and Locked-Session Reauthentication
+**Requirement:** The idle session-timeout layer shall:
+1. Accept only timeout values in the approved range `1..30` minutes and
+   normalize all other values to the default `5` minutes.
+2. Track authenticated user activity from dashboard and authenticated
+   settings-dialog keyboard, mouse, and command interaction only. Passive
+   timer updates, redraws, and simulation refreshes shall not reset the timer.
+3. Detect idle expiry from elapsed ticks without heap allocation and remain
+   correct across tick-counter wraparound.
+4. On expiry, close any open authenticated modal dialogs, obscure the
+   dashboard by switching to a dedicated locked-session window, and preserve
+   the current patient and monitoring state in memory.
+5. Require the same authenticated username and password to unlock the session.
+   Authentication failures shall display a generic error and shall not reveal
+   which field was incorrect.
+6. Leave explicit user-initiated Logout behavior unchanged: Logout shall still
+   clear session data and return to the login screen.
+
+**Traces to:** SYS-022
+**Implemented in:** `src/session_timeout.c` â€” validation and expiry helpers;
+`src/gui_main.c` â€” idle timer, lock window, unlock flow
+**Verified by:** `tests/unit/test_session_timeout.cpp` â€” `SessionTimeout*.*`
+(7 tests); manual GUI review (`GUI-MAN-07`)
+
+---
+
+### SWR-GUI-014 â€” Admin Session Timeout Settings and Persistence
+
+**Requirement:** The Settings panel for `ROLE_ADMIN` sessions shall provide a
+dedicated Session tab for configuring the clinician idle timeout. The tab shall:
+
+1. Display the current timeout value in minutes.
+2. Accept only a single local timeout value that applies to all authenticated
+   sessions on the workstation.
+3. Persist the value to `monitor.cfg` using the key
+   `idle_timeout_minutes=<N>`.
+4. Apply the saved value immediately after the user clicks **Apply & Save**.
+5. Normalize missing, malformed, zero, negative, and out-of-range values to
+   the approved default `5` minutes when loading or saving.
+6. Remain inaccessible to `ROLE_CLINICAL` users.
+
+**Traces to:** SYS-022
+**Implemented in:** `src/gui_main.c` â€” Session tab and admin-only editor;
+`src/app_config.c` â€” `idle_timeout_minutes` persistence helpers
+**Verified by:** `tests/unit/test_config.cpp` â€” `ConfigTest.*` (17 tests);
+manual GUI review (`GUI-MAN-07`)
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -734,3 +783,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-06 | Codex implementer | Added SWR-SEC-005 and SWR-GUI-014 for configurable idle session locking |

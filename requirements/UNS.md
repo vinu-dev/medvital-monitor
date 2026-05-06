@@ -1,9 +1,9 @@
 # User Needs Specification (UNS)
 
-**Document ID:** UNS-001-REV-E
+**Document ID:** UNS-001-REV-F
 **Project:** Patient Vital Signs Monitor
 **Version:** 1.0.0
-**Date:** 2026-05-05
+**Date:** 2026-05-06
 **Status:** Approved
 **Standard:** 21 CFR 820.30(c) / IEC 62304 §5.1
 
@@ -143,6 +143,8 @@ dependencies create deployment and security risks.
 ### UNS-013 — User Authentication
 **Need:** The system shall require the clinician to authenticate with a
 username and password before accessing patient data or any monitoring function.
+The system shall also protect unattended authenticated sessions by requiring
+re-authentication after a bounded period of user inactivity.
 **Rationale:** Unauthorised access to patient health data is a clinical and
 regulatory risk; access control is required under HIPAA and IEC 62304 risk
 management.
@@ -176,8 +178,8 @@ workflow and provides a plug point for real hardware integration.
 ### UNS-016 — Role-Based Access and Multi-User Support
 **Need:** Different clinical staff roles (ward administrators and bedside
 clinicians) require different levels of system access. An administrator must
-be able to manage user accounts and credentials without exposing those
-controls to clinical users.
+be able to manage user accounts, credentials, and local session-protection
+policy without exposing those controls to clinical users.
 **Rationale:** In a clinical environment, user management tasks (adding and
 removing accounts, resetting passwords) must be separated from patient
 monitoring to comply with role-based access control requirements and to
@@ -208,3 +210,4 @@ reconstruction from raw reading history.
 | C   | 2026-04-07 | vinu-engineer   | Added UNS-015 (live monitoring feed / HAL) |
 | D   | 2026-04-07 | vinu-engineer   | Added UNS-016 (role-based access / multi-user) |
 | E   | 2026-05-05 | Codex implementer | Added UNS-017 (session alarm event review) |
+| F   | 2026-05-06 | Codex implementer | Extended UNS-013 and UNS-016 for configurable idle session locking |

@@ -38,6 +38,7 @@
 #include "hw_vitals.h"
 #include "app_config.h"
 #include "localization.h"
+#include "session_timeout.h"
 
 /* ===================================================================
  * App metadata
@@ -54,6 +55,7 @@
 #define CLASS_SETTINGS "PVM_Settings"
 #define CLASS_PWDDLG   "PVM_PwdDlg"
 #define CLASS_ADDUSER  "PVM_AddUser"
+#define CLASS_LOCK     "PVM_Lock"
 
 /* ===================================================================
  * Control IDs — Login
@@ -99,6 +101,7 @@
 #define IDC_LIST_HISTORY 1301
 #define IDC_LIST_EVENTS  1302
 #define TIMER_SIM        1
+#define TIMER_IDLE       2
 
 /* ===================================================================
  * Control IDs — Settings window
@@ -116,6 +119,8 @@
 /* Simulation tab in Settings @req SWR-GUI-010 */
 #define IDC_BTN_SIM_TOGGLE 1225
 #define IDC_STC_SIM_STATUS 1226
+#define IDC_EDT_IDLE_TIMEOUT 1237
+#define IDC_BTN_IDLE_APPLY 1238
 
 /* ===================================================================
  * Control IDs — Password change dialog
@@ -126,6 +131,11 @@
 #define IDC_BTN_PWOK      1243
 #define IDC_BTN_PWCANCEL  1244
 #define IDC_STC_PWERR     1245
+#define IDC_LCK_USER      1250
+#define IDC_LCK_PASS      1251
+#define IDC_LCK_BTN_UNLOCK 1252
+#define IDC_LCK_BTN_LOGOUT 1253
+#define IDC_LCK_ERR       1254
 
 /* ===================================================================
  * Control IDs — Alarm Limits tab (Settings)  @req SWR-ALM-001
@@ -197,6 +207,7 @@ typedef struct {
     HWND      hwnd_settings;
     HWND      hwnd_pwddlg;
     HWND      hwnd_adduser;
+    HWND      hwnd_lock;
 
     char     logged_user[USERS_MAX_USERNAME_LEN];     /* display name for UI */
     char     logged_username[USERS_MAX_USERNAME_LEN]; /* actual username for auth */
@@ -206,8 +217,12 @@ typedef struct {
     int           has_patient;
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
+    int           idle_timeout_minutes;
+    int           session_locked;
+    int           reopen_settings_after_unlock;
     int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
+    DWORD         last_activity_tick;
 
     HFONT font_hdr;
     HFONT font_tile_val;
@@ -233,6 +248,7 @@ static LRESULT CALLBACK dash_proc    (HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK settings_proc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK pwddlg_proc  (HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK adduser_proc (HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK lock_proc    (HWND, UINT, WPARAM, LPARAM);
 static void create_dashboard(void);
 static void update_dashboard(HWND w);
 static void refresh_dash_language(HWND w);
@@ -240,6 +256,8 @@ static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
 static void open_adduser(HWND parent);
+static void session_note_activity(void);
+static void logout_authenticated_session(void);
 
 /* ===================================================================
  * GDI helpers
@@ -610,6 +628,163 @@ static int get_txt(HWND p, int id, char *out, int len)
 }
 static void set_txt(HWND p, int id, const char *s) { SetWindowTextA(GetDlgItem(p,id),s); }
 
+static void session_note_activity(void)
+{
+    if (g_app.hwnd_dash != NULL && !g_app.session_locked)
+        g_app.last_activity_tick = GetTickCount();
+}
+
+static void session_track_message(UINT msg)
+{
+    switch (msg) {
+    case WM_COMMAND:
+    case WM_NOTIFY:
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    case WM_CHAR:
+    case WM_MOUSEMOVE:
+    case WM_MOUSEWHEEL:
+    case WM_MOUSEHWHEEL:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_MBUTTONDBLCLK:
+    case WM_VSCROLL:
+    case WM_HSCROLL:
+        session_note_activity();
+        break;
+    default:
+        break;
+    }
+}
+
+static void open_login_window(void)
+{
+    if (g_app.hwnd_login != NULL)
+        return;
+
+    g_app.hwnd_login = CreateWindowExA(
+        WS_EX_APPWINDOW, CLASS_LOGIN, APP_TITLE,
+        WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
+        CW_USEDEFAULT, CW_USEDEFAULT, 440, 520,
+        NULL, NULL, g_app.inst, NULL);
+    ShowWindow(g_app.hwnd_login, SW_SHOWNORMAL);
+    UpdateWindow(g_app.hwnd_login);
+}
+
+static void clear_authenticated_session_data(void)
+{
+    ZeroMemory(&g_app.patient, sizeof(g_app.patient));
+    g_app.has_patient = 0;
+    g_app.sim_paused = 0;
+    g_app.session_locked = 0;
+    g_app.reopen_settings_after_unlock = 0;
+    g_app.logged_user[0] = '\0';
+    g_app.logged_username[0] = '\0';
+    g_app.logged_role = ROLE_CLINICAL;
+}
+
+static void logout_authenticated_session(void)
+{
+    HWND dash = g_app.hwnd_dash;
+    HWND settings = g_app.hwnd_settings;
+    HWND pwddlg = g_app.hwnd_pwddlg;
+    HWND adduser = g_app.hwnd_adduser;
+    HWND lock = g_app.hwnd_lock;
+
+    if (pwddlg != NULL)
+        DestroyWindow(pwddlg);
+    if (adduser != NULL)
+        DestroyWindow(adduser);
+    if (settings != NULL)
+        DestroyWindow(settings);
+
+    if (dash != NULL)
+    {
+        KillTimer(dash, TIMER_SIM);
+        KillTimer(dash, TIMER_IDLE);
+    }
+
+    app_config_save(g_app.sim_enabled);
+    open_login_window();
+    clear_authenticated_session_data();
+
+    if (lock != NULL)
+        DestroyWindow(lock);
+    if (dash != NULL)
+        DestroyWindow(dash);
+}
+
+static void session_unlock(HWND w)
+{
+    const int reopen_settings = g_app.reopen_settings_after_unlock;
+
+    g_app.session_locked = 0;
+    g_app.reopen_settings_after_unlock = 0;
+    g_app.last_activity_tick = GetTickCount();
+    ShowWindow(g_app.hwnd_dash, SW_SHOWNORMAL);
+    DestroyWindow(w);
+    SetForegroundWindow(g_app.hwnd_dash);
+
+    if (reopen_settings)
+        open_settings(g_app.hwnd_dash);
+}
+
+static void attempt_unlock(HWND w)
+{
+    char user[USERS_MAX_USERNAME_LEN] = "";
+    char pass[USERS_MAX_PASSWORD_LEN] = "";
+    UserRole role = ROLE_CLINICAL;
+
+    get_txt(w, IDC_LCK_USER, user, (int)sizeof(user));
+    get_txt(w, IDC_LCK_PASS, pass, (int)sizeof(pass));
+
+    if (strcmp(user, g_app.logged_username) == 0 &&
+        auth_validate_role(user, pass, &role) &&
+        role == g_app.logged_role)
+    {
+        session_unlock(w);
+        return;
+    }
+
+    SetWindowTextA(GetDlgItem(w, IDC_LCK_ERR),
+                   "Invalid username or password. Please try again.");
+    SetWindowTextA(GetDlgItem(w, IDC_LCK_PASS), "");
+    SetFocus(GetDlgItem(w, IDC_LCK_PASS));
+}
+
+static void session_lock(HWND dash)
+{
+    if (dash == NULL || g_app.session_locked)
+        return;
+
+    g_app.session_locked = 1;
+    g_app.reopen_settings_after_unlock = (g_app.hwnd_settings != NULL) ? 1 : 0;
+
+    if (g_app.hwnd_pwddlg != NULL)
+        DestroyWindow(g_app.hwnd_pwddlg);
+    if (g_app.hwnd_adduser != NULL)
+        DestroyWindow(g_app.hwnd_adduser);
+    if (g_app.hwnd_settings != NULL)
+        DestroyWindow(g_app.hwnd_settings);
+
+    ShowWindow(dash, SW_HIDE);
+    g_app.hwnd_lock = CreateWindowExA(
+        WS_EX_DLGMODALFRAME|WS_EX_TOPMOST|WS_EX_APPWINDOW,
+        CLASS_LOCK, APP_TITLE,
+        WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
+        CW_USEDEFAULT, CW_USEDEFAULT, 420, 320,
+        NULL, NULL, g_app.inst, NULL);
+    ShowWindow(g_app.hwnd_lock, SW_SHOWNORMAL);
+    UpdateWindow(g_app.hwnd_lock);
+    SetForegroundWindow(g_app.hwnd_lock);
+}
+
 /* ===================================================================
  * Dashboard: controls
  * =================================================================== */
@@ -880,6 +1055,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
     static HWND hw_tab, hw_list;
     static HWND hw_btn_add, hw_btn_edit, hw_btn_rem, hw_btn_pwd;
+    static HWND session_ctrls[8];
+    static int  session_count = 0;
     static HWND sim_ctrls[6];
     static int  sim_count  = 0;
     static HWND about_ctrls[8];
@@ -893,6 +1070,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
     /* Language tab control handles @req SWR-GUI-012 */
     static HWND lang_ctrls[4];
     static int  lang_count = 0;
+
+    session_track_message(msg);
 
     switch (msg) {
     case WM_CREATE: {
@@ -910,16 +1089,18 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         if (g_app.logged_role == ROLE_ADMIN) {
             ti.pszText = (char*)localization_get_string(STR_USER_MANAGEMENT);
                                           TabCtrl_InsertItem(hw_tab, 0, &ti);
-            ti.pszText = (char*)localization_get_string(STR_SIM_MODE);
+            ti.pszText = "Session";
                                           TabCtrl_InsertItem(hw_tab, 1, &ti);
-            ti.pszText = (char*)localization_get_string(STR_ABOUT);
+            ti.pszText = (char*)localization_get_string(STR_SIM_MODE);
                                           TabCtrl_InsertItem(hw_tab, 2, &ti);
-            ti.pszText = (char*)localization_get_string(STR_ALARM_LIMITS);
+            ti.pszText = (char*)localization_get_string(STR_ABOUT);
                                           TabCtrl_InsertItem(hw_tab, 3, &ti);
-            ti.pszText = (char*)localization_get_string(STR_MY_ACCOUNT);
+            ti.pszText = (char*)localization_get_string(STR_ALARM_LIMITS);
                                           TabCtrl_InsertItem(hw_tab, 4, &ti);
-            ti.pszText = (char*)localization_get_string(STR_LANGUAGE);
+            ti.pszText = (char*)localization_get_string(STR_MY_ACCOUNT);
                                           TabCtrl_InsertItem(hw_tab, 5, &ti);
+            ti.pszText = (char*)localization_get_string(STR_LANGUAGE);
+                                          TabCtrl_InsertItem(hw_tab, 6, &ti);
         } else {
             /* Clinical users: no Users tab */
             ti.pszText = (char*)localization_get_string(STR_SIM_MODE);
@@ -946,6 +1127,36 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         EnableWindow(hw_btn_edit, FALSE);
         EnableWindow(hw_btn_rem,  FALSE);
         EnableWindow(hw_btn_pwd,  FALSE);
+
+        /* --- Session tab controls @req SWR-GUI-014 --- */
+        session_count = 0;
+        session_ctrls[session_count++] = make_label(w,
+            "Session Security",
+            16, 58, 520, 22);
+        session_ctrls[session_count++] = make_label(w,
+            "Configure how many idle minutes are allowed before the current\r\n"
+            "session locks and requires the same user to re-authenticate.",
+            16, 86, 520, 40);
+        session_ctrls[session_count++] = make_label(w,
+            "Idle timeout (minutes):",
+            16, 140, 180, 18);
+        {
+            char timeout_buf[16];
+            snprintf(timeout_buf, sizeof(timeout_buf), "%d",
+                     g_app.idle_timeout_minutes);
+            session_ctrls[session_count++] = make_edit(w,
+                IDC_EDT_IDLE_TIMEOUT, timeout_buf, 16, 160, 80, 24);
+        }
+        session_ctrls[session_count++] = make_label(w,
+            "Allowed range: 1 to 30 minutes. Invalid values are saved as 5.",
+            16, 196, 520, 20);
+        session_ctrls[session_count++] = make_btn(w, IDC_BTN_IDLE_APPLY,
+            "Apply & Save", 16, 228, 120, 28);
+        session_ctrls[session_count++] = make_label(w,
+            "The saved value applies immediately to all authenticated sessions.",
+            16, 268, 520, 20);
+        for (i = 0; i < session_count; ++i)
+            ShowWindow(session_ctrls[i], SW_HIDE);
 
         /* --- Simulation tab controls @req SWR-GUI-010 --- */
         sim_count = 0;
@@ -1118,6 +1329,16 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             SendMessage(sim_ctrls[0],   WM_SETFONT, (WPARAM)g_app.font_status, TRUE);
 
         settings_refresh_list(hw_list);
+        TabCtrl_SetCurSel(hw_tab, 0);
+        if (g_app.logged_role != ROLE_ADMIN) {
+            ShowWindow(hw_list, SW_HIDE);
+            ShowWindow(hw_btn_add, SW_HIDE);
+            ShowWindow(hw_btn_edit, SW_HIDE);
+            ShowWindow(hw_btn_rem, SW_HIDE);
+            ShowWindow(hw_btn_pwd, SW_HIDE);
+            for (i = 0; i < sim_count; ++i)
+                ShowWindow(sim_ctrls[i], SW_SHOW);
+        }
         return 0;
     }
 
@@ -1139,16 +1360,17 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             int sel = TabCtrl_GetCurSel(hw_tab);
             int i;
             /* Map tab index to content: depends on role */
-            int show_users=SW_HIDE, show_sim=SW_HIDE, show_about=SW_HIDE,
+            int show_users=SW_HIDE, show_session=SW_HIDE, show_sim=SW_HIDE, show_about=SW_HIDE,
                 show_alm=SW_HIDE, show_acct=SW_HIDE, show_lang=SW_HIDE;
             if (g_app.logged_role == ROLE_ADMIN) {
-                /* Admin tabs: 0=Users, 1=Sim, 2=About, 3=Alarm, 4=MyAccount, 5=Language */
+                /* Admin tabs: 0=Users, 1=Session, 2=Sim, 3=About, 4=Alarm, 5=MyAccount, 6=Language */
                 if (sel==0) show_users=SW_SHOW;
-                if (sel==1) show_sim=SW_SHOW;
-                if (sel==2) show_about=SW_SHOW;
-                if (sel==3) show_alm=SW_SHOW;
-                if (sel==4) show_acct=SW_SHOW;
-                if (sel==5) show_lang=SW_SHOW;
+                if (sel==1) show_session=SW_SHOW;
+                if (sel==2) show_sim=SW_SHOW;
+                if (sel==3) show_about=SW_SHOW;
+                if (sel==4) show_alm=SW_SHOW;
+                if (sel==5) show_acct=SW_SHOW;
+                if (sel==6) show_lang=SW_SHOW;
             } else {
                 /* Clinical tabs: 0=Sim, 1=Alarm, 2=MyAccount, 3=About, 4=Language */
                 if (sel==0) show_sim=SW_SHOW;
@@ -1162,6 +1384,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             ShowWindow(hw_btn_edit,show_users);
             ShowWindow(hw_btn_rem, show_users);
             ShowWindow(hw_btn_pwd, show_users);
+            for (i = 0; i < session_count; ++i)
+                ShowWindow(session_ctrls[i], show_session);
             for (i = 0; i < sim_count;   ++i)
                 ShowWindow(sim_ctrls[i],   show_sim);
             for (i = 0; i < about_count; ++i)
@@ -1193,6 +1417,38 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_COMMAND:
         switch (LOWORD(wp)) {
+        case IDC_BTN_IDLE_APPLY: {
+            char buf[32];
+            char trailing[2];
+            int requested = SESSION_TIMEOUT_DEFAULT_MINUTES;
+            int normalized = SESSION_TIMEOUT_DEFAULT_MINUTES;
+
+            get_txt(w, IDC_EDT_IDLE_TIMEOUT, buf, (int)sizeof(buf));
+            if (sscanf(buf, "%d%1s", &requested, trailing) != 1)
+                requested = SESSION_TIMEOUT_DEFAULT_MINUTES - 1;
+
+            normalized = session_timeout_normalize_minutes(requested);
+            g_app.idle_timeout_minutes = normalized;
+            snprintf(buf, sizeof(buf), "%d", normalized);
+            set_txt(w, IDC_EDT_IDLE_TIMEOUT, buf);
+            session_note_activity();
+
+            if (!app_config_save_idle_timeout_minutes(normalized))
+            {
+                MessageBoxA(w, "Unable to save the idle timeout.",
+                            "Session Settings", MB_OK|MB_ICONWARNING);
+                return 0;
+            }
+
+            if (session_timeout_is_valid_minutes(requested))
+                MessageBoxA(w, "Idle timeout saved.",
+                            "Session Settings", MB_OK|MB_ICONINFORMATION);
+            else
+                MessageBoxA(w,
+                            "Invalid idle timeout. Default 5 minutes was saved.",
+                            "Session Settings", MB_OK|MB_ICONWARNING);
+            return 0;
+        }
         case IDC_ALM_BTN_APPLY: {   /* @req SWR-ALM-001 */
             char buf[32]; double dv; int iv;
             AlarmLimits tmp;
@@ -1360,8 +1616,11 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_DESTROY:
         g_app.hwnd_settings = NULL;
-        EnableWindow(g_app.hwnd_dash, TRUE);
-        SetForegroundWindow(g_app.hwnd_dash);
+        if (g_app.hwnd_dash != NULL) {
+            EnableWindow(g_app.hwnd_dash, TRUE);
+            if (!g_app.session_locked)
+                SetForegroundWindow(g_app.hwnd_dash);
+        }
         return 0;
     }
     return DefWindowProcA(w, msg, wp, lp);
@@ -1372,6 +1631,8 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
  * =================================================================== */
 static LRESULT CALLBACK pwddlg_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
+    session_track_message(msg);
+
     switch (msg) {
     case WM_CREATE: {
         int admin = g_pwd_ctx.admin_mode;
@@ -1487,8 +1748,11 @@ static LRESULT CALLBACK pwddlg_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         HWND parent = (g_app.hwnd_settings != NULL) ? g_app.hwnd_settings
                                                      : g_app.hwnd_dash;
         g_app.hwnd_pwddlg = NULL;
-        EnableWindow(parent, TRUE);
-        SetForegroundWindow(parent);
+        if (parent != NULL) {
+            EnableWindow(parent, TRUE);
+            if (!g_app.session_locked)
+                SetForegroundWindow(parent);
+        }
         return 0;
     }
     }
@@ -1500,6 +1764,8 @@ static LRESULT CALLBACK pwddlg_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
  * =================================================================== */
 static LRESULT CALLBACK adduser_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
+    session_track_message(msg);
+
     switch (msg) {
     case WM_CREATE: {
         HWND cmb;
@@ -1597,10 +1863,89 @@ static LRESULT CALLBACK adduser_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_DESTROY:
         g_app.hwnd_adduser = NULL;
-        EnableWindow(g_app.hwnd_settings, TRUE);
-        SetForegroundWindow(g_app.hwnd_settings);
+        if (g_app.hwnd_settings != NULL) {
+            EnableWindow(g_app.hwnd_settings, TRUE);
+            if (!g_app.session_locked)
+                SetForegroundWindow(g_app.hwnd_settings);
+        }
         return 0;
     }
+    return DefWindowProcA(w, msg, wp, lp);
+}
+
+/* ===================================================================
+ * Locked-session dialog
+ * =================================================================== */
+static LRESULT CALLBACK lock_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
+{
+    (void)lp;
+
+    switch (msg) {
+    case WM_CREATE: {
+        HWND ed;
+
+        g_app.hwnd_lock = w;
+        make_label(w,
+                   "Session locked after inactivity. Re-enter credentials to continue.",
+                   20, 54, 360, 36);
+        make_label(w, "Username:", 20, 104, 360, 18);
+        make_edit(w, IDC_LCK_USER, g_app.logged_username, 20, 124, 360, 28);
+        make_label(w, "Password:", 20, 160, 360, 18);
+        ed = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_AUTOHSCROLL|ES_PASSWORD,
+            20, 180, 360, 28, w, (HMENU)(INT_PTR)IDC_LCK_PASS, g_app.inst, NULL);
+        SendMessage(ed, EM_SETPASSWORDCHAR, (WPARAM)'*', 0);
+        CreateWindowExA(0, "STATIC", "", WS_CHILD|WS_VISIBLE|SS_LEFT,
+            20, 218, 360, 18, w, (HMENU)(INT_PTR)IDC_LCK_ERR, g_app.inst, NULL);
+        CreateWindowExA(0, "BUTTON", "Unlock Session",
+            WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,
+            20, 246, 170, 28, w, (HMENU)(INT_PTR)IDC_LCK_BTN_UNLOCK, g_app.inst, NULL);
+        make_btn(w, IDC_LCK_BTN_LOGOUT, localization_get_string(STR_LOGOUT),
+                 206, 246, 174, 28);
+        font_children(w, g_app.font_ui);
+        SetFocus(GetDlgItem(w, IDC_LCK_PASS));
+        return 0;
+    }
+
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(w, &ps);
+        fill_rect(hdc, 0, 0, 420, 40, CLR_NAVY);
+        draw_text_ex(hdc, "  Session Locked", 0, 0, 420, 40,
+                     g_app.font_status, CLR_WHITE,
+                     DT_SINGLELINE|DT_VCENTER|DT_LEFT);
+        EndPaint(w, &ps);
+        return 0;
+    }
+
+    case WM_CTLCOLORSTATIC:
+        if ((HWND)lp == GetDlgItem(w, IDC_LCK_ERR)) {
+            SetTextColor((HDC)wp, CLR_CR_FG);
+            SetBkMode((HDC)wp, TRANSPARENT);
+            return (LRESULT)GetStockObject(NULL_BRUSH);
+        }
+        break;
+
+    case WM_COMMAND:
+        switch (LOWORD(wp)) {
+        case IDC_LCK_BTN_UNLOCK:
+            attempt_unlock(w);
+            return 0;
+        case IDC_LCK_BTN_LOGOUT:
+            logout_authenticated_session();
+            return 0;
+        }
+        break;
+
+    case WM_CLOSE:
+        logout_authenticated_session();
+        return 0;
+
+    case WM_DESTROY:
+        g_app.hwnd_lock = NULL;
+        return 0;
+    }
+
     return DefWindowProcA(w, msg, wp, lp);
 }
 
@@ -1717,6 +2062,8 @@ static void refresh_dash_language(HWND w)
  * =================================================================== */
 static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 {
+    session_track_message(msg);
+
     switch (msg) {
     case WM_CREATE: {
         VitalSigns first_v;
@@ -1737,9 +2084,14 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             int lang = app_config_load_language();
             localization_set_language((Language)lang);
         }
+        g_app.idle_timeout_minutes = app_config_load_idle_timeout_minutes();
+        g_app.session_locked = 0;
+        g_app.reopen_settings_after_unlock = 0;
+        g_app.last_activity_tick = GetTickCount();
         alarm_limits_load(&g_app.alarm_limits);       /* restore alarm limits @req SWR-ALM-001 */
         hw_init();
         g_app.sim_paused = 0;
+        SetTimer(w, TIMER_IDLE, 1000, NULL);
 
         /* Pause Sim and demo buttons only visible when simulation is active */
         ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
@@ -1798,6 +2150,13 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             g_app.sim_msg_scroll_offset = (g_app.sim_msg_scroll_offset + 3) % 800;
             update_dashboard(w);
         }
+        if (wp == TIMER_IDLE &&
+            !g_app.session_locked &&
+            session_timeout_has_expired((uint32_t)g_app.last_activity_tick,
+                                        (uint32_t)GetTickCount(),
+                                        g_app.idle_timeout_minutes)) {
+            session_lock(w);
+        }
         return 0;
 
     case WM_ERASEBKGND: {
@@ -1839,26 +2198,14 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             open_settings(w);
             return 0;
         case IDC_BTN_LOGOUT:
-            KillTimer(w, TIMER_SIM);
-            app_config_save(g_app.sim_enabled);
-            ZeroMemory(&g_app.patient, sizeof(g_app.patient));
-            g_app.has_patient    = 0;
-            g_app.sim_paused     = 0;
-            g_app.logged_user[0] = '\0';
-            g_app.logged_username[0] = '\0';
-            g_app.hwnd_login = CreateWindowExA(
-                WS_EX_APPWINDOW, CLASS_LOGIN, APP_TITLE,
-                WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
-                CW_USEDEFAULT,CW_USEDEFAULT,440,520,
-                NULL,NULL,g_app.inst,NULL);
-            ShowWindow(g_app.hwnd_login, SW_SHOWNORMAL);
-            DestroyWindow(w);
+            logout_authenticated_session();
             return 0;
         }
         break;
 
     case WM_DESTROY:
         KillTimer(w, TIMER_SIM);
+        KillTimer(w, TIMER_IDLE);
         g_app.hwnd_dash = NULL;
         if (g_app.hwnd_login == NULL) PostQuitMessage(0);
         return 0;
@@ -2076,6 +2423,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
     wc.lpfnWndProc   = settings_proc; wc.lpszClassName = CLASS_SETTINGS; RegisterClassExA(&wc);
     wc.lpfnWndProc   = pwddlg_proc;   wc.lpszClassName = CLASS_PWDDLG;   RegisterClassExA(&wc);
     wc.lpfnWndProc   = adduser_proc;  wc.lpszClassName = CLASS_ADDUSER;  RegisterClassExA(&wc);
+    wc.lpfnWndProc   = lock_proc;     wc.lpszClassName = CLASS_LOCK;     RegisterClassExA(&wc);
 
     g_app.hwnd_login = CreateWindowExA(
         WS_EX_APPWINDOW, CLASS_LOGIN, APP_TITLE,
@@ -2090,6 +2438,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
         if (g_app.hwnd_settings && IsDialogMessage(g_app.hwnd_settings, &msg)) continue;
         if (g_app.hwnd_pwddlg   && IsDialogMessage(g_app.hwnd_pwddlg,  &msg)) continue;
         if (g_app.hwnd_adduser  && IsDialogMessage(g_app.hwnd_adduser,  &msg)) continue;
+        if (g_app.hwnd_lock     && IsDialogMessage(g_app.hwnd_lock,     &msg)) continue;
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

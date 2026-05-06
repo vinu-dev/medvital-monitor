@@ -1,9 +1,9 @@
 # System Requirements Specification (SYS)
 
-**Document ID:** SYS-001-REV-F
+**Document ID:** SYS-001-REV-G
 **Project:** Patient Vital Signs Monitor
 **Version:** 1.0.0
-**Date:** 2026-05-05
+**Date:** 2026-05-06
 **Status:** Approved
 **Standard:** 21 CFR 820.30(d) / IEC 62304 §5.1
 
@@ -256,6 +256,22 @@ events have been recorded.
 
 ---
 
+### SYS-022 â€” Configurable Idle Session Locking
+**Requirement:** The system shall apply a locally persisted idle timeout to all
+authenticated dashboard sessions. The timeout shall be configurable only by
+`ROLE_ADMIN`, shall use minutes as its unit, shall accept only values in the
+approved range `1..30`, and shall fall back to the default value `5` when a
+persisted value is missing, malformed, zero, negative, or out of range. When
+no qualifying user interaction occurs for the configured duration, the system
+shall enter a locked state that obscures patient-monitoring content, blocks
+dashboard and settings interaction, preserves the active patient and monitoring
+state, and requires the same authenticated user to re-enter username and
+password before access resumes. Idle locking shall not stop monitoring timers,
+alarm evaluation, or patient-session storage.
+**Traces to:** UNS-013, UNS-016
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -266,3 +282,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-06 | Codex implementer | Added SYS-022 for configurable idle session locking |
