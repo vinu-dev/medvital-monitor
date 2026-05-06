@@ -1,9 +1,9 @@
 # System Requirements Specification (SYS)
 
-**Document ID:** SYS-001-REV-F
+**Document ID:** SYS-001-REV-G
 **Project:** Patient Vital Signs Monitor
 **Version:** 1.0.0
-**Date:** 2026-05-05
+**Date:** 2026-05-06
 **Status:** Approved
 **Standard:** 21 CFR 820.30(d) / IEC 62304 §5.1
 
@@ -163,6 +163,11 @@ active patient in a graphical dashboard using colour-coded status tiles:
 green for NORMAL, amber for WARNING, and red for CRITICAL. The aggregate
 alert status shall be displayed in a banner using the same colour convention.
 The dashboard shall refresh automatically after each new reading is added.
+During active monitoring, when the aggregate alert status is `WARNING` or
+`CRITICAL`, the dashboard may display elapsed time for the current abnormal
+aggregate alert state. That elapsed-time cue shall reset whenever the
+aggregate alert level changes, monitoring pauses, the session is cleared or
+re-admitted, the user logs out, or the system leaves active monitoring.
 **Traces to:** UNS-014, UNS-005, UNS-006, UNS-010
 
 ---
@@ -266,3 +271,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-06 | Codex implementer | Extended SYS-014 with alert-state duration display and reset semantics for active monitoring |

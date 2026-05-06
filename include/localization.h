@@ -106,6 +106,8 @@ typedef enum {
     STR_STATUS_CRITICAL,
     STR_DEVICE_MODE_MSG,
     STR_SIM_MODE_MSG,
+    STR_SIM_PAUSED_MSG,
+    STR_ALERT_STATE_AGE,
 
     STR_COUNT  /* Total number of strings */
 } StringID;
