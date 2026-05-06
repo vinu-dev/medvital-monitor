@@ -1,0 +1,5 @@
+D:\Claude\AGX-PRI\medvital-monitor\agentry\worktrees\implementer\build\session-review-patient-1001.txt VINU\vinun:(R,W,D)
+                                                                                                       BUILTIN\Administrators:(F)
+                                                                                                       NT AUTHORITY\SYSTEM:(F)
+
+Successfully processed 1 files; Failed processing 0 files

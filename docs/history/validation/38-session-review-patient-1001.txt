@@ -1,0 +1,49 @@
+Session Review Snapshot
+Format Version: 1.0
+Generated At (UTC): 2026-05-06T10:41:51Z
+Snapshot Scope: Current admitted session only; not a live monitor feed.
+Reading Capacity: 3 / 10
+
+Patient Demographics
+  ID             : 1001
+  Name           : Sarah Johnson
+  Age            : 52 years
+  Weight         : 72.5 kg
+  Height         : 1.66 m
+  BMI            : 26.3 (Overweight)
+
+Mode Context
+  Simulation     : ENABLED
+  Acquisition    : PAUSED
+
+Alarm Limit Context
+  Heart Rate     : low 40 bpm / high 150 bpm
+  Blood Pressure : SBP low 70 mmHg / high 180 mmHg; DBP low 40 mmHg / high 120 mmHg
+  Temperature    : low 35.0 C / high 39.5 C
+  SpO2           : low 90% (no configured high limit)
+  Respiration    : low 8 br/min / high 25 br/min
+
+Latest Vital Signs
+  Heart Rate     : 135 bpm [WARNING]
+  Blood Pressure : 175/112 mmHg [WARNING]
+  Temperature    : 39.8 C [CRITICAL]
+  SpO2           : 87% [CRITICAL]
+  Respiration    : 27 br/min [CRITICAL]
+  Status Basis   : Live dashboard clinical thresholds; configured alarm limits are listed above for session context.
+  Overall Status : CRITICAL
+
+Active Alerts
+  [WARNING]  Heart rate 135 bpm [normal 60-100]
+  [WARNING]  BP 175/112 mmHg [normal 90-140 / 60-90]
+  [CRITICAL]  Temp 39.8 C [normal 36.1-37.2]
+  [CRITICAL]  SpO2 87% [normal 95-100%]
+  [CRITICAL]  RR 27 br/min [normal 12-20]
+
+Reading History
+  #1  HR 78 | BP 122/82 | Temp 36.7 C | SpO2 98% | RR 15 br/min  [NORMAL]
+  #2  HR 108 | BP 148/94 | Temp 37.9 C | SpO2 93% | RR 23 br/min  [WARNING]
+  #3  HR 135 | BP 175/112 | Temp 39.8 C | SpO2 87% | RR 27 br/min  [CRITICAL]
+
+Retention Boundary
+  History in this snapshot is limited to the current admitted session and at most 10 readings.
+  This export is a point-in-time snapshot and shall not be treated as a live monitor feed.
