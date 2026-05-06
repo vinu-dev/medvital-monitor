@@ -326,7 +326,13 @@ TEST(PatientAlertEvents, REQ_PAT_008_SessionResetNoticeLifecycle) {
     ASSERT_NE(notice, nullptr);
     EXPECT_NE(std::string(notice).find("automatically after 10 readings"), std::string::npos);
 
-    patient_init(&rec, 2, "Reset Patient", 40, 80.0f, 1.80f);
+    patient_init(&rec, rec.info.id, rec.info.name,
+                 rec.info.age, rec.info.weight_kg, rec.info.height_m);
+    EXPECT_EQ(rec.info.id, 1);
+    EXPECT_STREQ(rec.info.name, "Test");
+    EXPECT_EQ(rec.info.age, 25);
+    EXPECT_FLOAT_EQ(rec.info.weight_kg, 70.0f);
+    EXPECT_FLOAT_EQ(rec.info.height_m, 1.75f);
     EXPECT_EQ(patient_session_reset_notice(&rec), nullptr);
 }
 

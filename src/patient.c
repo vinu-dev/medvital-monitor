@@ -163,12 +163,18 @@ static void format_alert_event_line(const AlertEvent *event,
 void patient_init(PatientRecord *rec, int id, const char *name,
                   int age, float weight_kg, float height_m)
 {
+    char name_copy[MAX_NAME_LEN];
+
+    /* Copy the name first in case the caller passes rec->info.name back in. */
+    strncpy(name_copy, name, MAX_NAME_LEN - 1);
+    name_copy[MAX_NAME_LEN - 1] = '\0';
+
     memset(rec, 0, sizeof(*rec));
     rec->info.id        = id;
     rec->info.age       = age;
     rec->info.weight_kg = weight_kg;
     rec->info.height_m  = height_m;
-    strncpy(rec->info.name, name, MAX_NAME_LEN - 1);
+    strncpy(rec->info.name, name_copy, MAX_NAME_LEN - 1);
     rec->info.name[MAX_NAME_LEN - 1] = '\0'; /* guarantee null-termination */
     rec->reading_count  = 0;
 }
