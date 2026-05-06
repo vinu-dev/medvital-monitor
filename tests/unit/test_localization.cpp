@@ -63,6 +63,10 @@ protected:
     }
 };
 
+class AlarmAudioLocalizationTest : public LocalizationTest
+{
+};
+
 // @req SWR-GUI-012 - Default language is English on startup/reset
 TEST_F(LocalizationTest, DefaultsToEnglish)
 {
@@ -153,4 +157,33 @@ TEST_F(LocalizationTest, SaveLanguagePreservesSimulationModeAndNormalizesInvalid
     ASSERT_EQ(1, app_config_load(&sim_enabled));
     EXPECT_EQ(0, sim_enabled);
     EXPECT_EQ(LOC_LANG_ENGLISH, app_config_load_language());
+}
+
+// @req SWR-GUI-014 - Alarm-audio badge strings are localized for all approved languages
+TEST_F(AlarmAudioLocalizationTest, REQ_GUI_014_AlarmAudioBadgeStringsExistAcrossApprovedLanguages)
+{
+    struct Sample {
+        Language lang;
+        const char *label;
+        const char *audible;
+        const char *silenced;
+        const char *unknown;
+    };
+
+    const Sample samples[] = {
+        {LOC_LANG_ENGLISH, "Audio", "Audible", "Silenced", "Unknown"},
+        {LOC_LANG_SPANISH, "Audio", "Audible", "Silenciado", "Desconocido"},
+        {LOC_LANG_FRENCH, "Audio", "Audible", "Silencieux", "Inconnu"},
+        {LOC_LANG_GERMAN, "Audio", "Hoerbar", "Stumm", "Unbekannt"},
+    };
+
+    for (const Sample &sample : samples)
+    {
+        SCOPED_TRACE(static_cast<int>(sample.lang));
+        localization_set_language(sample.lang);
+        EXPECT_STREQ(sample.label, localization_get_string(STR_AUDIO_LABEL));
+        EXPECT_STREQ(sample.audible, localization_get_string(STR_AUDIO_AUDIBLE));
+        EXPECT_STREQ(sample.silenced, localization_get_string(STR_AUDIO_SILENCED));
+        EXPECT_STREQ(sample.unknown, localization_get_string(STR_AUDIO_UNKNOWN));
+    }
 }

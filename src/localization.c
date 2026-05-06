@@ -73,6 +73,11 @@ static const char* g_strings_english[STR_COUNT] = {
     "Device Mode",                  /* STR_DEVICE_MODE */
     "IN SIMULATION MODE",           /* STR_IN_SIMULATION_MODE */
 
+    "Audio",                        /* STR_AUDIO_LABEL */
+    "Audible",                      /* STR_AUDIO_AUDIBLE */
+    "Silenced",                     /* STR_AUDIO_SILENCED */
+    "Unknown",                      /* STR_AUDIO_UNKNOWN */
+
     "Language",                     /* STR_LANGUAGE */
     "Alarm Limits",                 /* STR_ALARM_LIMITS */
     "User Management",              /* STR_USER_MANAGEMENT */
@@ -145,6 +150,11 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "Simulación habilitada",
     "Modo Dispositivo",
     "EN MODO SIMULACIÓN",
+
+    "Audio",
+    "Audible",
+    "Silenciado",
+    "Desconocido",
 
     "Idioma",
     "Límites de Alarma",
@@ -219,6 +229,11 @@ static const char* g_strings_french[STR_COUNT] = {
     "Mode Appareil",
     "EN MODE SIMULATION",
 
+    "Audio",
+    "Audible",
+    "Silencieux",
+    "Inconnu",
+
     "Langue",
     "Limites d'Alarme",
     "Gestion des Utilisateurs",
@@ -291,6 +306,11 @@ static const char* g_strings_german[STR_COUNT] = {
     "Simulation aktiviert",
     "Gerät-Modus",
     "IM SIMULATIONSMODUS",
+
+    "Audio",
+    "Hoerbar",
+    "Stumm",
+    "Unbekannt",
 
     "Sprache",
     "Alarmlimits",

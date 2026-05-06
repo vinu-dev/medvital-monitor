@@ -47,7 +47,8 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-001, UNS-009 | SYS-001, SYS-002 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | `TrendDirection.*`, `TrendExtract.*` (18 tests) | — |
 | UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | Manual GUI review + `ConfigTest.*` support (10 persistence checks) | — |
 | UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | Manual visual review | — |
-| UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, selector strings, `monitor.cfg` persistence/load | `LocalizationTest.*` (8 tests) + supplemental `DVT-GUI-16` | — |
+| UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, selector strings, `monitor.cfg` persistence/load | `LocalizationTest.DefaultsToEnglish`, `SupportsAllApprovedLanguages`, `InvalidLanguageValuesAreIgnored`, `LanguageNamesMatchApprovedSelectorEntries`, `InvalidLanguageNameReturnsUnknown`, `InvalidStringIdReturnsFallbackToken`, `SaveAndLoadLanguagePreference`, `SaveLanguagePreservesSimulationModeAndNormalizesInvalidInput` + supplemental `DVT-GUI-16` | — |
+| UNS-014 | SYS-022 | SWR-GUI-014 | `gui_main.c` : `paint_header()`, `format_alarm_audio_badge()`, `reset_alarm_audio_state()`; `localization.c` : alarm-audio badge strings | `AlarmAudioLocalizationTest.REQ_GUI_014_*` + Manual GUI review (`GUI-MAN-07`) | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -113,6 +114,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `UsersTest` | `REQ_SEC_004_*` | SWR-SEC-004 | SYS-017 | UNS-016 |
 | `UsersTest` | `REQ_GUI_007_*` | SWR-GUI-007 | SYS-016 | UNS-016 |
 | `LocalizationTest` | `LocalizationTest.*` | SWR-GUI-012 | SYS-014 | UNS-014 |
+| `AlarmAudioLocalizationTest` | `REQ_GUI_014_*` | SWR-GUI-014 | SYS-022 | UNS-014 |
 | `RespRate` | `REQ_VIT_008_*` | SWR-VIT-008 | SYS-018 | UNS-005, UNS-006, UNS-014, UNS-015 |
 | `News2HR`, `News2RR`, etc. | `News2*.*` | SWR-NEW-001 | SYS-019 | UNS-005, UNS-006, UNS-010, UNS-014 |
 | `AlarmLimitsTest` | `AlarmLimitsTest.*` | SWR-ALM-001 | SYS-002, SYS-003 | UNS-005, UNS-006 |
@@ -161,7 +163,7 @@ Supporting implementation checks:
 | UNS-011 | Data integrity | SYS-010, SYS-012 | SWR-PAT-002, SWR-PAT-005, SWR-ALT-003, SWR-PAT-001 | ✓ |
 | UNS-012 | Platform compatibility | SYS-012 | SWR-PAT-001, SWR-ALT-003 | ✓ |
 | UNS-013 | User authentication | SYS-013 | SWR-GUI-001, SWR-GUI-002 | ✓ |
-| UNS-014 | Graphical dashboard | SYS-014, SYS-018, SYS-019, SYS-021 | SWR-GUI-003, SWR-GUI-004, SWR-GUI-012, SWR-GUI-013, SWR-VIT-008, SWR-NEW-001 | ✓ |
+| UNS-014 | Graphical dashboard | SYS-014, SYS-018, SYS-019, SYS-021, SYS-022 | SWR-GUI-003, SWR-GUI-004, SWR-GUI-012, SWR-GUI-013, SWR-GUI-014, SWR-VIT-008, SWR-NEW-001 | ✓ |
 | UNS-015 | Live monitoring feed | SYS-015, SYS-018 | SWR-GUI-005, SWR-GUI-006, SWR-GUI-010, SWR-GUI-011, SWR-VIT-008 | ✓ |
 | UNS-016 | Role-based access / multi-user | SYS-016, SYS-017 | SWR-SEC-001, SWR-SEC-002, SWR-SEC-003, SWR-GUI-007, SWR-GUI-008, SWR-GUI-009 | ✓ |
 | UNS-017 | Session alarm event review | SYS-020, SYS-021 | SWR-PAT-006, SWR-PAT-007, SWR-PAT-008, SWR-GUI-013 | ✓ |
@@ -210,14 +212,15 @@ Supporting implementation checks:
 | SWR-GUI-009 | `settings_proc()`, `pwddlg_proc()`, `adduser_proc()` | GUI demo | — | ✓ |
 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : mode toggle + persistence | Manual GUI review + `ConfigTest.*` support (10) | — | ✓ |
 | SWR-GUI-011 | `gui_main.c` : `paint_status_banner()`, scroll offset | Manual visual review | — | ✓ |
-| SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector strings, persistence/load | `LocalizationTest.*` (8) + supplemental `DVT-GUI-16` | — | ✓ |
+| SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector strings, persistence/load | 8 targeted `LocalizationTest` cases + supplemental `DVT-GUI-16` | — | ✓ |
 | SWR-GUI-013 | `create_dash_controls()`, `reposition_dash_controls()`, `update_dashboard()` | Manual GUI review (`GUI-MAN-06`) | — | ✓ |
+| SWR-GUI-014 | `paint_header()`, `format_alarm_audio_badge()`, `reset_alarm_audio_state()` | `AlarmAudioLocalizationTest.REQ_GUI_014_*` + Manual GUI review (`GUI-MAN-07`) | — | ✓ |
 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | 18 | — | ✓ |
 
-**Result: 40 / 40 SWRs implemented and tested ✓**
+**Result: 41 / 41 SWRs implemented and tested ✓**
 
 ---
 
@@ -268,10 +271,10 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_trend.cpp` | 18 | SWR-TRD-001 |
 | `tests/unit/test_hal.cpp` | 12 | Supporting HAL / simulator checks only; no direct SWR verification claim |
 | `tests/unit/test_config.cpp` | 10 | Supporting config persistence checks only; no direct SWR verification claim |
-| `tests/unit/test_localization.cpp` | 8 | SWR-GUI-012 |
+| `tests/unit/test_localization.cpp` | 9 | SWR-GUI-012, SWR-GUI-014 |
 | `tests/integration/test_patient_monitoring.cpp` | 7 | SWR-PAT-*, SWR-VIT-*, SWR-ALT-* |
 | `tests/integration/test_alert_escalation.cpp` | 7 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004, SWR-PAT-007 |
-| **Total** | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total** | **308** | **41 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
@@ -291,3 +294,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | J   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for RR and NEWS2 requirements; 37/37 SWR, 295 tests |
 | K   | 2026-05-05 | Codex implementer | Added session alarm event review traceability: UNS-017, SYS-020/021, SWR-PAT-007/008, SWR-GUI-013; 40/40 SWR, 305 tests |
 | L   | 2026-05-06 | Codex implementer | Added session-reset disclosure traceability and updated automated totals to 307 tests |
+| M   | 2026-05-06 | Codex implementer | Added local alarm-audio badge traceability: SYS-022, SWR-GUI-014, and 9 localization tests; 41/41 SWR, 308 tests |

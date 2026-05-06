@@ -14,6 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
+ * @req SWR-GUI-014
  * @req SWR-VIT-008  @req SWR-NEW-001
  */
 #ifdef _MSC_VER
@@ -186,6 +187,13 @@
 #define CLR_CR_FG      RGB(185,  28,  28)
 #define CLR_GOLD       RGB(218, 165,  32)
 #define CLR_TEAL       RGB( 32, 178, 170)
+#define CLR_AUDIO_BG   RGB( 71,  85, 105)
+
+typedef enum {
+    ALARM_AUDIO_UNKNOWN = 0,
+    ALARM_AUDIO_AUDIBLE,
+    ALARM_AUDIO_SILENCED
+} AlarmAudioState;
 
 /* ===================================================================
  * Global application state
@@ -206,6 +214,7 @@ typedef struct {
     int           has_patient;
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
+    AlarmAudioState alarm_audio_state; /**< Local alarm-audio badge state @req SWR-GUI-014 */
     int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
 
@@ -287,12 +296,44 @@ static void draw_pill(HDC hdc, int x, int y, int w, int h,
                  DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }
 
+/**
+ * @brief Format the informational alarm-audio badge text for the dashboard header.
+ * @req SWR-GUI-014
+ */
+static void format_alarm_audio_badge(char *buf, size_t buf_sz)
+{
+    StringID state_id = STR_AUDIO_UNKNOWN;
+
+    switch (g_app.alarm_audio_state) {
+    case ALARM_AUDIO_AUDIBLE:
+        state_id = STR_AUDIO_AUDIBLE;
+        break;
+    case ALARM_AUDIO_SILENCED:
+        state_id = STR_AUDIO_SILENCED;
+        break;
+    case ALARM_AUDIO_UNKNOWN:
+    default:
+        state_id = STR_AUDIO_UNKNOWN;
+        break;
+    }
+
+    snprintf(buf, buf_sz, "%s: %s",
+             localization_get_string(STR_AUDIO_LABEL),
+             localization_get_string(state_id));
+}
+
+static void reset_alarm_audio_state(void)
+{
+    g_app.alarm_audio_state = ALARM_AUDIO_UNKNOWN;
+}
+
 /* ===================================================================
  * Painted zones — header
  * =================================================================== */
 static void paint_header(HDC hdc, int cw)
 {
     char buf[128];
+    char audio_buf[64];
     fill_rect(hdc, 0, 0, cw, HDR_H, CLR_NAVY);
 
     /* Medical cross (white GDI rects) */
@@ -311,10 +352,14 @@ static void paint_header(HDC hdc, int cw)
         const char *badge_txt = (g_app.logged_role == ROLE_ADMIN) ? "ADMIN" : "CLINICAL";
         snprintf(buf, sizeof(buf), "  %s", g_app.logged_user);
         draw_text_ex(hdc, buf,
-                     cw - 560, 0, 160, HDR_H,
+                     cw - 560, 0, 150, HDR_H,
                      g_app.font_ui, RGB(186, 230, 253),
-                     DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+                     DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS);
         draw_pill(hdc, cw - 400, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
+
+        format_alarm_audio_badge(audio_buf, sizeof(audio_buf));
+        draw_pill(hdc, cw - 456, 31, 176, 22,
+                  CLR_AUDIO_BG, audio_buf, g_app.font_tile_lbl);
     }
 
     /* Sim status indicator — only shown when simulation is active */
@@ -322,7 +367,7 @@ static void paint_header(HDC hdc, int cw)
         const char *mode_txt = g_app.sim_paused ? "SIM PAUSED" : "* SIM LIVE";
         COLORREF    mode_clr = g_app.sim_paused ? RGB(253,224,71) : RGB(134,239,172);
         draw_text_ex(hdc, mode_txt,
-                     cw - 560, 32, 108, 22,
+                     cw - 560, 32, 104, 22,
                      g_app.font_tile_lbl, mode_clr,
                      DT_SINGLELINE | DT_LEFT);
     }
@@ -1740,6 +1785,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         alarm_limits_load(&g_app.alarm_limits);       /* restore alarm limits @req SWR-ALM-001 */
         hw_init();
         g_app.sim_paused = 0;
+        reset_alarm_audio_state();
 
         /* Pause Sim and demo buttons only visible when simulation is active */
         ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
@@ -1844,6 +1890,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             ZeroMemory(&g_app.patient, sizeof(g_app.patient));
             g_app.has_patient    = 0;
             g_app.sim_paused     = 0;
+            reset_alarm_audio_state();
             g_app.logged_user[0] = '\0';
             g_app.logged_username[0] = '\0';
             g_app.hwnd_login = CreateWindowExA(

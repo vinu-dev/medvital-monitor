@@ -88,6 +88,12 @@ typedef enum {
     STR_DEVICE_MODE,
     STR_IN_SIMULATION_MODE,
 
+    /* Alarm audio badge */
+    STR_AUDIO_LABEL,
+    STR_AUDIO_AUDIBLE,
+    STR_AUDIO_SILENCED,
+    STR_AUDIO_UNKNOWN,
+
     /* Settings */
     STR_LANGUAGE,
     STR_ALARM_LIMITS,

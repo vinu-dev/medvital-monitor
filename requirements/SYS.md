@@ -256,6 +256,16 @@ events have been recorded.
 
 ---
 
+### SYS-022 — Local Alarm-Audio Status Indication
+**Requirement:** The system shall display the current local alarm-audio
+presentation state in the dashboard header as `Audible`, `Silenced`, or
+`Unknown` when the local state is unavailable or indeterminate. The indication
+shall be informational only and shall not alter alarm thresholds, alert
+generation, or alarm routing.
+**Traces to:** UNS-014
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -266,3 +276,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-06 | Codex implementer | Added SYS-022 for informational local alarm-audio status indication |

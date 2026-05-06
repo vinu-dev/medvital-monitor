@@ -717,6 +717,26 @@ session event label string
 
 ---
 
+### SWR-GUI-014 — Alarm-Audio Status Badge
+
+**Requirement:** The dashboard header shall render a dedicated non-clinical
+alarm-audio badge labeled `Audio`. The badge shall source its state from an
+explicit local alarm-audio presentation-state model and shall support
+`Audible`, `Silenced`, and `Unknown`. The application shall initialize the
+state to `Unknown` on dashboard creation, reset it to `Unknown` on logout, and
+display `Unknown` whenever the local state is unavailable, stale, unsupported,
+or not yet established. The badge shall remain display-only, use localized
+strings, and remain visually distinct from patient severity status colours.
+
+**Traces to:** SYS-022
+**Implemented in:** `src/gui_main.c` — `paint_header()`,
+`format_alarm_audio_badge()`, `reset_alarm_audio_state()`; `src/localization.c`
+— alarm-audio badge strings
+**Verified by:** `tests/unit/test_localization.cpp` —
+`AlarmAudioLocalizationTest.REQ_GUI_014_*`; Manual GUI review (`GUI-MAN-07`)
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -734,3 +754,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-06 | Codex implementer | Added SWR-GUI-014 for the localized local alarm-audio status badge |
