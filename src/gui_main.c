@@ -14,7 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
- * @req SWR-VIT-008  @req SWR-NEW-001  @req SWR-GUI-013
+ * @req SWR-VIT-008  @req SWR-NEW-001  @req SWR-GUI-013  @req SWR-GUI-014
  */
 #ifdef _MSC_VER
 #  define _CRT_SECURE_NO_WARNINGS

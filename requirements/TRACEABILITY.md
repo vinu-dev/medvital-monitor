@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix (RTM)
 
-**Document ID:** RTM-001-REV-L
+**Document ID:** RTM-001-REV-M
 **Project:** Patient Vital Signs Monitor
 **Version:** 2.7.0
 **Date:** 2026-05-06
@@ -48,6 +48,10 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-015 | SYS-015 | SWR-GUI-010 | `gui_main.c`, `app_config.c` : sim toggle + persistence | Manual GUI review + `ConfigTest.*` support (10 persistence checks) | — |
 | UNS-015 | SYS-005 | SWR-GUI-011 | `gui_main.c` : rolling message in sim mode (`paint_status_banner()`, scroll offset) | Manual visual review | — |
 | UNS-014 | SYS-014 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : language tab, selector strings, `monitor.cfg` persistence/load | `LocalizationTest.*` (8 tests) + supplemental `DVT-GUI-16` | — |
+| UNS-018, UNS-011 | SYS-023, SYS-024 | SWR-EXP-001 | `session_export.c` : `session_export_build_path()`, `session_export_write_snapshot()` | `SessionExportTest.SWR_EXP_001_*` (3 tests) | `REQ_INT_EXP_002` |
+| UNS-018, UNS-009, UNS-010 | SYS-022, SYS-024 | SWR-EXP-002 | `session_export.c` : `session_export_write_snapshot()`, `session_export_format_history_row()`, `session_export_format_alert_row()` | `SessionExportTest.SWR_EXP_002_*` (2 tests) | `REQ_INT_EXP_001`, `REQ_INT_EXP_002` |
+| UNS-018, UNS-011 | SYS-022, SYS-023 | SWR-EXP-003 | `session_export.c` : `session_export_write_snapshot()` refusal and overwrite policy | `SessionExportTest.SWR_EXP_003_*` (3 tests) | `REQ_INT_EXP_003` |
+| UNS-018, UNS-013 | SYS-022, SYS-023 | SWR-GUI-014 | `gui_main.c`, `localization.c` : export button creation and `do_export_session_review()` | Manual GUI review with `SessionExportTest.*` support | — |
 | UNS-005, UNS-006 | SYS-005 | SWR-ALT-001 | `alerts.c` : `generate_alerts()` | `REQ_ALT_002_*` (4 tests) | `REQ_INT_MON_004`, `REQ_INT_ESC_002`, `REQ_INT_ESC_003` |
 | UNS-005 | SYS-005 | SWR-ALT-002 | `alerts.c` : `generate_alerts()` | `REQ_ALT_001_*` (1 test) | `REQ_INT_ESC_004` |
 | UNS-011 | SYS-012 | SWR-ALT-003 | `alerts.c` : `generate_alerts()` | `REQ_ALT_004_*` (2 tests) | — |
@@ -105,6 +109,7 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | `PatientAlertEvents` | `REQ_PAT_007_*` | SWR-PAT-007 | SYS-020, SYS-012 | UNS-017, UNS-011 |
 | `PatientAlertEvents` | `REQ_PAT_008_*` | SWR-PAT-008 | SYS-020, SYS-021 | UNS-017 |
 | `PatientPrintSummary` | `REQ_PAT_006_*` | SWR-PAT-006 | SYS-011, SYS-021 | UNS-010, UNS-017 |
+| `SessionExportTest` | `SWR_EXP_001_*`, `SWR_EXP_002_*`, `SWR_EXP_003_*` | SWR-EXP-001, SWR-EXP-002, SWR-EXP-003 | SYS-022, SYS-023, SYS-024 | UNS-018, UNS-011, UNS-009, UNS-010 |
 | `UsersTest` | `REQ_GUI_001_*` | SWR-GUI-001 | SYS-013 | UNS-013 |
 | `UsersTest` | `REQ_GUI_002_*` | SWR-GUI-002 | SYS-013 | UNS-013 |
 | `UsersTest` | `REQ_SEC_001_*` | SWR-SEC-001 | SYS-016 | UNS-016 |
@@ -139,6 +144,9 @@ Supporting implementation checks:
 | `AlertEscalation` | `REQ_INT_ESC_004` | SWR-PAT-004, SWR-ALT-002 | SYS-005, SYS-006 | UNS-005, UNS-006 |
 | `AlertEscalation` | `REQ_INT_ESC_005` | SWR-VIT-001, SWR-VIT-004, SWR-PAT-004 | SYS-001, SYS-004, SYS-006 | UNS-001, UNS-004, UNS-005, UNS-006 |
 | `AlertEscalation` | `REQ_INT_ESC_006` | SWR-PAT-007, SWR-ALT-001 | SYS-020, SYS-005 | UNS-017, UNS-005, UNS-006 |
+| `SessionExportIntegrationTest` | `REQ_INT_EXP_001` | SWR-EXP-002 | SYS-022, SYS-024 | UNS-018, UNS-009, UNS-010 |
+| `SessionExportIntegrationTest` | `REQ_INT_EXP_002` | SWR-EXP-001, SWR-EXP-002 | SYS-022, SYS-023, SYS-024 | UNS-018, UNS-011 |
+| `SessionExportIntegrationTest` | `REQ_INT_EXP_003` | SWR-EXP-003 | SYS-022, SYS-023 | UNS-018, UNS-011 |
 
 ---
 
@@ -165,8 +173,9 @@ Supporting implementation checks:
 | UNS-015 | Live monitoring feed | SYS-015, SYS-018 | SWR-GUI-005, SWR-GUI-006, SWR-GUI-010, SWR-GUI-011, SWR-VIT-008 | ✓ |
 | UNS-016 | Role-based access / multi-user | SYS-016, SYS-017 | SWR-SEC-001, SWR-SEC-002, SWR-SEC-003, SWR-GUI-007, SWR-GUI-008, SWR-GUI-009 | ✓ |
 | UNS-017 | Session alarm event review | SYS-020, SYS-021 | SWR-PAT-006, SWR-PAT-007, SWR-PAT-008, SWR-GUI-013 | ✓ |
+| UNS-018 | Session review snapshot export | SYS-022, SYS-023, SYS-024 | SWR-EXP-001, SWR-EXP-002, SWR-EXP-003, SWR-GUI-014 | ✓ |
 
-**Result: 17 / 17 User Needs covered ✓**
+**Result: 18 / 18 User Needs covered ✓**
 
 ---
 
@@ -195,6 +204,9 @@ Supporting implementation checks:
 | SWR-PAT-006 | `patient_print_summary()` | 5 | — | ✓ |
 | SWR-PAT-007 | `patient_add_reading()`, alert-event helpers | 6 | 2 | ✓ |
 | SWR-PAT-008 | `patient_init()`, `patient_alert_event_count()`, `patient_alert_event_at()`, `patient_note_session_reset()`, `patient_session_reset_notice()` | 2 | — | ✓ |
+| SWR-EXP-001 | `session_export_build_path()`, `session_export_write_snapshot()` | 3 | 1 | ✓ |
+| SWR-EXP-002 | `session_export_write_snapshot()`, shared row-format helpers | 2 | 2 | ✓ |
+| SWR-EXP-003 | `session_export_write_snapshot()` refusal + overwrite flow | 3 | 1 | ✓ |
 | SWR-GUI-001 | `auth_validate()` | 10 | — | ✓ |
 | SWR-GUI-002 | `attempt_login()`, `login_proc()`, logout | 5 | — | ✓ |
 | SWR-GUI-003 | `paint_tile()`, `paint_tiles()`, `paint_status_banner()` | GUI demo | — | ✓ |
@@ -212,12 +224,13 @@ Supporting implementation checks:
 | SWR-GUI-011 | `gui_main.c` : `paint_status_banner()`, scroll offset | Manual visual review | — | ✓ |
 | SWR-GUI-012 | `gui_main.c`, `localization.c`, `app_config.c` : selector strings, persistence/load | `LocalizationTest.*` (8) + supplemental `DVT-GUI-16` | — | ✓ |
 | SWR-GUI-013 | `create_dash_controls()`, `reposition_dash_controls()`, `update_dashboard()` | Manual GUI review (`GUI-MAN-06`) | — | ✓ |
+| SWR-GUI-014 | `gui_main.c`, `localization.c` : export button + export action | Manual GUI review + `SessionExportTest.*` support | — | ✓ |
 | SWR-VIT-008 | `vitals.c` : `check_respiration_rate()` | 15 | — | ✓ |
 | SWR-NEW-001 | `news2.c` : `news2_calculate()` | 53 | — | ✓ |
 | SWR-ALM-001 | `alarm_limits.c` : `alarm_limits_defaults()`, `alarm_check_*()` | 31 | — | ✓ |
 | SWR-TRD-001 | `trend.c` : `trend_direction()`, `trend_extract_*()` | 18 | — | ✓ |
 
-**Result: 40 / 40 SWRs implemented and tested ✓**
+**Result: 44 / 44 SWRs implemented and tested ✓**
 
 ---
 
@@ -261,7 +274,7 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 |-----------|-------|---------------|
 | `tests/unit/test_vitals.cpp` | 80 | SWR-VIT-001 – SWR-VIT-008 |
 | `tests/unit/test_alerts.cpp` | 11 | SWR-ALT-001 – SWR-ALT-004 |
-| `tests/unit/test_patient.cpp` | 29 | SWR-PAT-001 – SWR-PAT-008 |
+| `tests/unit/test_patient.cpp` | 30 | SWR-PAT-001 – SWR-PAT-008 |
 | `tests/unit/test_auth.cpp` | 41 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–004, SWR-GUI-007 |
 | `tests/unit/test_news2.cpp` | 53 | SWR-NEW-001 |
 | `tests/unit/test_alarm_limits.cpp` | 31 | SWR-ALM-001 |
@@ -269,9 +282,11 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_hal.cpp` | 12 | Supporting HAL / simulator checks only; no direct SWR verification claim |
 | `tests/unit/test_config.cpp` | 10 | Supporting config persistence checks only; no direct SWR verification claim |
 | `tests/unit/test_localization.cpp` | 8 | SWR-GUI-012 |
+| `tests/unit/test_session_export.cpp` | 8 | SWR-EXP-001 – SWR-EXP-003 |
 | `tests/integration/test_patient_monitoring.cpp` | 7 | SWR-PAT-*, SWR-VIT-*, SWR-ALT-* |
 | `tests/integration/test_alert_escalation.cpp` | 7 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004, SWR-PAT-007 |
-| **Total** | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| `tests/integration/test_session_export.cpp` | 3 | SWR-EXP-001 – SWR-EXP-003 |
+| **Total** | **319** | **44 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
@@ -291,3 +306,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | J   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for RR and NEWS2 requirements; 37/37 SWR, 295 tests |
 | K   | 2026-05-05 | Codex implementer | Added session alarm event review traceability: UNS-017, SYS-020/021, SWR-PAT-007/008, SWR-GUI-013; 40/40 SWR, 305 tests |
 | L   | 2026-05-06 | Codex implementer | Added session-reset disclosure traceability and updated automated totals to 307 tests |
+| M   | 2026-05-06 | Codex implementer | Added session review snapshot export traceability, SWR-EXP-001..003, SWR-GUI-014, and updated automated totals to 319 tests |

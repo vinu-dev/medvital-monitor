@@ -327,7 +327,7 @@ from a terminal.
 | Script                 | What it does                                                          |
 |------------------------|-----------------------------------------------------------------------|
 | `build.bat`            | Configure + build everything (first run or incremental). Launches GUI.|
-| `run_tests.bat`        | Rebuild test targets and run all 307 tests. Exits non-zero on failure.|
+| `run_tests.bat`        | Rebuild test targets and run all 319 tests. Exits non-zero on failure.|
 | `run_coverage.bat`     | Build with `--coverage`, run tests, generate HTML + XML reports.      |
 | `generate_docs.bat`    | Run Doxygen to produce HTML + XML design documentation.               |
 | `create_installer.bat` | Build release exe + compile Windows installer (`dist\` folder).       |
@@ -469,9 +469,11 @@ requirements revision.
 | `tests/unit/test_hal.cpp`                       | 12     | Supporting HAL / simulator checks only |
 | `tests/unit/test_config.cpp`                    | 10     | Supporting config persistence checks only |
 | `tests/unit/test_localization.cpp`              | 8      | SWR-GUI-012                       |
+| `tests/unit/test_session_export.cpp`            | 8      | SWR-EXP-001..003                  |
 | `tests/integration/test_patient_monitoring.cpp` | 7      | SWR-PAT-*, SWR-VIT-*, SWR-ALT-*   |
 | `tests/integration/test_alert_escalation.cpp`   | 7      | SWR-VIT-*, SWR-ALT-*, SWR-PAT-007 |
-| **Total**                                       | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| `tests/integration/test_session_export.cpp`     | 3      | SWR-EXP-001..003                  |
+| **Total**                                       | **319** | **44 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ### Test techniques applied
 

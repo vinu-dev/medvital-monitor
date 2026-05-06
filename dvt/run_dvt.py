@@ -98,6 +98,21 @@ REQUIREMENT_MAP = {
         "PatientAlertEvents.REQ_PAT_008_EventAccessAndReset",
         "PatientAlertEvents.REQ_PAT_008_SessionResetNoticeLifecycle",
     ), "patient alert-event accessors and reset behavior"),
+    # Session review snapshot export
+    "SWR-EXP-001": ("test_unit", (
+        "SessionExportTest.SWR_EXP_001_BuildPathUsesDeterministicFilename",
+        "SessionExportTest.SWR_EXP_001_CreatesSnapshotWithRestrictedPermissions",
+        "SessionExportTest.SWR_EXP_001_OverwriteEnabledRecreatesRestrictedSnapshot",
+    ), "Session snapshot path and restrictive local file creation"),
+    "SWR-EXP-002": ("test_unit", (
+        "SessionExportTest.SWR_EXP_002_WritesRequiredSnapshotSections",
+        "SessionExportTest.SWR_EXP_002_Win32EditPathPreservesUtf8PatientName",
+    ), "Session snapshot content serialization and UTF-8 formatting parity"),
+    "SWR-EXP-003": ("test_unit", (
+        "SessionExportTest.SWR_EXP_003_RefusesWhenNoPatientIsAdmitted",
+        "SessionExportTest.SWR_EXP_003_RefusesWhenNoReadingsExist",
+        "SessionExportTest.SWR_EXP_003_ExistingFileRequiresExplicitOverwrite",
+    ), "Session snapshot refusal states and overwrite control"),
     # Security - GTest suite: UsersTest
     "SWR-SEC-001": ("test_unit", "UsersTest", "users_authenticate() valid/invalid creds"),
     "SWR-SEC-002": ("test_unit", "UsersTest.REQ_SEC_004_StoredValueIsNotPlaintext",
@@ -112,6 +127,7 @@ REQUIREMENT_MAP = {
     "SWR-GUI-011": (None, "MANUAL", "Rolling simulation banner verified by manual visual check"),
     "SWR-GUI-012": ("test_unit", "LocalizationTest", "Localization API, selector list, and monitor.cfg persistence"),
     "SWR-GUI-013": (None, "MANUAL", "GUI review: dedicated session alarm events list remains distinct from active alerts"),
+    "SWR-GUI-014": (None, "MANUAL", "GUI review: export action, overwrite prompt, and operator feedback"),
     # GUI requirements verified via manual checklist only (GUI rendering and workflow review)
     "SWR-GUI-001": (None, "MANUAL", "Login screen: auth, error message, role detection"),
     "SWR-GUI-002": (None, "MANUAL", "Dashboard: colour-coded vital tiles update every 2 s"),
