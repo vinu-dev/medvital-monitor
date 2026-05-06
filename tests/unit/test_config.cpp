@@ -22,6 +22,8 @@
 
 extern "C" {
 #include "app_config.h"
+#include "localization.h"
+#include "session_timeout.h"
 }
 
 // ---------------------------------------------------------------------------
@@ -250,4 +252,80 @@ TEST_F(ConfigTest, NonZeroValueTreatedAsEnabled)
     int result = app_config_load(&sim_enabled);
     EXPECT_EQ(1, result);
     EXPECT_EQ(1, sim_enabled) << "Any non-zero value should be normalised to 1";
+}
+
+// @req SWR-GUI-014 - Missing idle-timeout config falls back to approved default
+TEST_F(ConfigTest, IdleTimeoutDefaultsWhenFileAbsent)
+{
+    std::string nonexistent = temp_path_ + "_idle_missing";
+    std::remove(nonexistent.c_str());
+    app_config_set_path(nonexistent.c_str());
+
+    EXPECT_EQ(SESSION_TIMEOUT_DEFAULT_MINUTES,
+              app_config_load_idle_timeout_minutes());
+
+    std::remove(nonexistent.c_str());
+}
+
+// @req SWR-GUI-014 - Saved idle timeout is reloaded unchanged when valid
+TEST_F(ConfigTest, SaveIdleTimeoutThenLoadReturnsSavedValue)
+{
+    ASSERT_EQ(1, app_config_save_idle_timeout_minutes(12));
+    EXPECT_EQ(12, app_config_load_idle_timeout_minutes());
+}
+
+// @req SWR-GUI-014 - Saving idle timeout preserves existing sim and language keys
+TEST_F(ConfigTest, SaveIdleTimeoutPreservesSimulationAndLanguage)
+{
+    ASSERT_EQ(1, app_config_save(0));
+    ASSERT_EQ(1, app_config_save_language(LOC_LANG_GERMAN));
+    ASSERT_EQ(1, app_config_save_idle_timeout_minutes(9));
+
+    int sim_enabled = 99;
+    ASSERT_EQ(1, app_config_load(&sim_enabled));
+    EXPECT_EQ(0, sim_enabled);
+    EXPECT_EQ(LOC_LANG_GERMAN, app_config_load_language());
+    EXPECT_EQ(9, app_config_load_idle_timeout_minutes());
+}
+
+// @req SWR-GUI-014 - Saving language preserves the persisted idle timeout
+TEST_F(ConfigTest, SaveLanguagePreservesIdleTimeout)
+{
+    ASSERT_EQ(1, app_config_save_idle_timeout_minutes(14));
+    ASSERT_EQ(1, app_config_save_language(LOC_LANG_SPANISH));
+
+    EXPECT_EQ(LOC_LANG_SPANISH, app_config_load_language());
+    EXPECT_EQ(14, app_config_load_idle_timeout_minutes());
+}
+
+// @req SWR-GUI-014 - Saving sim mode preserves the persisted idle timeout
+TEST_F(ConfigTest, SaveSimulationModePreservesIdleTimeout)
+{
+    ASSERT_EQ(1, app_config_save_idle_timeout_minutes(18));
+    ASSERT_EQ(1, app_config_save(0));
+
+    int sim_enabled = 99;
+    ASSERT_EQ(1, app_config_load(&sim_enabled));
+    EXPECT_EQ(0, sim_enabled);
+    EXPECT_EQ(18, app_config_load_idle_timeout_minutes());
+}
+
+// @req SWR-SEC-005 - Malformed idle-timeout config falls back to the default
+TEST_F(ConfigTest, MalformedIdleTimeoutFallsBackToDefault)
+{
+    FILE *f = fopen(temp_path_.c_str(), "w");
+    ASSERT_NE(nullptr, f);
+    fprintf(f, "idle_timeout_minutes=abc\n");
+    fclose(f);
+
+    EXPECT_EQ(SESSION_TIMEOUT_DEFAULT_MINUTES,
+              app_config_load_idle_timeout_minutes());
+}
+
+// @req SWR-SEC-005 - Invalid saved idle-timeout values are normalized to the default
+TEST_F(ConfigTest, SavingInvalidIdleTimeoutPersistsDefault)
+{
+    ASSERT_EQ(1, app_config_save_idle_timeout_minutes(0));
+    EXPECT_EQ(SESSION_TIMEOUT_DEFAULT_MINUTES,
+              app_config_load_idle_timeout_minutes());
 }

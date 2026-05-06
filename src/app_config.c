@@ -5,6 +5,8 @@
  * The configuration file is a simple key=value text file:
  *
  *   sim_enabled=1
+ *   language=0
+ *   idle_timeout_minutes=5
  *
  * File location (in priority order):
  *  1. Path supplied by app_config_set_path() (non-NULL).
@@ -15,6 +17,7 @@
  */
 
 #include "app_config.h"
+#include "session_timeout.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +33,13 @@
 
 /* When non-empty this overrides the exe-derived path (set by tests). */
 static char s_override_path[CFG_MAX_PATH] = {0};
+
+typedef struct
+{
+    int sim_enabled;
+    int language;
+    int idle_timeout_minutes;
+} AppConfigData;
 
 /* -------------------------------------------------------------------------
  * Internal helpers
@@ -80,6 +90,129 @@ static int get_cfg_path(char *buf, size_t buf_size)
 #endif
 }
 
+static void app_config_defaults(AppConfigData *cfg)
+{
+    cfg->sim_enabled = 1;
+    cfg->language = 0;
+    cfg->idle_timeout_minutes = SESSION_TIMEOUT_DEFAULT_MINUTES;
+}
+
+static int parse_named_int(const char *line, const char *key, int *value_out)
+{
+    const size_t key_len = strlen(key);
+    char trailing[2];
+    int value = 0;
+
+    if (strncmp(line, key, key_len) != 0 || line[key_len] != '=')
+        return 0;
+
+    if (sscanf(line + key_len + 1u, "%d%1s", &value, trailing) == 1)
+    {
+        *value_out = value;
+        return 1;
+    }
+
+    return -1;
+}
+
+static int app_config_read(AppConfigData *cfg,
+                           int *sim_found,
+                           int *lang_found,
+                           int *idle_timeout_found)
+{
+    char cfg_path[CFG_MAX_PATH] = {0};
+    FILE *f = NULL;
+    char line[128];
+
+    if (sim_found != NULL)
+        *sim_found = 0;
+    if (lang_found != NULL)
+        *lang_found = 0;
+    if (idle_timeout_found != NULL)
+        *idle_timeout_found = 0;
+
+    if (cfg == NULL)
+        return 0;
+
+    app_config_defaults(cfg);
+
+    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
+        return 0;
+
+    f = fopen(cfg_path, "r");
+    if (f == NULL)
+        return 0;
+
+    while (fgets(line, (int)sizeof(line), f) != NULL)
+    {
+        int value = 0;
+        int rc = parse_named_int(line, "sim_enabled", &value);
+        if (rc != 0)
+        {
+            if (rc > 0)
+            {
+                cfg->sim_enabled = (value != 0) ? 1 : 0;
+                if (sim_found != NULL)
+                    *sim_found = 1;
+            }
+            continue;
+        }
+
+        rc = parse_named_int(line, "language", &value);
+        if (rc != 0)
+        {
+            if (rc > 0)
+            {
+                cfg->language = (value >= 0 && value < 4) ? value : 0;
+                if (lang_found != NULL)
+                    *lang_found = 1;
+            }
+            continue;
+        }
+
+        rc = parse_named_int(line, "idle_timeout_minutes", &value);
+        if (rc != 0)
+        {
+            if (rc > 0)
+            {
+                cfg->idle_timeout_minutes =
+                    session_timeout_normalize_minutes(value);
+                if (idle_timeout_found != NULL &&
+                    session_timeout_is_valid_minutes(value))
+                {
+                    *idle_timeout_found = 1;
+                }
+            }
+            continue;
+        }
+    }
+
+    fclose(f);
+    return 1;
+}
+
+static int app_config_write(const AppConfigData *cfg)
+{
+    char cfg_path[CFG_MAX_PATH] = {0};
+    FILE *f = NULL;
+    int ok = 0;
+
+    if (cfg == NULL || !get_cfg_path(cfg_path, sizeof(cfg_path)))
+        return 0;
+
+    f = fopen(cfg_path, "w");
+    if (f == NULL)
+        return 0;
+
+    ok = (fprintf(f,
+                  "sim_enabled=%d\nlanguage=%d\nidle_timeout_minutes=%d\n",
+                  cfg->sim_enabled ? 1 : 0,
+                  cfg->language,
+                  session_timeout_normalize_minutes(cfg->idle_timeout_minutes)) > 0);
+    fclose(f);
+    return ok ? 1 : 0;
+}
+
 /* -------------------------------------------------------------------------
  * Public API
  * ---------------------------------------------------------------------- */
@@ -99,109 +232,56 @@ void app_config_set_path(const char *path)
 
 int app_config_load(int *sim_enabled_out)
 {
+    AppConfigData cfg;
+    int sim_found = 0;
+
     if (sim_enabled_out == NULL)
         return 0;
 
-    /* Apply default before attempting to read */
-    *sim_enabled_out = 1;
-
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
-
-    FILE *f = fopen(cfg_path, "r");
-    if (f == NULL)
-        return 0; /* file absent – caller gets the default */
-
-    char line[128];
-    int parsed = 0;
-    while (fgets(line, (int)sizeof(line), f) != NULL)
-    {
-        int value = 0;
-        if (sscanf(line, "sim_enabled=%d", &value) == 1)
-        {
-            *sim_enabled_out = (value != 0) ? 1 : 0;
-            parsed = 1;
-            break;
-        }
-    }
-
-    fclose(f);
-
-    if (!parsed)
-    {
-        /* File exists but does not contain a recognisable value */
-        *sim_enabled_out = 1;
-        return 0;
-    }
-
-    return 1;
+    (void)app_config_read(&cfg, &sim_found, NULL, NULL);
+    *sim_enabled_out = cfg.sim_enabled;
+    return sim_found ? 1 : 0;
 }
 
 int app_config_save(int sim_enabled)
 {
-    /* Preserve language setting when saving sim_enabled */
-    int lang = app_config_load_language();
+    AppConfigData cfg;
 
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
-
-    FILE *f = fopen(cfg_path, "w");
-    if (f == NULL)
-        return 0;
-
-    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
-                       sim_enabled ? 1 : 0, lang) > 0);
-    fclose(f);
-    return ok ? 1 : 0;
+    (void)app_config_read(&cfg, NULL, NULL, NULL);
+    cfg.sim_enabled = sim_enabled ? 1 : 0;
+    return app_config_write(&cfg);
 }
 
 int app_config_load_language(void)
 {
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
+    AppConfigData cfg;
 
-    FILE *f = fopen(cfg_path, "r");
-    if (f == NULL)
-        return 0;
-
-    char line[128];
-    int lang = 0;
-    while (fgets(line, (int)sizeof(line), f) != NULL)
-    {
-        int value = 0;
-        if (sscanf(line, "language=%d", &value) == 1)
-        {
-            if (value >= 0 && value < 4)
-                lang = value;
-            break;
-        }
-    }
-    fclose(f);
-    return lang;
+    (void)app_config_read(&cfg, NULL, NULL, NULL);
+    return cfg.language;
 }
 
 int app_config_save_language(int language)
 {
-    /* Preserve sim_enabled setting when saving language */
-    int sim = 1;
-    app_config_load(&sim);
+    AppConfigData cfg;
 
-    if (language < 0 || language > 3)
-        language = 0;
+    (void)app_config_read(&cfg, NULL, NULL, NULL);
+    cfg.language = (language >= 0 && language < 4) ? language : 0;
+    return app_config_write(&cfg);
+}
 
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
+int app_config_load_idle_timeout_minutes(void)
+{
+    AppConfigData cfg;
 
-    FILE *f = fopen(cfg_path, "w");
-    if (f == NULL)
-        return 0;
+    (void)app_config_read(&cfg, NULL, NULL, NULL);
+    return cfg.idle_timeout_minutes;
+}
 
-    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
-                       sim, language) > 0);
-    fclose(f);
-    return ok ? 1 : 0;
+int app_config_save_idle_timeout_minutes(int minutes)
+{
+    AppConfigData cfg;
+
+    (void)app_config_read(&cfg, NULL, NULL, NULL);
+    cfg.idle_timeout_minutes = session_timeout_normalize_minutes(minutes);
+    return app_config_write(&cfg);
 }

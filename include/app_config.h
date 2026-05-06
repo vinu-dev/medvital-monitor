@@ -2,8 +2,9 @@
  * @file app_config.h
  * @brief Application configuration persistence interface.
  *
- * Provides save/load of run-time configuration (currently only the
- * sim_enabled flag) to/from a plain-text file named APP_CFG_FILENAME.
+ * Provides save/load of run-time configuration (simulation mode, language,
+ * and clinician idle timeout) to/from a plain-text file named
+ * APP_CFG_FILENAME.
  * The file is located in the same directory as the running executable
  * unless overridden via app_config_set_path() (intended for unit tests).
  *
@@ -93,6 +94,34 @@ int app_config_load_language(void);
  * @req SWR-GUI-012
  */
 int app_config_save_language(int language);
+
+/**
+ * @brief Load the persisted clinician idle timeout from the configuration file.
+ *
+ * Reads the "idle_timeout_minutes=N" line from the config file. Missing,
+ * malformed, zero, negative, and out-of-range values fall back to the
+ * approved default.
+ *
+ * @return Idle timeout in minutes.
+ *
+ * @req SWR-GUI-014
+ * @req SWR-SEC-005
+ */
+int app_config_load_idle_timeout_minutes(void);
+
+/**
+ * @brief Save the clinician idle timeout to the configuration file.
+ *
+ * Preserves existing simulation-mode and language settings. Invalid timeout
+ * values are replaced with the approved default before persistence.
+ *
+ * @param minutes  Requested idle timeout in minutes.
+ * @return 1 on success, 0 on failure.
+ *
+ * @req SWR-GUI-014
+ * @req SWR-SEC-005
+ */
+int app_config_save_idle_timeout_minutes(int minutes);
 
 #ifdef __cplusplus
 }

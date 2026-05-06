@@ -34,6 +34,7 @@ add_library(monitor_lib STATIC
     src/patient.c
     src/pw_hash.c
     src/app_config.c
+    src/session_timeout.c
     src/news2.c
     src/alarm_limits.c
     src/trend.c
