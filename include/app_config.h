@@ -2,12 +2,15 @@
  * @file app_config.h
  * @brief Application configuration persistence interface.
  *
- * Provides save/load of run-time configuration (currently only the
- * sim_enabled flag) to/from a plain-text file named APP_CFG_FILENAME.
+ * Provides save/load of run-time configuration (simulation mode,
+ * language selection, and dashboard readability mode) to/from a
+ * plain-text file named APP_CFG_FILENAME.
  * The file is located in the same directory as the running executable
  * unless overridden via app_config_set_path() (intended for unit tests).
  *
  * @req SWR-GUI-010  Configuration shall persist across application restarts.
+ * @req SWR-GUI-012
+ * @req SWR-GUI-014
  */
 
 #ifndef APP_CONFIG_H
@@ -93,6 +96,32 @@ int app_config_load_language(void);
  * @req SWR-GUI-012
  */
 int app_config_save_language(int language);
+
+/**
+ * @brief Load the dashboard readability preference from the configuration file.
+ *
+ * Reads the "readability_mode=N" line from the config file. Returns 1 when
+ * the dashboard readability mode is enabled, or 0 when the key is absent,
+ * invalid, or explicitly disabled.
+ *
+ * @return 1 if readability mode is enabled, otherwise 0.
+ *
+ * @req SWR-GUI-014
+ */
+int app_config_load_readability_mode(void);
+
+/**
+ * @brief Save the dashboard readability preference to the configuration file.
+ *
+ * Updates the "readability_mode=N" line while preserving the existing
+ * simulation-mode and language preferences.
+ *
+ * @param enabled  1 to enable readability mode, 0 to disable it.
+ * @return 1 on success, 0 on failure.
+ *
+ * @req SWR-GUI-014
+ */
+int app_config_save_readability_mode(int enabled);
 
 #ifdef __cplusplus
 }

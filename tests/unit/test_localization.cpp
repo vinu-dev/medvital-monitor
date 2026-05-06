@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 #ifdef _WIN32
@@ -93,6 +94,21 @@ TEST_F(LocalizationTest, SupportsAllApprovedLanguages)
         EXPECT_NE(nullptr, localization_get_string(STR_SETTINGS));
         EXPECT_NE(std::string::npos,
                   std::string(localization_get_string(STR_SETTINGS)).find(sample.expected_settings));
+    }
+}
+
+// @req SWR-GUI-012 - Newly added localized readability strings are present in every language
+TEST_F(LocalizationTest, ReadabilityStringsExistInAllLanguages)
+{
+    for (int i = 0; i < LOC_LANG_COUNT; ++i)
+    {
+        localization_set_language(static_cast<Language>(i));
+        EXPECT_NE(nullptr, localization_get_string(STR_READABILITY_MODE));
+        EXPECT_NE(nullptr, localization_get_string(STR_ENABLE_READABILITY_MODE));
+        EXPECT_NE(nullptr, localization_get_string(STR_READABILITY_MODE_NOTE));
+        EXPECT_GT(std::strlen(localization_get_string(STR_READABILITY_MODE)), 0u);
+        EXPECT_GT(std::strlen(localization_get_string(STR_ENABLE_READABILITY_MODE)), 0u);
+        EXPECT_GT(std::strlen(localization_get_string(STR_READABILITY_MODE_NOTE)), 0u);
     }
 }
 
