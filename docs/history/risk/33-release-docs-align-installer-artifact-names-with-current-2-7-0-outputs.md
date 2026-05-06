@@ -1,6 +1,6 @@
 # Risk Note: Issue 33
 
-Issue: `#33`  
+Issue: `#33`
 Branch: `feature/33-release-docs-align-installer-artifact-names-with-current-2-7-0-outputs`
 
 ## proposed change
