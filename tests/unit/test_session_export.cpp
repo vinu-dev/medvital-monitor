@@ -15,6 +15,7 @@
 
 extern "C" {
 #include "alarm_limits.h"
+#include "gui_utf8.h"
 #include "session_export.h"
 }
 
@@ -375,6 +376,56 @@ TEST_F(SessionExportTest, SWR_EXP_002_WritesRequiredSnapshotSections)
               content.find("#1  HR 108 | BP 148/94 | Temp 37.9 C | SpO2 93% | RR 23 br/min  [WARNING]"));
     EXPECT_NE(std::string::npos, content.find("Retention Boundary"));
 }
+
+#ifdef _WIN32
+TEST_F(SessionExportTest, SWR_EXP_002_Win32EditPathPreservesUtf8PatientName)
+{
+    static const char kInitialName[] =
+        "\xE6\x82\xA3\xE8\x80\x85\xE6\x9D\x8E\xE9\x9B\xB7";
+    static const char kUpdatedName[] =
+        "\xE6\x82\xA3\xE8\x80\x85\xE5\xBC\xA0\xE4\xBC\x9F";
+    HINSTANCE instance = GetModuleHandleA(nullptr);
+    HWND parent = nullptr;
+    HWND edit = nullptr;
+    VitalSigns reading = make_warning_reading();
+    char gui_name[MAX_NAME_LEN];
+    std::string content;
+
+    parent = CreateWindowExA(0, "STATIC", "",
+                             WS_OVERLAPPEDWINDOW,
+                             0, 0, 320, 120,
+                             nullptr, nullptr, instance, nullptr);
+    ASSERT_NE(nullptr, parent);
+
+    edit = gui_create_edit_utf8(instance, parent, 7001, kInitialName,
+                                WS_EX_CLIENTEDGE,
+                                WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+                                0, 0, 240, 24);
+    ASSERT_NE(nullptr, edit);
+    EXPECT_NE(FALSE, IsWindowUnicode(edit));
+
+    ASSERT_GT(gui_get_control_text_utf8(parent, 7001, gui_name, sizeof(gui_name)), 0);
+    EXPECT_STREQ(kInitialName, gui_name);
+
+    ASSERT_EQ(1, gui_set_control_text_utf8(parent, 7001, kUpdatedName));
+    ASSERT_GT(gui_get_control_text_utf8(parent, 7001, gui_name, sizeof(gui_name)), 0);
+    EXPECT_STREQ(kUpdatedName, gui_name);
+
+    patient_init(&patient_, 1001, gui_name, 52, 72.5f, 1.66f);
+    ASSERT_EQ(1, patient_add_reading(&patient_, &reading));
+
+    ASSERT_EQ(SESSION_EXPORT_RESULT_OK,
+              session_export_write_snapshot(&patient_, 1, &limits_,
+                                            1, 0, temp_path_.c_str(), 0,
+                                            nullptr, 0));
+
+    content = read_text_file(temp_path_);
+    EXPECT_NE(std::string::npos,
+              content.find(std::string("Name           : ") + kUpdatedName));
+
+    DestroyWindow(parent);
+}
+#endif
 
 TEST_F(SessionExportTest, SWR_EXP_003_ExistingFileRequiresExplicitOverwrite)
 {

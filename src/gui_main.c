@@ -37,6 +37,7 @@
 #include "gui_users.h"
 #include "hw_vitals.h"
 #include "app_config.h"
+#include "gui_utf8.h"
 #include "localization.h"
 #include "session_export.h"
 
@@ -606,6 +607,17 @@ static HWND make_edit(HWND p, int id, const char *t, int x, int y, int w, int h)
                            WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_AUTOHSCROLL,
                            x,y,w,h,p,(HMENU)(INT_PTR)id,g_app.inst,NULL);
 }
+static HWND make_edit_utf8(HWND p, int id, const char *t, int x, int y, int w, int h)
+{
+#if defined(_WIN32)
+    return gui_create_edit_utf8(g_app.inst, p, id, t,
+                                WS_EX_CLIENTEDGE,
+                                WS_CHILD|WS_VISIBLE|WS_TABSTOP|ES_AUTOHSCROLL,
+                                x, y, w, h);
+#else
+    return make_edit(p, id, t, x, y, w, h);
+#endif
+}
 static HWND make_btn(HWND p, int id, const char *t, int x, int y, int w, int h)
 {
     return CreateWindowExA(0,"BUTTON",t,
@@ -627,36 +639,20 @@ static int get_txt(HWND p, int id, char *out, int len)
 static int get_txt_utf8(HWND p, int id, char *out, int len)
 {
 #if defined(_WIN32)
-    HWND ctrl = GetDlgItem(p, id);
-    WCHAR wide_text[MAX_NAME_LEN * 2];
-    int wide_len;
-    int count;
-
-    if (len <= 0) return 0;
-    out[0] = '\0';
-    if (ctrl == NULL) return 0;
-
-    wide_len = GetWindowTextW(ctrl, wide_text,
-                              (int)(sizeof(wide_text) / sizeof(wide_text[0])));
-    if (wide_len <= 0) return 0;
-
-    for (count = wide_len; count > 0; --count) {
-        int written = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS,
-                                          wide_text, count,
-                                          out, len - 1,
-                                          NULL, NULL);
-        if (written > 0) {
-            out[written] = '\0';
-            return written;
-        }
-    }
-
-    return 0;
+    return gui_get_control_text_utf8(p, id, out, len);
 #else
     return get_txt(p, id, out, len);
 #endif
 }
 static void set_txt(HWND p, int id, const char *s) { SetWindowTextA(GetDlgItem(p,id),s); }
+static void set_txt_utf8(HWND p, int id, const char *s)
+{
+#if defined(_WIN32)
+    gui_set_control_text_utf8(p, id, s);
+#else
+    set_txt(p, id, s);
+#endif
+}
 
 /* ===================================================================
  * Dashboard: controls
@@ -666,7 +662,7 @@ static void create_dash_controls(HWND w)
     make_label(w,localization_get_string(STR_PATIENT_ID), 20, CY, 40, 18);
     make_edit (w,IDC_PAT_ID, "1001",  20, CY+20, 100, 24);
     make_label(w,localization_get_string(STR_PATIENT_NAME), 130, CY, 90, 18);
-    make_edit (w,IDC_PAT_NAME,"Sarah Johnson",130,CY+20,240,24);
+    make_edit_utf8(w,IDC_PAT_NAME,"Sarah Johnson",130,CY+20,240,24);
     make_label(w,localization_get_string(STR_AGE), 382, CY, 40, 18);
     make_edit (w,IDC_PAT_AGE, "52",  382,CY+20,  70, 24);
     make_label(w,localization_get_string(STR_WEIGHT_KG), 464, CY, 90, 18);
@@ -866,7 +862,7 @@ static void do_clear(HWND w)
 {
     ZeroMemory(&g_app.patient,sizeof(g_app.patient));
     g_app.has_patient=0;
-    set_txt(w,IDC_PAT_ID,    "1001"); set_txt(w,IDC_PAT_NAME,"Sarah Johnson");
+    set_txt(w,IDC_PAT_ID,    "1001"); set_txt_utf8(w,IDC_PAT_NAME,"Sarah Johnson");
     set_txt(w,IDC_PAT_AGE,   "52");   set_txt(w,IDC_PAT_WEIGHT,"72.5");
     set_txt(w,IDC_PAT_HEIGHT,"1.66"); set_txt(w,IDC_VIT_HR,"78");
     set_txt(w,IDC_VIT_SYS,  "122");   set_txt(w,IDC_VIT_DIA,"82");
@@ -936,11 +932,11 @@ static void do_scenario(HWND w, int s)
     static const VitalSigns bra[2]={{68,118,76,36.5f,99,14},{38,110,72,36.6f,97,8}};
     const VitalSigns *rd; int n,i;
     if (s==1) {
-        set_txt(w,IDC_PAT_ID,"1001"); set_txt(w,IDC_PAT_NAME,"Sarah Johnson");
+        set_txt(w,IDC_PAT_ID,"1001"); set_txt_utf8(w,IDC_PAT_NAME,"Sarah Johnson");
         set_txt(w,IDC_PAT_AGE,"52");  set_txt(w,IDC_PAT_WEIGHT,"72.5");
         set_txt(w,IDC_PAT_HEIGHT,"1.66"); rd=det; n=3;
     } else {
-        set_txt(w,IDC_PAT_ID,"1002"); set_txt(w,IDC_PAT_NAME,"David Okonkwo");
+        set_txt(w,IDC_PAT_ID,"1002"); set_txt_utf8(w,IDC_PAT_NAME,"David Okonkwo");
         set_txt(w,IDC_PAT_AGE,"34");  set_txt(w,IDC_PAT_WEIGHT,"85.0");
         set_txt(w,IDC_PAT_HEIGHT,"1.80"); rd=bra; n=2;
     }
@@ -1714,7 +1710,7 @@ static void apply_sim_mode(HWND dash)
         if (!g_app.has_patient) {
             patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
             g_app.has_patient = 1;
-            set_txt(dash,IDC_PAT_ID,"2001"); set_txt(dash,IDC_PAT_NAME,"James Mitchell");
+            set_txt(dash,IDC_PAT_ID,"2001"); set_txt_utf8(dash,IDC_PAT_NAME,"James Mitchell");
             set_txt(dash,IDC_PAT_AGE,"45");  set_txt(dash,IDC_PAT_WEIGHT,"78.0");
             set_txt(dash,IDC_PAT_HEIGHT,"1.75");
         }
@@ -1753,7 +1749,7 @@ static void refresh_dash_language(HWND w)
     HWND btn;
 
     get_txt(w, IDC_PAT_ID,     pat_id,   sizeof(pat_id));
-    get_txt(w, IDC_PAT_NAME,   pat_name, sizeof(pat_name));
+    get_txt_utf8(w, IDC_PAT_NAME, pat_name, sizeof(pat_name));
     get_txt(w, IDC_PAT_AGE,    pat_age,  sizeof(pat_age));
     get_txt(w, IDC_PAT_WEIGHT, pat_wt,   sizeof(pat_wt));
     get_txt(w, IDC_PAT_HEIGHT, pat_ht,   sizeof(pat_ht));
@@ -1784,7 +1780,7 @@ static void refresh_dash_language(HWND w)
 
     /* --- restore saved state --- */
     set_txt(w, IDC_PAT_ID,     pat_id);
-    set_txt(w, IDC_PAT_NAME,   pat_name);
+    set_txt_utf8(w, IDC_PAT_NAME, pat_name);
     set_txt(w, IDC_PAT_AGE,    pat_age);
     set_txt(w, IDC_PAT_WEIGHT, pat_wt);
     set_txt(w, IDC_PAT_HEIGHT, pat_ht);
@@ -1844,7 +1840,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         if (g_app.sim_enabled) {
             patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
             g_app.has_patient = 1;
-            set_txt(w,IDC_PAT_ID,"2001"); set_txt(w,IDC_PAT_NAME,"James Mitchell");
+            set_txt(w,IDC_PAT_ID,"2001"); set_txt_utf8(w,IDC_PAT_NAME,"James Mitchell");
             set_txt(w,IDC_PAT_AGE,"45");  set_txt(w,IDC_PAT_WEIGHT,"78.0");
             set_txt(w,IDC_PAT_HEIGHT,"1.75");
             hw_get_next_reading(&first_v);

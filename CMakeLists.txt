@@ -47,6 +47,7 @@ target_compile_options(monitor_lib PRIVATE
 )
 
 if(WIN32)
+    target_sources(monitor_lib PRIVATE src/gui_utf8.c)
     target_link_libraries(monitor_lib PUBLIC advapi32)
 endif()
 
