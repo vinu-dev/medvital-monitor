@@ -273,9 +273,13 @@ Trend direction detection and sparkline data extraction.
 
 ### End-user install (no development tools needed)
 
-Download **`PatientMonitor-v2.6.0-portable.exe`** from the
+Download **`PatientMonitorSetup-2.7.0.exe`** from the
 [Releases](https://github.com/vinu-dev/medvital-monitor/releases) page and
 double-click to run the setup wizard.
+
+If you want the standalone executable instead, download
+**`PatientMonitor-v2.7.0.exe`**. The portable bundle is
+**`PatientMonitor-v2.7.0-portable.zip`**.
 
 | Step | What happens |
 |------|-------------|
@@ -296,7 +300,7 @@ Windows system DLLs (`GDI32`, `KERNEL32`, `USER32`).
 :: One-time: install Inno Setup 6
 winget install --id JRSoftware.InnoSetup
 
-:: Build app + compile installer  →  dist\PatientMonitorSetup-1.5.0.exe
+:: Build app + compile installer  ->  dist\PatientMonitorSetup-2.7.0.exe
 create_installer.bat
 ```
 

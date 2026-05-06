@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 echo =====================================================================
 echo   Patient Vital Signs Monitor -- Windows Installer Builder
 echo   Tool   : Inno Setup 6
-echo   Output : dist\PatientMonitorSetup-1.5.0.exe
+echo   Output : dist\PatientMonitorSetup-2.7.0.exe
 echo =====================================================================
 echo.
 
@@ -130,7 +130,7 @@ echo.
 echo =====================================================================
 echo   Installer built successfully.
 echo.
-echo   File    : dist\PatientMonitorSetup-1.5.0.exe
+echo   File    : dist\PatientMonitorSetup-2.7.0.exe
 echo   Install : double-click to run the wizard
 echo   Remove  : Settings ^> Apps ^> Patient Vital Signs Monitor ^> Uninstall
 echo            (or Control Panel ^> Programs ^> Uninstall a program)

@@ -200,7 +200,7 @@ activity for Class B software.
 |-----------------------------------|------------------------------------|
 | `PatientMonitor-v<x.y.z>.exe`    | Standalone GUI executable          |
 | `PatientMonitor-v<x.y.z>-portable.zip` | Portable archive with README |
-| `PatientMonitorSetup-v<x.y.z>.exe` | Inno Setup Windows installer     |
+| `PatientMonitorSetup-<x.y.z>.exe` | Inno Setup Windows installer     |
 
 ## 5. Artefact Retention
 
