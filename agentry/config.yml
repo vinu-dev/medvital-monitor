@@ -5,6 +5,8 @@ isolate_worktrees: true
 automation:
   auto_merge: true
   stop_when_queue_empty: false
+  max_open_prs: 1
+  pr_creation_issue_labels: ["ready-for-test"]
 
 research:
   allow_create_issues: true
@@ -20,6 +22,7 @@ context:
 
 agents:
   researcher:
+    enabled: false
     cli: npx.cmd
     args: ["--yes", "@openai/codex", "exec", "-m", "gpt-5.4-mini", "--dangerously-bypass-approvals-and-sandbox"]
     run_on_start: true
