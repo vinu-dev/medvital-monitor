@@ -118,7 +118,7 @@ Before submitting for regulatory review, verify:
 - [ ] All requirement annotations in code comments refer to valid SWR IDs in `SWR.md`
 - [ ] All Google Test names follow the `REQ_XXX_NNN_Description` pattern
 - [ ] `docs/doxygen_warnings.log` is empty (no undocumented or malformed comments)
-- [ ] All 307 tests pass (`run_tests.bat`)
+- [ ] All 317 tests pass (`run_tests.bat`)
 - [ ] `AuthValidation.*` and `AuthDisplayName.*` (15 tests) all pass
 - [ ] Line coverage ≥ 99% for `vitals.c`, `alerts.c`, `patient.c` (`run_coverage.bat`)
 - [ ] No dynamic memory allocation in production code

@@ -124,7 +124,7 @@ layout behavior, or animated presentation rather than stable control state.
 |---|---|
 | Unit test pass rate | 100% (`293 / 293`) |
 | Integration test pass rate | 100% (`14 / 14`) |
-| Automated GTest total | 100% (`307 / 307`) |
+| Automated GTest total | 100% (`317 / 317`) |
 | Automated GUI checks for approved IDs | All executed approved-ID checks pass |
 | Manual GUI checklist | All applicable manual items marked Pass |
 
