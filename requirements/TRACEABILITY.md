@@ -57,9 +57,9 @@ implementation and test coverage, and every UNS must reach at least one SWR.
 | UNS-009 | SYS-009 | SWR-PAT-003 | `patient.c` : `patient_latest_reading()` | `PatientLatestReading.*` (2 tests) | `REQ_INT_MON_004` |
 | UNS-010 | SYS-006, SYS-011 | SWR-PAT-004 | `patient.c` : `patient_current_status()` | `PatientStatus.*` (4 tests) | `REQ_INT_MON_002`, `REQ_INT_MON_003`, `REQ_INT_ESC_001`–`REQ_INT_ESC_005` |
 | UNS-011 | SYS-010 | SWR-PAT-005 | `patient.c` : `patient_is_full()` | `PatientIsFull.*` (2 tests) | `REQ_INT_MON_005` |
-| UNS-010, UNS-017 | SYS-011, SYS-021 | SWR-PAT-006 | `patient.c` : `patient_print_summary()` | `PatientPrintSummary.*` (4 tests) | — |
+| UNS-010, UNS-017 | SYS-011, SYS-021 | SWR-PAT-006 | `patient.c` : `patient_print_summary()` | `PatientPrintSummary.*` (5 tests) | — |
 | UNS-017 | SYS-020, SYS-012 | SWR-PAT-007 | `patient.c` : `patient_add_reading()`, alert-event helpers | `PatientAlertEvents.REQ_PAT_007_*` (6 tests) | `REQ_INT_MON_007`, `REQ_INT_ESC_006` |
-| UNS-017 | SYS-020, SYS-021 | SWR-PAT-008 | `patient.c` : `patient_init()`, `patient_alert_event_count()`, `patient_alert_event_at()` | `PatientAlertEvents.REQ_PAT_008_*` (1 test) | — |
+| UNS-017 | SYS-020, SYS-021 | SWR-PAT-008 | `patient.c` : `patient_init()`, `patient_alert_event_count()`, `patient_alert_event_at()`, `patient_note_session_reset()`, `patient_session_reset_notice()` | `PatientAlertEvents.REQ_PAT_008_*` (2 tests) | — |
 | UNS-013 | SYS-013 | SWR-GUI-001 | `gui_auth.c` : `auth_validate()` | `UsersTest.REQ_GUI_001_*` (10 tests) | — |
 | UNS-013 | SYS-013 | SWR-GUI-002 | `gui_main.c` : `attempt_login()`, `login_proc()`, logout handler | `UsersTest.REQ_GUI_002_*` (5 tests) | — |
 | UNS-014, UNS-005, UNS-006 | SYS-014 | SWR-GUI-003 | `gui_main.c` : `paint_tile()`, `paint_tiles()`, `paint_status_banner()`, `update_dashboard()` | GUI demo | — |
@@ -192,9 +192,9 @@ Supporting implementation checks:
 | SWR-PAT-003 | `patient_latest_reading()` | 2 | 1 | ✓ |
 | SWR-PAT-004 | `patient_current_status()` | 4 | 7 | ✓ |
 | SWR-PAT-005 | `patient_is_full()` | 2 | 1 | ✓ |
-| SWR-PAT-006 | `patient_print_summary()` | 4 | — | ✓ |
+| SWR-PAT-006 | `patient_print_summary()` | 5 | — | ✓ |
 | SWR-PAT-007 | `patient_add_reading()`, alert-event helpers | 6 | 2 | ✓ |
-| SWR-PAT-008 | `patient_init()`, `patient_alert_event_count()`, `patient_alert_event_at()` | 1 | — | ✓ |
+| SWR-PAT-008 | `patient_init()`, `patient_alert_event_count()`, `patient_alert_event_at()`, `patient_note_session_reset()`, `patient_session_reset_notice()` | 2 | — | ✓ |
 | SWR-GUI-001 | `auth_validate()` | 10 | — | ✓ |
 | SWR-GUI-002 | `attempt_login()`, `login_proc()`, logout | 5 | — | ✓ |
 | SWR-GUI-003 | `paint_tile()`, `paint_tiles()`, `paint_status_banner()` | GUI demo | — | ✓ |
@@ -261,7 +261,7 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 |-----------|-------|---------------|
 | `tests/unit/test_vitals.cpp` | 80 | SWR-VIT-001 – SWR-VIT-008 |
 | `tests/unit/test_alerts.cpp` | 11 | SWR-ALT-001 – SWR-ALT-004 |
-| `tests/unit/test_patient.cpp` | 27 | SWR-PAT-001 – SWR-PAT-008 |
+| `tests/unit/test_patient.cpp` | 29 | SWR-PAT-001 – SWR-PAT-008 |
 | `tests/unit/test_auth.cpp` | 41 | SWR-GUI-001, SWR-GUI-002, SWR-SEC-001–004, SWR-GUI-007 |
 | `tests/unit/test_news2.cpp` | 53 | SWR-NEW-001 |
 | `tests/unit/test_alarm_limits.cpp` | 31 | SWR-ALM-001 |
@@ -271,7 +271,7 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_localization.cpp` | 8 | SWR-GUI-012 |
 | `tests/integration/test_patient_monitoring.cpp` | 7 | SWR-PAT-*, SWR-VIT-*, SWR-ALT-* |
 | `tests/integration/test_alert_escalation.cpp` | 7 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004, SWR-PAT-007 |
-| **Total** | **305** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total** | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
@@ -290,3 +290,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | I   | 2026-05-03 | Codex implementer | Added SWR-GUI-012 localization traceability and 8 automated localization tests; 37/37 SWR, 295 tests |
 | J   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for RR and NEWS2 requirements; 37/37 SWR, 295 tests |
 | K   | 2026-05-05 | Codex implementer | Added session alarm event review traceability: UNS-017, SYS-020/021, SWR-PAT-007/008, SWR-GUI-013; 40/40 SWR, 305 tests |
+| L   | 2026-05-06 | Codex implementer | Added session-reset disclosure traceability and updated automated totals to 307 tests |

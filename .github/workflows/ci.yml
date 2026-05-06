@@ -8,7 +8,7 @@
 # What is validated:
 #   • CMake configure (GTest fetched from GitHub via FetchContent)
 #   • Build: test_unit + test_integration targets
-#   • Run: all 305 GTest cases; any failure fails the workflow
+#   • Run: all 307 GTest cases; any failure fails the workflow
 #   • Test result summary written to the Actions job summary page
 #   • Test result XML uploaded as artifact (IEC 62304 audit trail)
 #
@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-and-test:
-    name: Windows / MinGW-w64 / 305 tests
+    name: Windows / MinGW-w64 / 307 tests
     runs-on: windows-latest
 
     steps:
@@ -83,7 +83,7 @@ jobs:
         run: cmake --build build --target test_unit test_integration
 
       # ------------------------------------------------------------------
-      # 6. Run unit tests (283 tests across 30 suites)
+      # 6. Run unit tests (293 tests across 30 suites)
       #    Exit code non-zero → step fails → workflow fails.
       #    set -o pipefail ensures the exit code is preserved through tee.
       # ------------------------------------------------------------------
@@ -95,7 +95,7 @@ jobs:
             --gtest_output=xml:build/results_unit.xml 2>&1 | tee build/unit_output.txt
 
       # ------------------------------------------------------------------
-      # 7. Run integration tests (12 tests across 2 suites)
+      # 7. Run integration tests (14 tests across 2 suites)
       # ------------------------------------------------------------------
       - name: Run integration tests
         shell: bash

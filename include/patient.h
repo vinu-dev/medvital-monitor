@@ -56,6 +56,9 @@
 /** @brief Maximum length of a stored alert-event summary string. */
 #define ALERT_EVENT_SUMMARY_LEN 160
 
+/** @brief Maximum length of a retained session-reset disclosure string. */
+#define PATIENT_SESSION_NOTICE_LEN 160
+
 /* =========================================================================
  * Data Structures
  * ========================================================================= */
@@ -120,6 +123,11 @@ typedef struct {
     int         alert_event_count;               /**< Number of valid entries in
                                                       alert_events[]. Range:
                                                       0-MAX_ALERT_EVENTS.         */
+    char        session_reset_notice[PATIENT_SESSION_NOTICE_LEN];
+                                                 /**< Optional disclosure shown
+                                                      after an automatic
+                                                      session reset clears
+                                                      earlier review data.       */
 } PatientRecord;
 
 /* =========================================================================
@@ -246,6 +254,32 @@ int patient_alert_event_count(const PatientRecord *rec);
  * SWR-PAT-008
  */
 const AlertEvent *patient_alert_event_at(const PatientRecord *rec, int index);
+
+/**
+ * @brief Record a disclosure message for a session reset boundary.
+ *
+ * @details Callers use this after reinitialising a patient session because a
+ * retention boundary was reached. The notice is retained until the next
+ * patient_init() clears the record.
+ *
+ * @param[in,out] rec Pointer to an initialised PatientRecord. Must not be NULL.
+ * @param[in] previous_reading_count Number of readings retained before reset.
+ *
+ * @par Requirement
+ * SWR-PAT-008
+ */
+void patient_note_session_reset(PatientRecord *rec, int previous_reading_count);
+
+/**
+ * @brief Return the current session-reset disclosure, if any.
+ *
+ * @param[in] rec Pointer to an initialised PatientRecord. Must not be NULL.
+ * @return Pointer to the retained disclosure string, or NULL if none is set.
+ *
+ * @par Requirement
+ * SWR-PAT-008
+ */
+const char *patient_session_reset_notice(const PatientRecord *rec);
 
 /* =========================================================================
  * Display

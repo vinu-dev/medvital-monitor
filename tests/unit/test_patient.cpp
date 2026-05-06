@@ -315,6 +315,21 @@ TEST(PatientAlertEvents, REQ_PAT_008_EventAccessAndReset) {
     EXPECT_EQ(patient_alert_event_at(&rec, 0), nullptr);
 }
 
+TEST(PatientAlertEvents, REQ_PAT_008_SessionResetNoticeLifecycle) {
+    PatientRecord rec;
+    patient_init(&rec, 1, "Test", 25, 70.0f, 1.75f);
+
+    EXPECT_EQ(patient_session_reset_notice(&rec), nullptr);
+
+    patient_note_session_reset(&rec, MAX_READINGS);
+    const char *notice = patient_session_reset_notice(&rec);
+    ASSERT_NE(notice, nullptr);
+    EXPECT_NE(std::string(notice).find("automatically after 10 readings"), std::string::npos);
+
+    patient_init(&rec, 2, "Reset Patient", 40, 80.0f, 1.80f);
+    EXPECT_EQ(patient_session_reset_notice(&rec), nullptr);
+}
+
 // =============================================================
 // REQ-PAT-006  patient_print_summary()
 //   Verifies the display path for normal, warning, critical, and
@@ -367,4 +382,17 @@ TEST(PatientPrintSummary, REQ_PAT_006_SessionAlarmEventsIncluded) {
     EXPECT_NE(output.find("Session Alarm Events:"), std::string::npos);
     EXPECT_NE(output.find("#1 [WARNING]"), std::string::npos);
     EXPECT_NE(output.find("#2 [NORMAL] Recovered to normal"), std::string::npos);
+}
+
+TEST(PatientPrintSummary, REQ_PAT_006_SessionResetNoticeIncluded) {
+    PatientRecord rec;
+    patient_init(&rec, 13, "Reset Review", 47, 76.0f, 1.74f);
+    patient_note_session_reset(&rec, MAX_READINGS);
+
+    testing::internal::CaptureStdout();
+    patient_print_summary(&rec);
+    std::string output = testing::internal::GetCapturedStdout();
+
+    EXPECT_NE(output.find("NOTE: Session reset automatically after 10 readings"), std::string::npos);
+    EXPECT_NE(output.find("None recorded in current session."), std::string::npos);
 }

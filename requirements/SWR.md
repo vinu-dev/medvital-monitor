@@ -287,7 +287,9 @@ level, the text of all active alert messages, and a `Session Alarm Events`
 section rendered from the stored session event log in reading order. If no
 readings exist, the vitals and active-alert sections shall be omitted. If no
 session alarm events exist, the session event section shall state that none are
-recorded in the current session.
+recorded in the current session. If a reset disclosure is recorded for the
+current patient session, the session event section shall print that notice
+before any current-session rows or placeholders.
 **Traces to:** SYS-011, SYS-021
 **Implemented in:** `src/patient.c` — `patient_print_summary()`
 **Verified by:** `tests/unit/test_patient.cpp` — `PatientPrintSummary.*`
@@ -324,10 +326,14 @@ session alarm events stored in `alert_events[]`. `patient_alert_event_at()`
 shall return a pointer to `alert_events[index]` for valid zero-based indices
 and `NULL` otherwise. `patient_init()` shall clear all stored session alarm
 events by resetting the count to zero whenever a patient session is
-reinitialized.
+reinitialized. `patient_note_session_reset()` shall record a bounded disclosure
+string when a caller reinitializes the session after a retention boundary, and
+`patient_session_reset_notice()` shall return that disclosure string or `NULL`
+when no reset notice is pending.
 **Traces to:** SYS-020, SYS-021
 **Implemented in:** `src/patient.c` — `patient_init()`,
-`patient_alert_event_count()`, `patient_alert_event_at()`
+`patient_alert_event_count()`, `patient_alert_event_at()`,
+`patient_note_session_reset()`, `patient_session_reset_notice()`
 **Verified by:** `tests/unit/test_patient.cpp` — `PatientAlertEvents.REQ_PAT_008_*`
 
 ---
@@ -696,9 +702,12 @@ and language selector population; `src/app_config.c` -
 History`. `update_dashboard()` shall repopulate this list from
 `patient_alert_event_count()` and `patient_alert_event_at()` and render each
 stored event with its reading index, resulting severity, and summary text. If
-no session alarm events exist for the current session, the list shall show an
-explicit placeholder rather than remaining blank. `IDC_LIST_ALERTS` shall
-continue to show only active alerts from the latest reading.
+`patient_session_reset_notice()` reports that the previous bounded session was
+cleared, the list shall show that reset/retention disclosure before any
+current-session rows. If no session alarm events exist for the current session,
+the list shall show an explicit placeholder rather than remaining blank.
+`IDC_LIST_ALERTS` shall continue to show only active alerts from the latest
+reading.
 
 **Traces to:** SYS-014, SYS-021
 **Implemented in:** `src/gui_main.c` — `create_dash_controls()`,
@@ -724,3 +733,4 @@ session event label string
 | J   | 2026-05-05 | vinu           | Refreshed SWR-GUI-001..003 verification references |
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
+| M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |

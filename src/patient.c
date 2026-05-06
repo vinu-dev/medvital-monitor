@@ -230,6 +230,27 @@ int patient_is_full(const PatientRecord *rec)
     return rec->reading_count >= MAX_READINGS;
 }
 
+void patient_note_session_reset(PatientRecord *rec, int previous_reading_count)
+{
+    if (previous_reading_count <= 0) {
+        rec->session_reset_notice[0] = '\0';
+        return;
+    }
+
+    snprintf(rec->session_reset_notice, sizeof(rec->session_reset_notice),
+             "Session reset automatically after %d readings; earlier alarm "
+             "events from the previous session are no longer retained.",
+             previous_reading_count);
+}
+
+const char *patient_session_reset_notice(const PatientRecord *rec)
+{
+    if (rec->session_reset_notice[0] == '\0') {
+        return NULL;
+    }
+    return rec->session_reset_notice;
+}
+
 int patient_alert_event_count(const PatientRecord *rec)
 {
     return rec->alert_event_count;
@@ -257,6 +278,7 @@ void patient_print_summary(const PatientRecord *rec)
     int alert_count = 0;
     int i;
     char event_line[256];
+    const char *reset_notice = patient_session_reset_notice(rec);
 
     printf("+--------------------------------------------------+\n");
     printf("| PATIENT SUMMARY                                  |\n");
@@ -298,6 +320,9 @@ void patient_print_summary(const PatientRecord *rec)
     }
 
     printf("\n  Session Alarm Events:\n");
+    if (reset_notice != NULL) {
+        printf("    NOTE: %s\n", reset_notice);
+    }
     if (patient_alert_event_count(rec) == 0) {
         printf("    None recorded in current session.\n");
     } else {

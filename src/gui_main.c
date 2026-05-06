@@ -688,6 +688,7 @@ static void update_dashboard(HWND w)
 {
     char buf[256];
     const VitalSigns *latest = NULL;
+    const char *reset_notice = NULL;
     Alert alerts[MAX_ALERTS];
     int   ac = 0, ec = 0, i;
 
@@ -731,6 +732,11 @@ static void update_dashboard(HWND w)
     }
 
     ec = patient_alert_event_count(&g_app.patient);
+    reset_notice = patient_session_reset_notice(&g_app.patient);
+    if (reset_notice != NULL) {
+        snprintf(buf, sizeof(buf), "[SESSION RESET] %s", reset_notice);
+        SendMessageA(GetDlgItem(w,IDC_LIST_EVENTS),LB_ADDSTRING,0,(LPARAM)buf);
+    }
     if (ec == 0) {
         SendMessageA(GetDlgItem(w,IDC_LIST_EVENTS),LB_ADDSTRING,0,
                      (LPARAM)"No session alarm events recorded in current session.");
@@ -1778,10 +1784,12 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         if (wp == TIMER_SIM && g_app.sim_enabled && !g_app.sim_paused) {
             VitalSigns v;
             if (g_app.has_patient && patient_is_full(&g_app.patient)) {
+                int previous_reading_count = g_app.patient.reading_count;
                 patient_init(&g_app.patient,
                              g_app.patient.info.id, g_app.patient.info.name,
                              g_app.patient.info.age, g_app.patient.info.weight_kg,
                              g_app.patient.info.height_m);
+                patient_note_session_reset(&g_app.patient, previous_reading_count);
             }
             hw_get_next_reading(&v);
             patient_add_reading(&g_app.patient, &v);
