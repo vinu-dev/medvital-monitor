@@ -10,6 +10,10 @@ coverage_combined/
 coverage_unit.cov
 coverage_report.xml
 
+# Generated DVT outputs
+dvt/results/*
+!dvt/results/.gitkeep
+
 # IDE / OS / tooling
 .vs/
 *.user
