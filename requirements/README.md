@@ -118,7 +118,7 @@ Before submitting for regulatory review, verify:
 - [ ] All requirement annotations in code comments refer to valid SWR IDs in `SWR.md`
 - [ ] All Google Test names follow the `REQ_XXX_NNN_Description` pattern
 - [ ] `docs/doxygen_warnings.log` is empty (no undocumented or malformed comments)
-- [ ] All 319 tests pass (`run_tests.bat`)
+- [ ] All 320 tests pass (`run_tests.bat`)
 - [ ] `AuthValidation.*` and `AuthDisplayName.*` (15 tests) all pass
 - [ ] Line coverage ≥ 99% for `vitals.c`, `alerts.c`, `patient.c` (`run_coverage.bat`)
 - [ ] No dynamic memory allocation in production code
@@ -135,3 +135,4 @@ Before submitting for regulatory review, verify:
 | C   | 2026-05-05 | codex           | Updated RR example trace for SYS-018 / SWR-VIT-008 repair |
 | D   | 2026-05-06 | Codex implementer | Updated checklist totals for session-reset disclosure coverage |
 | E   | 2026-05-06 | Codex implementer | Updated checklist totals for session review snapshot export coverage |
+| F   | 2026-05-06 | Codex implementer | Updated checklist totals for session export overwrite preservation coverage |

@@ -110,6 +110,8 @@ endif()
 option(BUILD_TESTS "Build unit and integration tests" ON)
 
 if(BUILD_TESTS)
+    target_compile_definitions(monitor_lib PRIVATE SESSION_EXPORT_TESTING)
+
     include(FetchContent)
     FetchContent_Declare(
         googletest

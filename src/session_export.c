@@ -46,6 +46,20 @@
 
 static int file_exists(const char *path);
 static int remove_file_if_present(const char *path);
+static int build_overwrite_temp_path(const char *target_path,
+                                     char *out_path,
+                                     size_t out_path_len);
+static int replace_file_atomically(const char *source_path,
+                                   const char *target_path);
+
+#ifdef SESSION_EXPORT_TESTING
+static int g_force_replace_failure = 0;
+
+void session_export_test_force_replace_failure(int enabled)
+{
+    g_force_replace_failure = enabled != 0;
+}
+#endif
 
 static int init_well_known_sid(WELL_KNOWN_SID_TYPE sid_type,
                                BYTE *sid_buffer,
@@ -84,6 +98,99 @@ static int copy_path(const char *src, char *dst, size_t dst_len)
     }
 
     memcpy(dst, src, src_len + 1u);
+    return 1;
+}
+
+static int append_path_suffix(const char *path,
+                              const char *suffix,
+                              char *out_path,
+                              size_t out_path_len)
+{
+    size_t path_len;
+    size_t suffix_len;
+
+    if (path == NULL || suffix == NULL || out_path == NULL ||
+        out_path_len == 0u) {
+        return 0;
+    }
+
+    path_len = strlen(path);
+    suffix_len = strlen(suffix);
+    if (path_len + suffix_len >= out_path_len) {
+        return 0;
+    }
+
+    memcpy(out_path, path, path_len);
+    memcpy(out_path + path_len, suffix, suffix_len + 1u);
+    return 1;
+}
+
+static const char *find_last_path_separator(const char *path)
+{
+    const char *last_forward;
+    const char *last_backward;
+
+    if (path == NULL) {
+        return NULL;
+    }
+
+    last_forward = strrchr(path, '/');
+    last_backward = strrchr(path, '\\');
+    if (last_forward == NULL) {
+        return last_backward;
+    }
+    if (last_backward == NULL) {
+        return last_forward;
+    }
+    return last_forward > last_backward ? last_forward : last_backward;
+}
+
+static int build_overwrite_temp_path(const char *target_path,
+                                     char *out_path,
+                                     size_t out_path_len)
+{
+    static const char kTempSuffix[] = ".tmp";
+    const char *last_separator;
+    char fallback_name[64];
+    size_t directory_len = 0u;
+    int written;
+
+    if (target_path == NULL || target_path[0] == '\0' ||
+        out_path == NULL || out_path_len == 0u) {
+        return 0;
+    }
+
+    if (append_path_suffix(target_path, kTempSuffix,
+                           out_path, out_path_len)) {
+        return 1;
+    }
+
+#if defined(_WIN32)
+    written = snprintf(fallback_name, sizeof(fallback_name),
+                       "session-review-write-%lu.tmp",
+                       (unsigned long)GetCurrentProcessId());
+#else
+    written = snprintf(fallback_name, sizeof(fallback_name),
+                       "session-review-write-%lu.tmp",
+                       (unsigned long)getpid());
+#endif
+    if (written <= 0 || (size_t)written >= sizeof(fallback_name)) {
+        return 0;
+    }
+
+    last_separator = find_last_path_separator(target_path);
+    if (last_separator != NULL) {
+        directory_len = (size_t)(last_separator - target_path) + 1u;
+    }
+
+    if (directory_len + (size_t)written >= out_path_len) {
+        return 0;
+    }
+
+    if (directory_len > 0u) {
+        memcpy(out_path, target_path, directory_len);
+    }
+    memcpy(out_path + directory_len, fallback_name, (size_t)written + 1u);
     return 1;
 }
 
@@ -146,7 +253,7 @@ static int utf8_or_ansi_to_wide(const char *src, WCHAR *dst, size_t dst_len)
 }
 #endif
 
-static FILE *open_write_restricted(const char *path, int allow_overwrite)
+static FILE *open_write_restricted(const char *path)
 {
 #if defined(_WIN32)
     BYTE token_user_buffer[512];
@@ -164,18 +271,12 @@ static FILE *open_write_restricted(const char *path, int allow_overwrite)
     SECURITY_DESCRIPTOR security_descriptor;
     WCHAR wide_path[SESSION_EXPORT_PATH_MAX];
     int fd = -1;
-    DWORD disposition = CREATE_NEW;
     FILE *fp;
     PACL restricted_acl = (PACL)acl_buffer;
 
     if (path == NULL || path[0] == '\0' ||
         !utf8_or_ansi_to_wide(path, wide_path,
                               sizeof(wide_path) / sizeof(wide_path[0]))) {
-        return NULL;
-    }
-
-    if (allow_overwrite && file_exists(path) &&
-        !remove_file_if_present(path)) {
         return NULL;
     }
 
@@ -236,7 +337,7 @@ static FILE *open_write_restricted(const char *path, int allow_overwrite)
                               GENERIC_WRITE,
                               0,
                               &security_attributes,
-                              disposition,
+                              CREATE_NEW,
                               FILE_ATTRIBUTE_NORMAL,
                               NULL);
     CloseHandle(token);
@@ -261,11 +362,6 @@ static FILE *open_write_restricted(const char *path, int allow_overwrite)
     int fd;
     int oflag = O_CREAT | O_WRONLY | O_EXCL;
     FILE *fp;
-
-    if (allow_overwrite && file_exists(path) &&
-        !remove_file_if_present(path)) {
-        return NULL;
-    }
 
     fd = open(path, oflag, S_IRUSR | S_IWUSR);
     if (fd < 0) {
@@ -337,6 +433,41 @@ static int remove_file_if_present(const char *path)
         return 0;
     }
     return 1;
+#endif
+}
+
+static int replace_file_atomically(const char *source_path,
+                                   const char *target_path)
+{
+    if (source_path == NULL || source_path[0] == '\0' ||
+        target_path == NULL || target_path[0] == '\0') {
+        return 0;
+    }
+
+#ifdef SESSION_EXPORT_TESTING
+    if (g_force_replace_failure) {
+        return 0;
+    }
+#endif
+
+#if defined(_WIN32)
+    {
+        WCHAR wide_source[SESSION_EXPORT_PATH_MAX];
+        WCHAR wide_target[SESSION_EXPORT_PATH_MAX];
+
+        if (!utf8_or_ansi_to_wide(source_path, wide_source,
+                                  sizeof(wide_source) / sizeof(wide_source[0])) ||
+            !utf8_or_ansi_to_wide(target_path, wide_target,
+                                  sizeof(wide_target) / sizeof(wide_target[0]))) {
+            return 0;
+        }
+
+        return MoveFileExW(wide_source, wide_target,
+                           MOVEFILE_REPLACE_EXISTING |
+                               MOVEFILE_WRITE_THROUGH) != 0;
+    }
+#else
+    return rename(source_path, target_path) == 0;
 #endif
 }
 
@@ -618,11 +749,15 @@ SessionExportResult session_export_write_snapshot(const PatientRecord *patient,
                                                   char *out_path,
                                                   size_t out_path_len)
 {
+    char overwrite_path[SESSION_EXPORT_PATH_MAX];
     char resolved_path[SESSION_EXPORT_PATH_MAX];
     char *target_path = resolved_path;
     size_t target_path_len = sizeof(resolved_path);
     FILE *fp;
     SessionExportResult result;
+    const char *write_path;
+    int target_exists;
+    int use_atomic_replace = 0;
 
     if (patient == NULL || alarm_limits == NULL) {
         return SESSION_EXPORT_RESULT_ARGUMENT_ERROR;
@@ -647,11 +782,26 @@ SessionExportResult session_export_write_snapshot(const PatientRecord *patient,
         return SESSION_EXPORT_RESULT_PATH_ERROR;
     }
 
-    if (!allow_overwrite && file_exists(target_path)) {
+    target_exists = file_exists(target_path);
+    if (!allow_overwrite && target_exists) {
         return SESSION_EXPORT_RESULT_EXISTS;
     }
 
-    fp = open_write_restricted(target_path, allow_overwrite != 0);
+    write_path = target_path;
+    if (allow_overwrite && target_exists) {
+        if (!build_overwrite_temp_path(target_path,
+                                       overwrite_path,
+                                       sizeof(overwrite_path))) {
+            return SESSION_EXPORT_RESULT_PATH_ERROR;
+        }
+        if (!remove_file_if_present(overwrite_path)) {
+            return SESSION_EXPORT_RESULT_IO_ERROR;
+        }
+        write_path = overwrite_path;
+        use_atomic_replace = 1;
+    }
+
+    fp = open_write_restricted(write_path);
     if (fp == NULL) {
         if (!allow_overwrite && file_exists(target_path)) {
             return SESSION_EXPORT_RESULT_EXISTS;
@@ -666,7 +816,14 @@ SessionExportResult session_export_write_snapshot(const PatientRecord *patient,
     }
 
     if (result != SESSION_EXPORT_RESULT_OK) {
-        remove_file_if_present(target_path);
+        remove_file_if_present(write_path);
+        return result;
+    }
+
+    if (use_atomic_replace &&
+        !replace_file_atomically(write_path, target_path)) {
+        remove_file_if_present(write_path);
+        return SESSION_EXPORT_RESULT_IO_ERROR;
     }
 
     return result;

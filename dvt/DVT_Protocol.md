@@ -1,12 +1,12 @@
 # Design Verification Test (DVT) Protocol
 
-**Document ID:** DVT-001-REV-F
-**Project:** Patient Vital Signs Monitor  
-**Version Under Test:** 2.7.0  
+**Document ID:** DVT-001-REV-G
+**Project:** Patient Vital Signs Monitor
+**Version Under Test:** 2.7.0
 **Date:** 2026-05-06
-**Standard:** IEC 62304 §5.7, §5.8  
-**Author:** vinu-engineer  
-**Status:** Approved  
+**Standard:** IEC 62304 §5.7, §5.8
+**Author:** vinu-engineer
+**Status:** Approved
 
 ---
 
@@ -100,7 +100,7 @@ layout behavior, or animated presentation rather than stable control state.
 |---|---:|---|
 | `tests/unit/test_vitals.cpp` (`HeartRate`, `BloodPressure`, `Temperature`, `SpO2`, `RespRate`, `OverallAlert`, `BMI`, `AlertStr`) | 80 | `SWR-VIT-001` .. `SWR-VIT-008` |
 | `tests/unit/test_alerts.cpp` (`GenerateAlerts`) | 11 | `SWR-ALT-001` .. `SWR-ALT-004` |
-| `tests/unit/test_patient.cpp` (`PatientInit`, `PatientAddReading`, `PatientLatestReading`, `PatientStatus`, `PatientIsFull`, `PatientAlertEvents`, `PatientPrintSummary`) | 29 | `SWR-PAT-001` .. `SWR-PAT-008` |
+| `tests/unit/test_patient.cpp` (`PatientInit`, `PatientAddReading`, `PatientLatestReading`, `PatientStatus`, `PatientIsFull`, `PatientAlertEvents`, `PatientPrintSummary`) | 30 | `SWR-PAT-001` .. `SWR-PAT-008` |
 | `tests/unit/test_auth.cpp` (`UsersTest`) | 41 | `SWR-GUI-001`, `SWR-GUI-002`, `SWR-GUI-007`, `SWR-SEC-001` .. `SWR-SEC-004` |
 | `tests/unit/test_news2.cpp` (`News2*`) | 53 | `SWR-NEW-001` |
 | `tests/unit/test_alarm_limits.cpp` (`AlarmLimitsTest`) | 31 | `SWR-ALM-001` |
@@ -108,8 +108,8 @@ layout behavior, or animated presentation rather than stable control state.
 | `tests/unit/test_hal.cpp` (`HALTest`, `HALTestNoInit`, `SimSequenceTest`) | 12 | Supporting checks for HAL safety and simulator sequence behavior; not an approved automated DVT claim for `SWR-GUI-005` / `SWR-GUI-006` |
 | `tests/unit/test_config.cpp` (`ConfigTest`) | 10 | Supporting persistence checks for `monitor.cfg`; not a full approved automated DVT claim for `SWR-GUI-010` |
 | `tests/unit/test_localization.cpp` (`LocalizationTest`) | 8 | `SWR-GUI-012` |
-| `tests/unit/test_session_export.cpp` (`SessionExportTest`) | 8 | `SWR-EXP-001` .. `SWR-EXP-003` |
-| **Total** | **302** | |
+| `tests/unit/test_session_export.cpp` (`SessionExportTest`) | 9 | `SWR-EXP-001` .. `SWR-EXP-003` |
+| **Total** | **303** | |
 
 ### 5.2 Integration Tests (`test_integration.exe`)
 
@@ -126,9 +126,9 @@ layout behavior, or animated presentation rather than stable control state.
 
 | Criterion | Threshold |
 |---|---|
-| Unit test pass rate | 100% (`302 / 302`) |
+| Unit test pass rate | 100% (`303 / 303`) |
 | Integration test pass rate | 100% (`17 / 17`) |
-| Automated GTest total | 100% (`319 / 319`) |
+| Automated GTest total | 100% (`320 / 320`) |
 | Automated GUI checks for approved IDs | All executed approved-ID checks pass |
 | Manual GUI checklist | All applicable manual items marked Pass |
 
@@ -170,3 +170,4 @@ may execute during validation, but they do not convert `SWR-GUI-005`,
 | D | 2026-05-05 | Codex implementer | Added session alarm event review evidence, GUI-MAN-06, and updated automated totals to 305 tests |
 | E | 2026-05-06 | Codex implementer | Added session-reset disclosure evidence expectations and updated automated totals to 307 tests |
 | F | 2026-05-06 | Codex implementer | Added session review snapshot export evidence, GUI-MAN-07, and updated automated totals to 319 tests |
+| G | 2026-05-06 | Codex implementer | Added overwrite-failure preservation coverage for session export and refreshed automated totals to 320 tests |

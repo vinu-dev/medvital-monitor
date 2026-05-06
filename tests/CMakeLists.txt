@@ -30,6 +30,7 @@ add_executable(test_unit
 )
 target_link_libraries(test_unit PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_unit PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_compile_definitions(test_unit PRIVATE SESSION_EXPORT_TESTING)
 add_test(NAME UnitTests COMMAND test_unit --gtest_output=xml:${CMAKE_BINARY_DIR}/results_unit.xml)
 
 # -------------------------------------------------------
@@ -42,6 +43,7 @@ add_executable(test_integration
 )
 target_link_libraries(test_integration PRIVATE monitor_lib ${GTEST_MAIN_TARGET})
 target_include_directories(test_integration PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_compile_definitions(test_integration PRIVATE SESSION_EXPORT_TESTING)
 add_test(NAME IntegrationTests COMMAND test_integration --gtest_output=xml:${CMAKE_BINARY_DIR}/results_integration.xml)
 
 set(TEST_TEMP_DIR "${CMAKE_BINARY_DIR}/test_tmp")

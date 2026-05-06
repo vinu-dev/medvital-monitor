@@ -62,6 +62,10 @@ SessionExportResult session_export_write_snapshot(const PatientRecord *patient,
                                                   char *out_path,
                                                   size_t out_path_len);
 
+#ifdef SESSION_EXPORT_TESTING
+void session_export_test_force_replace_failure(int enabled);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

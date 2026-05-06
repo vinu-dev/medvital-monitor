@@ -487,3 +487,28 @@ TEST_F(SessionExportTest, SWR_EXP_001_OverwriteEnabledRecreatesRestrictedSnapsho
     }
 #endif
 }
+
+TEST_F(SessionExportTest, SWR_EXP_003_OverwriteFailurePreservesExistingSnapshot)
+{
+    char path[SESSION_EXPORT_PATH_MAX];
+    const std::string existing_snapshot = "existing snapshot";
+    VitalSigns reading = make_warning_reading();
+    std::ofstream existing(temp_path_, std::ios::binary);
+    SessionExportResult result;
+
+    existing << existing_snapshot;
+    existing.close();
+
+    patient_init(&patient_, 1001, "Sarah Johnson", 52, 72.5f, 1.66f);
+    ASSERT_EQ(1, patient_add_reading(&patient_, &reading));
+
+    session_export_test_force_replace_failure(1);
+    result = session_export_write_snapshot(&patient_, 1, &limits_,
+                                           1, 0, temp_path_.c_str(), 1,
+                                           path, sizeof(path));
+    session_export_test_force_replace_failure(0);
+
+    EXPECT_EQ(SESSION_EXPORT_RESULT_IO_ERROR, result);
+    EXPECT_EQ(existing_snapshot, read_text_file(temp_path_));
+    EXPECT_EQ(temp_path_, std::string(path));
+}

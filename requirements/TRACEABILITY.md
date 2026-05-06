@@ -282,11 +282,11 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | `tests/unit/test_hal.cpp` | 12 | Supporting HAL / simulator checks only; no direct SWR verification claim |
 | `tests/unit/test_config.cpp` | 10 | Supporting config persistence checks only; no direct SWR verification claim |
 | `tests/unit/test_localization.cpp` | 8 | SWR-GUI-012 |
-| `tests/unit/test_session_export.cpp` | 8 | SWR-EXP-001 – SWR-EXP-003 |
+| `tests/unit/test_session_export.cpp` | 9 | SWR-EXP-001 – SWR-EXP-003 |
 | `tests/integration/test_patient_monitoring.cpp` | 7 | SWR-PAT-*, SWR-VIT-*, SWR-ALT-* |
 | `tests/integration/test_alert_escalation.cpp` | 7 | SWR-VIT-*, SWR-ALT-*, SWR-PAT-004, SWR-PAT-007 |
 | `tests/integration/test_session_export.cpp` | 3 | SWR-EXP-001 – SWR-EXP-003 |
-| **Total** | **319** | **44 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total** | **320** | **44 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ---
 
@@ -307,3 +307,4 @@ This is recorded as an accepted coverage exclusion with a documented rationale.
 | K   | 2026-05-05 | Codex implementer | Added session alarm event review traceability: UNS-017, SYS-020/021, SWR-PAT-007/008, SWR-GUI-013; 40/40 SWR, 305 tests |
 | L   | 2026-05-06 | Codex implementer | Added session-reset disclosure traceability and updated automated totals to 307 tests |
 | M   | 2026-05-06 | Codex implementer | Added session review snapshot export traceability, SWR-EXP-001..003, SWR-GUI-014, and updated automated totals to 319 tests |
+| N   | 2026-05-06 | Codex implementer | Added overwrite-failure preservation coverage for session export and refreshed automated totals to 320 tests |
