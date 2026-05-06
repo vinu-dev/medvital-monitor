@@ -14,6 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
+ * @req SWR-GUI-014
  * @req SWR-VIT-008  @req SWR-NEW-001
  */
 #ifdef _MSC_VER
@@ -113,6 +114,7 @@
 /* Language tab in Settings @req SWR-GUI-012 */
 #define IDC_CMB_LANG       1228
 #define IDC_BTN_LANG_APPLY 1229
+#define IDC_CHK_READABILITY 1237
 /* Simulation tab in Settings @req SWR-GUI-010 */
 #define IDC_BTN_SIM_TOGGLE 1225
 #define IDC_STC_SIM_STATUS 1226
@@ -206,12 +208,17 @@ typedef struct {
     int           has_patient;
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
+    int           readability_mode; /**< 1=large-font dashboard mode, 0=standard mode @req SWR-GUI-014 */
     int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
 
     HFONT font_hdr;
     HFONT font_tile_val;
+    HFONT font_tile_val_large;
     HFONT font_tile_lbl;
+    HFONT font_tile_lbl_large;
+    HFONT font_tile_badge;
+    HFONT font_pill;
     HFONT font_status;
     HFONT font_ui;
     HICON app_icon;
@@ -236,6 +243,7 @@ static LRESULT CALLBACK adduser_proc (HWND, UINT, WPARAM, LPARAM);
 static void create_dashboard(void);
 static void update_dashboard(HWND w);
 static void refresh_dash_language(HWND w);
+static void refresh_dash_readability(HWND w);
 static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
@@ -314,7 +322,7 @@ static void paint_header(HDC hdc, int cw)
                      cw - 560, 0, 160, HDR_H,
                      g_app.font_ui, RGB(186, 230, 253),
                      DT_SINGLELINE | DT_VCENTER | DT_LEFT);
-        draw_pill(hdc, cw - 400, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
+        draw_pill(hdc, cw - 400, 15, 86, 26, badge_bg, badge_txt, g_app.font_pill);
     }
 
     /* Sim status indicator — only shown when simulation is active */
@@ -323,7 +331,7 @@ static void paint_header(HDC hdc, int cw)
         COLORREF    mode_clr = g_app.sim_paused ? RGB(253,224,71) : RGB(134,239,172);
         draw_text_ex(hdc, mode_txt,
                      cw - 560, 32, 108, 22,
-                     g_app.font_tile_lbl, mode_clr,
+                     g_app.font_pill, mode_clr,
                      DT_SINGLELINE | DT_LEFT);
     }
 }
@@ -402,6 +410,56 @@ static void paint_sparkline(HDC hdc, int sx, int sy, int sw, int sh,
     DeleteObject(pen);
 }
 
+typedef struct {
+    HFONT label_font;
+    HFONT value_font;
+    HFONT badge_font;
+    int label_y;
+    int label_h;
+    int value_y;
+    int value_h;
+    int spark_y;
+    int spark_h;
+    int badge_y;
+    int badge_h;
+} TileLayout;
+
+static TileLayout current_tile_layout(int th)
+{
+    TileLayout layout;
+
+    if (g_app.readability_mode)
+    {
+        layout.label_font = g_app.font_tile_lbl_large;
+        layout.value_font = g_app.font_tile_val_large;
+        layout.badge_font = g_app.font_tile_badge;
+        layout.label_y = 4;
+        layout.label_h = 18;
+        layout.value_y = 20;
+        layout.value_h = 28;
+        layout.spark_y = th - 24;
+        layout.spark_h = 8;
+        layout.badge_y = th - 16;
+        layout.badge_h = 14;
+    }
+    else
+    {
+        layout.label_font = g_app.font_tile_lbl;
+        layout.value_font = g_app.font_tile_val;
+        layout.badge_font = g_app.font_tile_badge;
+        layout.label_y = 6;
+        layout.label_h = 18;
+        layout.value_y = 26;
+        layout.value_h = th - 52;
+        layout.spark_y = th - 30;
+        layout.spark_h = 12;
+        layout.badge_y = th - 18;
+        layout.badge_h = 18;
+    }
+
+    return layout;
+}
+
 static void paint_tile(HDC hdc,
                         int tx, int ty, int tw, int th,
                         const char *label, const char *value, const char *unit,
@@ -410,13 +468,7 @@ static void paint_tile(HDC hdc,
 {
     COLORREF bg, fg;
     char badge[24], full_val[48];
-    /* vertical split: label top, value middle, sparkline, badge bottom */
-    int lbl_y  = ty + 6;                  /* label row top */
-    int val_y  = ty + 26;                 /* value row top (below label) */
-    int val_h  = th - 26 - 26;           /* value height: leaves room for sparkline + badge */
-    int spk_y  = ty + th - 30;           /* sparkline strip top */
-    int spk_h  = 12;                      /* sparkline strip height */
-    int bdg_y  = ty + th - 18;           /* badge row top (bottom-anchored) */
+    TileLayout layout = current_tile_layout(th);
     HPEN pen; HPEN open; HBRUSH obr;
 
     switch (level) {
@@ -437,12 +489,15 @@ static void paint_tile(HDC hdc,
     else
         snprintf(full_val, sizeof(full_val), "%s %s", value, unit);
 
-    draw_text_ex(hdc, label,     tx+10, lbl_y,  tw-20, 18,    g_app.font_tile_lbl, fg,           DT_SINGLELINE|DT_LEFT);
-    draw_text_ex(hdc, full_val,  tx+8,  val_y,  tw-16, val_h, g_app.font_tile_val, CLR_DARK_TEXT, DT_SINGLELINE|DT_LEFT|DT_VCENTER);
+    draw_text_ex(hdc, label, tx+10, ty + layout.label_y, tw-20, layout.label_h,
+                 layout.label_font, fg, DT_SINGLELINE|DT_LEFT);
+    draw_text_ex(hdc, full_val, tx+8, ty + layout.value_y, tw-16, layout.value_h,
+                 layout.value_font, CLR_DARK_TEXT, DT_SINGLELINE|DT_LEFT|DT_VCENTER);
     /* Sparkline strip — draw only when we have at least 2 data points */
     if (spark_n >= 2)
-        paint_sparkline(hdc, tx+8, spk_y, tw-16, spk_h, spark_vals, spark_n, fg);
-    draw_text_ex(hdc, badge,     tx+8,  bdg_y,  tw-16, 18,    g_app.font_tile_lbl, fg,           DT_SINGLELINE|DT_LEFT);
+        paint_sparkline(hdc, tx+8, ty + layout.spark_y, tw-16, layout.spark_h, spark_vals, spark_n, fg);
+    draw_text_ex(hdc, badge, tx+8, ty + layout.badge_y, tw-16, layout.badge_h,
+                 layout.badge_font, fg, DT_SINGLELINE|DT_LEFT);
 }
 
 static void paint_tiles(HDC hdc, int cw)
@@ -595,6 +650,12 @@ static HWND make_btn(HWND p, int id, const char *t, int x, int y, int w, int h)
     return CreateWindowExA(0,"BUTTON",t,
                            WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,
                            x,y,w,h,p,(HMENU)(INT_PTR)id,g_app.inst,NULL);
+}
+static HWND make_chk(HWND p, int id, const char *t, int x, int y, int w, int h)
+{
+    return CreateWindowExA(0, "BUTTON", t,
+                           WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,
+                           x, y, w, h, p, (HMENU)(INT_PTR)id, g_app.inst, NULL);
 }
 static void font_children(HWND p, HFONT f)
 {
@@ -891,7 +952,7 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
     static HWND acct_ctrls[4];
     static int  acct_count = 0;
     /* Language tab control handles @req SWR-GUI-012 */
-    static HWND lang_ctrls[4];
+    static HWND lang_ctrls[7];
     static int  lang_count = 0;
 
     switch (msg) {
@@ -1108,6 +1169,19 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         }
         lang_ctrls[lang_count++] = make_btn(w, IDC_BTN_LANG_APPLY,
             localization_get_string(STR_SAVE), 16, 180, 120, 30);
+        lang_ctrls[lang_count++] = make_label(w,
+            localization_get_string(STR_READABILITY_MODE), 16, 240, 520, 22);
+        {
+            HWND chk = make_chk(w, IDC_CHK_READABILITY,
+                localization_get_string(STR_ENABLE_READABILITY_MODE),
+                16, 270, 360, 22);
+            SendMessageA(chk, BM_SETCHECK,
+                         g_app.readability_mode ? BST_CHECKED : BST_UNCHECKED, 0);
+            lang_ctrls[lang_count++] = chk;
+        }
+        lang_ctrls[lang_count++] = make_label(w,
+            localization_get_string(STR_READABILITY_MODE_NOTE),
+            16, 300, 520, 20);
         for (i = 0; i < lang_count; ++i)
             ShowWindow(lang_ctrls[i], SW_HIDE);
 
@@ -1257,6 +1331,16 @@ static LRESULT CALLBACK settings_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             /* Propagate to dashboard */
             if (g_app.hwnd_dash) apply_sim_mode(g_app.hwnd_dash);
             return 0;
+
+        case IDC_CHK_READABILITY: { /* @req SWR-GUI-014 */
+            HWND chk = GetDlgItem(w, IDC_CHK_READABILITY);
+            g_app.readability_mode =
+                (SendMessageA(chk, BM_GETCHECK, 0, 0) == BST_CHECKED) ? 1 : 0;
+            app_config_save_readability_mode(g_app.readability_mode);
+            if (g_app.hwnd_dash)
+                refresh_dash_readability(g_app.hwnd_dash);
+            return 0;
+        }
 
         case IDC_BTN_LANG_APPLY: {  /* @req SWR-GUI-012 */
             HWND cmb = GetDlgItem(w, IDC_CMB_LANG);
@@ -1637,6 +1721,12 @@ static void apply_sim_mode(HWND dash)
     update_dashboard(dash);
 }
 
+static void refresh_dash_readability(HWND w)
+{
+    InvalidateRect(w, NULL, TRUE);
+    UpdateWindow(w);
+}
+
 /* ===================================================================
  * Refresh all dashboard controls after language change  @req SWR-GUI-012
  *
@@ -1733,6 +1823,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         SendMessage(btn, WM_SETFONT, (WPARAM)g_app.font_ui, TRUE);
 
         app_config_load(&g_app.sim_enabled);          /* restore sim mode */
+        g_app.readability_mode = app_config_load_readability_mode();
         { /* restore language @req SWR-GUI-012 */
             int lang = app_config_load_language();
             localization_set_language((Language)lang);
@@ -2051,11 +2142,15 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
     g_app.app_icon     = (HICON)LoadImageA(inst, MAKEINTRESOURCEA(IDI_APPICON),
                                             IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
 
-    g_app.font_hdr      = make_font(18, TRUE);
-    g_app.font_tile_val = make_font(18, TRUE);
-    g_app.font_tile_lbl = make_font( 9, FALSE);
-    g_app.font_status   = make_font(11, TRUE);
-    g_app.font_ui       = make_font( 9, FALSE);
+    g_app.font_hdr            = make_font(18, TRUE);
+    g_app.font_tile_val       = make_font(18, TRUE);
+    g_app.font_tile_val_large = make_font(22, TRUE);
+    g_app.font_tile_lbl       = make_font( 9, FALSE);
+    g_app.font_tile_lbl_large = make_font(11, FALSE);
+    g_app.font_tile_badge     = make_font( 9, FALSE);
+    g_app.font_pill           = make_font( 9, FALSE);
+    g_app.font_status         = make_font(11, TRUE);
+    g_app.font_ui             = make_font( 9, FALSE);
 
     ZeroMemory(&wc, sizeof(wc));
     wc.cbSize        = sizeof(wc);
@@ -2094,12 +2189,16 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show)
         DispatchMessage(&msg);
     }
 
-    if (g_app.font_hdr)      DeleteObject(g_app.font_hdr);
-    if (g_app.font_tile_val) DeleteObject(g_app.font_tile_val);
-    if (g_app.font_tile_lbl) DeleteObject(g_app.font_tile_lbl);
-    if (g_app.font_status)   DeleteObject(g_app.font_status);
-    if (g_app.font_ui)       DeleteObject(g_app.font_ui);
-    if (g_app.app_icon)      DestroyIcon(g_app.app_icon);
+    if (g_app.font_hdr)            DeleteObject(g_app.font_hdr);
+    if (g_app.font_tile_val)       DeleteObject(g_app.font_tile_val);
+    if (g_app.font_tile_val_large) DeleteObject(g_app.font_tile_val_large);
+    if (g_app.font_tile_lbl)       DeleteObject(g_app.font_tile_lbl);
+    if (g_app.font_tile_lbl_large) DeleteObject(g_app.font_tile_lbl_large);
+    if (g_app.font_tile_badge)     DeleteObject(g_app.font_tile_badge);
+    if (g_app.font_pill)           DeleteObject(g_app.font_pill);
+    if (g_app.font_status)         DeleteObject(g_app.font_status);
+    if (g_app.font_ui)             DeleteObject(g_app.font_ui);
+    if (g_app.app_icon)            DestroyIcon(g_app.app_icon);
 
     return (int)msg.wParam;
 }

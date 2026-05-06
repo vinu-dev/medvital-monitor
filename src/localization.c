@@ -74,6 +74,9 @@ static const char* g_strings_english[STR_COUNT] = {
     "IN SIMULATION MODE",           /* STR_IN_SIMULATION_MODE */
 
     "Language",                     /* STR_LANGUAGE */
+    "Readability Mode",             /* STR_READABILITY_MODE */
+    "Use larger dashboard values and labels", /* STR_ENABLE_READABILITY_MODE */
+    "Applies immediately and is restored on next launch.", /* STR_READABILITY_MODE_NOTE */
     "Alarm Limits",                 /* STR_ALARM_LIMITS */
     "User Management",              /* STR_USER_MANAGEMENT */
     "My Account",                   /* STR_MY_ACCOUNT */
@@ -147,6 +150,9 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "EN MODO SIMULACIÓN",
 
     "Idioma",
+    "Modo legible",
+    "Usar valores y etiquetas mas grandes en el panel",
+    "Se aplica al instante y se restaura al reiniciar.",
     "Límites de Alarma",
     "Gestión de Usuarios",
     "Mi Cuenta",
@@ -220,6 +226,9 @@ static const char* g_strings_french[STR_COUNT] = {
     "EN MODE SIMULATION",
 
     "Langue",
+    "Mode lisible",
+    "Utiliser des valeurs et libelles plus grands",
+    "Application immediate et restauration au prochain demarrage.",
     "Limites d'Alarme",
     "Gestion des Utilisateurs",
     "Mon Compte",
@@ -293,6 +302,9 @@ static const char* g_strings_german[STR_COUNT] = {
     "IM SIMULATIONSMODUS",
 
     "Sprache",
+    "Lesemodus",
+    "Groessere Dashboard-Werte und Labels verwenden",
+    "Wirkt sofort und wird beim naechsten Start wiederhergestellt.",
     "Alarmlimits",
     "Benutzerverwaltung",
     "Mein Konto",

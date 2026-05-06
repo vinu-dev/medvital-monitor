@@ -12,7 +12,7 @@ Usage:
 Requirements:
     pip install pywinauto
 
-Reference: dvt/DVT_Protocol.md (DVT-001-REV-C)
+Reference: dvt/DVT_Protocol.md (DVT-001-REV-F)
 """
 
 import sys
@@ -483,7 +483,7 @@ def generate_report(results, exe_path, output_dir):
         "=" * 80,
         f"  Generated  : {now.strftime('%Y-%m-%d %H:%M:%S')} UTC",
         f"  Executable : {exe_path}",
-        f"  Protocol   : dvt/DVT_Protocol.md (DVT-001-REV-C)",
+        f"  Protocol   : dvt/DVT_Protocol.md (DVT-001-REV-F)",
         "=" * 80,
         "",
         f"  OVERALL RESULT: {results.overall()}",
@@ -512,10 +512,11 @@ def generate_report(results, exe_path, output_dir):
         "  - GUI-RESIZE  : Window resize - zones scale, no clipping",
         "  - GUI-MAXIMIZE: Maximize - all zones fill screen",
         "  - GUI-L10N-SEL: DVT-GUI-16 verifies the four-option localization selector",
+        "  - GUI-READABILITY: SWR-GUI-014 readability-mode layout and restart restore",
         "",
         "  REFERENCES",
         "  " + "-" * 76,
-        "  Protocol     : dvt/DVT_Protocol.md (DVT-001-REV-C)",
+        "  Protocol     : dvt/DVT_Protocol.md (DVT-001-REV-F)",
         "  Traceability : requirements/TRACEABILITY.md",
         "  SWR          : requirements/SWR.md",
         "=" * 80,

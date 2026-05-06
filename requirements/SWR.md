@@ -717,6 +717,29 @@ session event label string
 
 ---
 
+### SWR-GUI-014 — Dashboard Readability Mode
+
+**Requirement:** The dashboard Settings Language tab shall provide one
+user-selectable readability toggle for both ADMIN and CLINICAL users. When the
+toggle is enabled, the dashboard shall immediately repaint the six vital tiles
+using a dedicated large-font tile profile for labels and values while
+preserving the existing tile order, displayed values, units, alert colours,
+badge text, sparkline presence, and NEWS2 output. The preference shall persist
+in `monitor.cfg` using `readability_mode=0|1`, default to standard mode when
+the key is absent or invalid, and restore the last saved state on the next
+application launch. The supported readability layout remains the existing
+default dashboard window size and larger.
+
+**Traces to:** SYS-022
+**Implemented in:** `src/gui_main.c` - `settings_proc()`, `paint_tile()`,
+`dash_proc()`; `src/app_config.c` -
+`app_config_load_readability_mode()`, `app_config_save_readability_mode()`;
+`src/localization.c` - readability toggle strings
+**Verified by:** `tests/unit/test_config.cpp` -
+`ConfigTest.ReadabilityMode*` (3 tests); manual GUI review (`GUI-MAN-07`)
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -729,6 +752,7 @@ session event label string
 | F   | 2026-04-08 | vinu-engineer   | Added SWR-VIT-008 (RR), SWR-NEW-001 (NEWS2), SWR-ALM-001 (alarm limits), SWR-TRD-001 (trend) — v2.6.0 |
 | G   | 2026-04-08 | claude          | Added SWR-GUI-011 (rolling message in simulation mode) — v2.7.0 |
 | H   | 2026-05-03 | codex           | Reconciled SWR-VIT-008 and SWR-NEW-001 to existing alerting and aggregate-risk SYS links; no clinical behavior changes |
+| I   | 2026-05-06 | Codex implementer | Added SWR-GUI-014 for dashboard readability-mode toggle, persistence, and manual GUI evidence |
 | I   | 2026-05-03 | Codex implementer | Added SWR-GUI-012 (localization selection and persistence) |
 | J   | 2026-05-05 | vinu           | Refreshed SWR-GUI-001..003 verification references |
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |

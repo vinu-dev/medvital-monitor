@@ -3,6 +3,7 @@
  * @brief Unit tests for application configuration persistence.
  *
  * @req SWR-GUI-010  Configuration shall persist across application restarts.
+ * @req SWR-GUI-014  Dashboard readability mode shall persist across restarts.
  *
  * All tests redirect I/O to a temporary file via app_config_set_path() so
  * they never touch the production monitor.cfg.  The fixture removes the
@@ -102,6 +103,19 @@ TEST_F(ConfigTest, DefaultWhenFileAbsent)
     std::remove(nonexistent.c_str());
 }
 
+// @req SWR-GUI-014 - When no config file exists, readability mode defaults to 0
+TEST_F(ConfigTest, ReadabilityModeDefaultsOffWhenFileAbsent)
+{
+    std::string nonexistent = temp_path_ + "_readability_missing";
+    std::remove(nonexistent.c_str());
+    app_config_set_path(nonexistent.c_str());
+
+    EXPECT_EQ(0, app_config_load_readability_mode())
+        << "Default readability_mode must be 0 when the file is absent";
+
+    std::remove(nonexistent.c_str());
+}
+
 // @req SWR-GUI-010 - Save sim_enabled=0 then load, expect 0
 TEST_F(ConfigTest, SaveZeroThenLoadReturnsZero)
 {
@@ -112,6 +126,8 @@ TEST_F(ConfigTest, SaveZeroThenLoadReturnsZero)
     int load_result = app_config_load(&sim_enabled);
     EXPECT_EQ(1, load_result)  << "Load should succeed after save";
     EXPECT_EQ(0, sim_enabled)  << "sim_enabled should be 0";
+    EXPECT_EQ(0, app_config_load_readability_mode())
+        << "Saving sim_enabled must preserve the default readability mode";
 }
 
 // @req SWR-GUI-010 - Save sim_enabled=1 then load, expect 1
@@ -186,6 +202,8 @@ TEST_F(ConfigTest, MalformedFileReturnsDefault)
 
     EXPECT_EQ(0, result)      << "Load should return 0 for malformed file";
     EXPECT_EQ(1, sim_enabled) << "Default sim_enabled=1 when file is malformed";
+    EXPECT_EQ(0, app_config_load_readability_mode())
+        << "Malformed readability_mode input must fall back to 0";
 }
 
 // @req SWR-GUI-010 - Load from an empty file returns default sim_enabled=1
@@ -250,4 +268,40 @@ TEST_F(ConfigTest, NonZeroValueTreatedAsEnabled)
     int result = app_config_load(&sim_enabled);
     EXPECT_EQ(1, result);
     EXPECT_EQ(1, sim_enabled) << "Any non-zero value should be normalised to 1";
+}
+
+// @req SWR-GUI-014 - Saving readability mode preserves the existing sibling preferences
+TEST_F(ConfigTest, ReadabilityModeSavePreservesSiblingPreferences)
+{
+    ASSERT_EQ(1, app_config_save(0));
+    ASSERT_EQ(1, app_config_save_language(3));
+    ASSERT_EQ(1, app_config_save_readability_mode(1));
+
+    int sim_enabled = 99;
+    ASSERT_EQ(1, app_config_load(&sim_enabled));
+    EXPECT_EQ(0, sim_enabled);
+    EXPECT_EQ(3, app_config_load_language());
+    EXPECT_EQ(1, app_config_load_readability_mode());
+
+    ASSERT_EQ(1, app_config_save(1));
+    EXPECT_EQ(1, app_config_load_readability_mode())
+        << "Saving sim_enabled must not drop readability_mode";
+}
+
+// @req SWR-GUI-014 - Invalid persisted readability values fall back to 0
+TEST_F(ConfigTest, ReadabilityModeInvalidValueFallsBackToOff)
+{
+    FILE *f = fopen(temp_path_.c_str(), "w");
+    ASSERT_NE(nullptr, f);
+    fprintf(f, "sim_enabled=1\n");
+    fprintf(f, "language=2\n");
+    fprintf(f, "readability_mode=7\n");
+    fclose(f);
+
+    int sim_enabled = 99;
+    ASSERT_EQ(1, app_config_load(&sim_enabled));
+    EXPECT_EQ(1, sim_enabled);
+    EXPECT_EQ(2, app_config_load_language());
+    EXPECT_EQ(0, app_config_load_readability_mode())
+        << "Only explicit 0/1 readability values are accepted";
 }

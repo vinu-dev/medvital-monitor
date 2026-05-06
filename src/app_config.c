@@ -5,6 +5,8 @@
  * The configuration file is a simple key=value text file:
  *
  *   sim_enabled=1
+ *   language=0
+ *   readability_mode=0
  *
  * File location (in priority order):
  *  1. Path supplied by app_config_set_path() (non-NULL).
@@ -12,6 +14,8 @@
  *     resolved via GetModuleFileNameA().
  *
  * @req SWR-GUI-010
+ * @req SWR-GUI-012
+ * @req SWR-GUI-014
  */
 
 #include "app_config.h"
@@ -31,6 +35,16 @@
 /* When non-empty this overrides the exe-derived path (set by tests). */
 static char s_override_path[CFG_MAX_PATH] = {0};
 
+typedef struct
+{
+    int sim_enabled;
+    int language;
+    int readability_mode;
+    int has_sim_enabled;
+    int has_language;
+    int has_readability_mode;
+} AppConfigData;
+
 /* -------------------------------------------------------------------------
  * Internal helpers
  * ---------------------------------------------------------------------- */
@@ -41,43 +55,134 @@ static char s_override_path[CFG_MAX_PATH] = {0};
  */
 static int get_cfg_path(char *buf, size_t buf_size)
 {
-    /* Test override takes priority */
     if (s_override_path[0] != '\0')
     {
-        strncpy(buf, s_override_path, buf_size - 1u);
-        buf[buf_size - 1u] = '\0';
-        return 1;
+        int written = snprintf(buf, buf_size, "%s", s_override_path);
+        return (written > 0 && (size_t)written < buf_size) ? 1 : 0;
     }
 
 #ifdef _WIN32
-    /* Derive path from executable location */
-    char exe_path[CFG_MAX_PATH] = {0};
-    DWORD len = GetModuleFileNameA(NULL, exe_path, (DWORD)(sizeof(exe_path) - 1u));
-    if (len == 0u || len >= (DWORD)(sizeof(exe_path) - 1u))
+    {
+        char exe_path[CFG_MAX_PATH] = {0};
+        char *last_sep = NULL;
+        char *p = exe_path;
+        DWORD len = GetModuleFileNameA(NULL, exe_path, (DWORD)(sizeof(exe_path) - 1u));
+        int written;
+
+        if (len == 0u || len >= (DWORD)(sizeof(exe_path) - 1u))
+            return 0;
+
+        while (*p)
+        {
+            if (*p == '\\' || *p == '/')
+                last_sep = p;
+            ++p;
+        }
+
+        if (last_sep != NULL)
+            *(last_sep + 1) = '\0';
+        else
+            exe_path[0] = '\0';
+
+        written = snprintf(buf, buf_size, "%s%s", exe_path, APP_CFG_FILENAME);
+        return (written > 0 && (size_t)written < buf_size) ? 1 : 0;
+    }
+#else
+    {
+        int written = snprintf(buf, buf_size, "%s", APP_CFG_FILENAME);
+        return (written > 0 && (size_t)written < buf_size) ? 1 : 0;
+    }
+#endif
+}
+
+static void config_defaults(AppConfigData *cfg)
+{
+    cfg->sim_enabled = 1;
+    cfg->language = 0;
+    cfg->readability_mode = 0;
+    cfg->has_sim_enabled = 0;
+    cfg->has_language = 0;
+    cfg->has_readability_mode = 0;
+}
+
+static int normalize_language(int language)
+{
+    return (language >= 0 && language < 4) ? language : 0;
+}
+
+static int load_config_file(AppConfigData *cfg)
+{
+    char cfg_path[CFG_MAX_PATH] = {0};
+    char line[128];
+    FILE *f;
+
+    config_defaults(cfg);
+
+    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
         return 0;
 
-    /* Strip the executable filename, keep the directory separator */
-    char *last_sep = NULL;
-    char *p = exe_path;
-    while (*p)
+    f = fopen(cfg_path, "r");
+    if (f == NULL)
+        return 0;
+
+    while (fgets(line, (int)sizeof(line), f) != NULL)
     {
-        if (*p == '\\' || *p == '/')
-            last_sep = p;
-        ++p;
+        int value = 0;
+
+        if (sscanf(line, "sim_enabled=%d", &value) == 1)
+        {
+            cfg->sim_enabled = (value != 0) ? 1 : 0;
+            cfg->has_sim_enabled = 1;
+            continue;
+        }
+
+        if (sscanf(line, "language=%d", &value) == 1)
+        {
+            cfg->language = normalize_language(value);
+            cfg->has_language = (value >= 0 && value < 4) ? 1 : 0;
+            continue;
+        }
+
+        if (sscanf(line, "readability_mode=%d", &value) == 1)
+        {
+            if (value == 0 || value == 1)
+            {
+                cfg->readability_mode = value;
+                cfg->has_readability_mode = 1;
+            }
+            else
+            {
+                cfg->readability_mode = 0;
+                cfg->has_readability_mode = 0;
+            }
+        }
     }
 
-    if (last_sep != NULL)
-        *(last_sep + 1) = '\0'; /* truncate after the last separator */
-    else
-        exe_path[0] = '\0';    /* no separator – use CWD fallback below */
+    fclose(f);
+    return cfg->has_sim_enabled || cfg->has_language || cfg->has_readability_mode;
+}
 
-    int written = snprintf(buf, buf_size, "%s%s", exe_path, APP_CFG_FILENAME);
-    return (written > 0 && (size_t)written < buf_size) ? 1 : 0;
-#else
-    /* Non-Windows fallback: place the file in the current directory */
-    int written = snprintf(buf, buf_size, "%s", APP_CFG_FILENAME);
-    return (written > 0 && (size_t)written < buf_size) ? 1 : 0;
-#endif
+static int save_config_file(const AppConfigData *cfg)
+{
+    char cfg_path[CFG_MAX_PATH] = {0};
+    FILE *f;
+    int ok;
+
+    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
+        return 0;
+
+    f = fopen(cfg_path, "w");
+    if (f == NULL)
+        return 0;
+
+    /* Rewrite the full file so sibling preferences are never dropped. */
+    ok = (fprintf(f,
+                  "sim_enabled=%d\nlanguage=%d\nreadability_mode=%d\n",
+                  cfg->sim_enabled ? 1 : 0,
+                  normalize_language(cfg->language),
+                  cfg->readability_mode ? 1 : 0) > 0);
+    fclose(f);
+    return ok ? 1 : 0;
 }
 
 /* -------------------------------------------------------------------------
@@ -99,109 +204,55 @@ void app_config_set_path(const char *path)
 
 int app_config_load(int *sim_enabled_out)
 {
+    AppConfigData cfg;
+
     if (sim_enabled_out == NULL)
         return 0;
 
-    /* Apply default before attempting to read */
-    *sim_enabled_out = 1;
-
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
-
-    FILE *f = fopen(cfg_path, "r");
-    if (f == NULL)
-        return 0; /* file absent – caller gets the default */
-
-    char line[128];
-    int parsed = 0;
-    while (fgets(line, (int)sizeof(line), f) != NULL)
-    {
-        int value = 0;
-        if (sscanf(line, "sim_enabled=%d", &value) == 1)
-        {
-            *sim_enabled_out = (value != 0) ? 1 : 0;
-            parsed = 1;
-            break;
-        }
-    }
-
-    fclose(f);
-
-    if (!parsed)
-    {
-        /* File exists but does not contain a recognisable value */
-        *sim_enabled_out = 1;
-        return 0;
-    }
-
-    return 1;
+    load_config_file(&cfg);
+    *sim_enabled_out = cfg.sim_enabled;
+    return cfg.has_sim_enabled ? 1 : 0;
 }
 
 int app_config_save(int sim_enabled)
 {
-    /* Preserve language setting when saving sim_enabled */
-    int lang = app_config_load_language();
+    AppConfigData cfg;
 
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
-
-    FILE *f = fopen(cfg_path, "w");
-    if (f == NULL)
-        return 0;
-
-    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
-                       sim_enabled ? 1 : 0, lang) > 0);
-    fclose(f);
-    return ok ? 1 : 0;
+    load_config_file(&cfg);
+    cfg.sim_enabled = sim_enabled ? 1 : 0;
+    return save_config_file(&cfg);
 }
 
 int app_config_load_language(void)
 {
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
+    AppConfigData cfg;
 
-    FILE *f = fopen(cfg_path, "r");
-    if (f == NULL)
-        return 0;
-
-    char line[128];
-    int lang = 0;
-    while (fgets(line, (int)sizeof(line), f) != NULL)
-    {
-        int value = 0;
-        if (sscanf(line, "language=%d", &value) == 1)
-        {
-            if (value >= 0 && value < 4)
-                lang = value;
-            break;
-        }
-    }
-    fclose(f);
-    return lang;
+    load_config_file(&cfg);
+    return cfg.language;
 }
 
 int app_config_save_language(int language)
 {
-    /* Preserve sim_enabled setting when saving language */
-    int sim = 1;
-    app_config_load(&sim);
+    AppConfigData cfg;
 
-    if (language < 0 || language > 3)
-        language = 0;
+    load_config_file(&cfg);
+    cfg.language = normalize_language(language);
+    return save_config_file(&cfg);
+}
 
-    char cfg_path[CFG_MAX_PATH] = {0};
-    if (!get_cfg_path(cfg_path, sizeof(cfg_path)))
-        return 0;
+int app_config_load_readability_mode(void)
+{
+    AppConfigData cfg;
 
-    FILE *f = fopen(cfg_path, "w");
-    if (f == NULL)
-        return 0;
+    load_config_file(&cfg);
+    return cfg.readability_mode;
+}
 
-    int ok = (fprintf(f, "sim_enabled=%d\nlanguage=%d\n",
-                       sim, language) > 0);
-    fclose(f);
-    return ok ? 1 : 0;
+int app_config_save_readability_mode(int enabled)
+{
+    AppConfigData cfg;
+
+    load_config_file(&cfg);
+    cfg.readability_mode = (enabled == 1) ? 1 : 0;
+    return save_config_file(&cfg);
 }

@@ -1,9 +1,9 @@
 # System Requirements Specification (SYS)
 
-**Document ID:** SYS-001-REV-F
+**Document ID:** SYS-001-REV-G
 **Project:** Patient Vital Signs Monitor
 **Version:** 1.0.0
-**Date:** 2026-05-05
+**Date:** 2026-05-06
 **Status:** Approved
 **Standard:** 21 CFR 820.30(d) / IEC 62304 §5.1
 
@@ -256,6 +256,16 @@ events have been recorded.
 
 ---
 
+### SYS-022 — Dashboard Readability Mode
+**Requirement:** The system shall provide an optional dashboard readability
+mode that enlarges the vital-tile values and labels for the supported dashboard
+layout while preserving the same values, units, tile order, alert colors, and
+status cues shown in the standard mode. The readability preference shall be
+restored on the next application launch.
+**Traces to:** UNS-014
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -266,3 +276,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-06 | Codex implementer | Added SYS-022 for optional dashboard readability mode and restart persistence |

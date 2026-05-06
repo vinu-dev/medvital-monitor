@@ -112,6 +112,7 @@ REQUIREMENT_MAP = {
     "SWR-GUI-011": (None, "MANUAL", "Rolling simulation banner verified by manual visual check"),
     "SWR-GUI-012": ("test_unit", "LocalizationTest", "Localization API, selector list, and monitor.cfg persistence"),
     "SWR-GUI-013": (None, "MANUAL", "GUI review: dedicated session alarm events list remains distinct from active alerts"),
+    "SWR-GUI-014": (None, "MANUAL", "GUI review: readability-mode layout, restart restore, and clean disable path"),
     # GUI requirements verified via manual checklist only (GUI rendering and workflow review)
     "SWR-GUI-001": (None, "MANUAL", "Login screen: auth, error message, role detection"),
     "SWR-GUI-002": (None, "MANUAL", "Dashboard: colour-coded vital tiles update every 2 s"),
@@ -464,11 +465,13 @@ def generate_report(
     ln(sep_major)
     ln()
     ln("  NOTE: Non-automated GUI/architecture items (including SWR-GUI-001/002/003/004/")
-    ln("  005/006/007/008/009/010/011) are verified via the checklist and review")
+    ln("  005/006/007/008/009/010/011/014) are verified via the checklist and review")
     ln("  guidance in dvt/DVT_Protocol.md and are not")
     ln("  included in the automated pass/fail decision.")
     ln("  NOTE: SWR-GUI-012 automated coverage comes from LocalizationTest.*.")
     ln("  DVT-GUI-16 remains supplemental GUI evidence for selector presence.")
+    ln("  NOTE: ConfigTest.ReadabilityMode* provides supporting persistence evidence for")
+    ln("  SWR-GUI-014, but the approved release verdict remains the manual GUI review.")
     ln()
     ln(sep_major)
     ln("  END OF REPORT")
