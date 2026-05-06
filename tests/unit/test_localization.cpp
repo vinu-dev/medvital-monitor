@@ -96,7 +96,7 @@ TEST_F(LocalizationTest, SupportsAllApprovedLanguages)
     }
 }
 
-// @req SWR-GUI-013 - Header patient identity strings exist across the approved languages
+// @req SWR-GUI-014 - Header patient identity strings exist across the approved languages
 TEST_F(LocalizationTest, HeaderPatientIdentityStringsExistAcrossAllLanguages)
 {
     const Language languages[] = {

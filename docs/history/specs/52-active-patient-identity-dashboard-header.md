@@ -184,7 +184,7 @@ Authentication/session boundaries remain relevant through existing
 authentication or after logout.
 
 Implementation should add one explicit GUI requirement entry, expected to be
-the next available GUI identifier (`SWR-GUI-013`), to define:
+the next available GUI identifier (`SWR-GUI-014`), to define:
 
 - header identity card presence in the authenticated dashboard
 - displayed fields: name, ID, age
@@ -280,7 +280,7 @@ Recommended targeted repo checks during implementation:
 
 ```powershell
 git diff --name-only
-rg -n "SWR-GUI-013|active patient|No active patient" requirements src include
+rg -n "SWR-GUI-014|active patient|No active patient" requirements src include
 ```
 
 Expected validation outcome:
