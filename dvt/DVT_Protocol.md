@@ -73,6 +73,7 @@ Automated GUI checks supplement but do not replace the GTest evidence used by
 | `SWR-GUI-011` | Manual visual review | Rolling status message content/motion is not asserted by current automation |
 | `SWR-GUI-012` | Unit tests + supplemental automation | `LocalizationTest.*` covers API and persistence; `DVT-GUI-16` confirms selector presence with four options |
 | `SWR-GUI-013` | Manual GUI review | Dedicated session alarm event list must stay distinct from current active alerts and disclose any bounded session reset |
+| `SWR-GUI-014` | Unit tests + manual GUI review | `DashboardFreshness.REQ_GUI_014_*` covers freshness-state computation; `GUI-MAN-07` confirms live, paused, waiting, reset, and device-mode header behavior |
 
 ### 4.3 Residual Manual GUI Checklist
 
@@ -87,6 +88,7 @@ layout behavior, or animated presentation rather than stable control state.
 | GUI-MAN-04 | Layout robustness | Resize dashboard window | Controls repaint and scale without clipping/overlap | |
 | GUI-MAN-05 | Layout robustness | Maximize dashboard window | Full layout remains legible and anchored correctly | |
 | GUI-MAN-06 | `SWR-GUI-013` | Drive a warning, critical, then recovery sequence and continue until the bounded session resets | Session Alarm Events retains the historical rows while Active Alerts returns to latest-only state, then shows an explicit session-reset disclosure when earlier rows are cleared | |
+| GUI-MAN-07 | `SWR-GUI-014` | Enable simulation, observe the header before the first accepted reading, then let the feed run, pause it, resume it, and clear or admit a new session | The header shows awaiting-first-reading before acceptance, `Last update: <N> s ago` while live, `Feed paused - last update: <N> s ago` while paused with age continuing to increase, and the cue clears or hides on reset/device mode | |
 
 ---
 
@@ -106,7 +108,8 @@ layout behavior, or animated presentation rather than stable control state.
 | `tests/unit/test_hal.cpp` (`HALTest`, `HALTestNoInit`, `SimSequenceTest`) | 12 | Supporting checks for HAL safety and simulator sequence behavior; not an approved automated DVT claim for `SWR-GUI-005` / `SWR-GUI-006` |
 | `tests/unit/test_config.cpp` (`ConfigTest`) | 10 | Supporting persistence checks for `monitor.cfg`; not a full approved automated DVT claim for `SWR-GUI-010` |
 | `tests/unit/test_localization.cpp` (`LocalizationTest`) | 8 | `SWR-GUI-012` |
-| **Total** | **293** | |
+| `tests/unit/test_dashboard_freshness.cpp` (`DashboardFreshness`) | 5 | `SWR-GUI-014` |
+| **Total** | **298** | |
 
 ### 5.2 Integration Tests (`test_integration.exe`)
 
@@ -122,9 +125,9 @@ layout behavior, or animated presentation rather than stable control state.
 
 | Criterion | Threshold |
 |---|---|
-| Unit test pass rate | 100% (`293 / 293`) |
+| Unit test pass rate | 100% (`298 / 298`) |
 | Integration test pass rate | 100% (`14 / 14`) |
-| Automated GTest total | 100% (`307 / 307`) |
+| Automated GTest total | 100% (`312 / 312`) |
 | Automated GUI checks for approved IDs | All executed approved-ID checks pass |
 | Manual GUI checklist | All applicable manual items marked Pass |
 
@@ -165,3 +168,4 @@ may execute during validation, but they do not convert `SWR-GUI-005`,
 | C | 2026-05-03 | Codex implementer | Approved SWR-GUI-012 localization evidence and updated automated totals |
 | D | 2026-05-05 | Codex implementer | Added session alarm event review evidence, GUI-MAN-06, and updated automated totals to 305 tests |
 | E | 2026-05-06 | Codex implementer | Added session-reset disclosure evidence expectations and updated automated totals to 307 tests |
+| F | 2026-05-06 | Codex implementer | Added SWR-GUI-014 freshness-cue evidence, GUI-MAN-07, and updated automated totals to 312 tests |

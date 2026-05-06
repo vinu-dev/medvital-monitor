@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo =====================================================
 echo   Patient Vital Signs Monitor -- Test Runner
-echo   307 tests: Unit (293) + Integration (14)
+echo   312 tests: Unit (298) + Integration (14)
 echo   Standard : IEC 62304 Class B
 echo =====================================================
 echo.
@@ -87,7 +87,7 @@ echo.
 :: Summary and exit code
 :: -------------------------------------------------------
 if !UNIT_RESULT! EQU 0 if !INT_RESULT! EQU 0 (
-    echo [PASS] All 307 tests passed.
+    echo [PASS] All 312 tests passed.
     echo.
     pause
     exit /b 0
