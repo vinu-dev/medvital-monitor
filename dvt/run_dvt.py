@@ -112,6 +112,7 @@ REQUIREMENT_MAP = {
     "SWR-GUI-011": (None, "MANUAL", "Rolling simulation banner verified by manual visual check"),
     "SWR-GUI-012": ("test_unit", "LocalizationTest", "Localization API, selector list, and monitor.cfg persistence"),
     "SWR-GUI-013": (None, "MANUAL", "GUI review: dedicated session alarm events list remains distinct from active alerts"),
+    "SWR-GUI-014": ("test_unit", "StatusDuration", "Current alert-state duration helper and banner timing support"),
     # GUI requirements verified via manual checklist only (GUI rendering and workflow review)
     "SWR-GUI-001": (None, "MANUAL", "Login screen: auth, error message, role detection"),
     "SWR-GUI-002": (None, "MANUAL", "Dashboard: colour-coded vital tiles update every 2 s"),

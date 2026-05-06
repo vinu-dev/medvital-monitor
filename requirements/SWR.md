@@ -1,6 +1,6 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-M
+**Document ID:** SWR-001-REV-N
 **Project:** Patient Vital Signs Monitor
 **Version:** 2.7.0
 **Date:** 2026-05-06
@@ -717,6 +717,39 @@ session event label string
 
 ---
 
+### SWR-GUI-014 â€” Current Alert-State Duration Cue
+
+**Requirement:** While active monitoring is live (`sim_enabled = 1` and
+`sim_paused = 0`), the aggregate status banner shall display a secondary
+elapsed-time cue for the current abnormal aggregate alert state:
+
+1. The cue shall be driven only by the aggregate `patient_current_status()`
+   result and shall appear only for `ALERT_WARNING` and `ALERT_CRITICAL`.
+2. The timer shall start when the software enters the current abnormal
+   aggregate state and shall continue while that same abnormal level remains
+   unchanged.
+3. The timer shall reset or clear on any of the following:
+   - `ALERT_WARNING` to `ALERT_CRITICAL`
+   - `ALERT_CRITICAL` to `ALERT_WARNING`
+   - abnormal state to `ALERT_NORMAL`
+   - simulation pause or device-mode transition
+   - clear session, admit/refresh, automatic session reset, or logout
+4. The cue shall refresh at least once per second while visible and shall use
+   the format `MM:SS`, promoting to `HH:MM:SS` after one hour.
+5. The cue shall remain visually subordinate to the existing aggregate
+   severity text and colour and shall not claim physiological onset time,
+   acknowledgement age, or escalation workflow.
+
+**Traces to:** SYS-014
+**Implemented in:** `src/gui_status_duration.c` â€” abnormal-state timing and
+formatting; `src/gui_main.c` â€” banner rendering, reset hooks, 1 Hz timer;
+`src/localization.c` â€” duration and paused-status banner strings
+**Verified by:** `tests/unit/test_gui_status_duration.cpp` â€” `StatusDuration.*`
+(10 tests) plus manual GUI review of abnormal transitions, pause, clear,
+admit/refresh, and logout behavior
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -734,3 +767,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-06 | Codex implementer | Added SWR-GUI-014 for current alert-state duration display, reset semantics, and 1 Hz refresh behavior |

@@ -14,6 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
+ * @req SWR-GUI-014
  * @req SWR-VIT-008  @req SWR-NEW-001
  */
 #ifdef _MSC_VER
@@ -37,6 +38,7 @@
 #include "gui_users.h"
 #include "hw_vitals.h"
 #include "app_config.h"
+#include "gui_status_duration.h"
 #include "localization.h"
 
 /* ===================================================================
@@ -99,6 +101,7 @@
 #define IDC_LIST_HISTORY 1301
 #define IDC_LIST_EVENTS  1302
 #define TIMER_SIM        1
+#define TIMER_ALERT_DURATION 2
 
 /* ===================================================================
  * Control IDs — Settings window
@@ -207,6 +210,7 @@ typedef struct {
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
     int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
+    GuiStatusDurationState alert_duration; /**< Aggregate abnormal-state age @req SWR-GUI-014 */
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
 
     HFONT font_hdr;
@@ -240,6 +244,8 @@ static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
 static void open_adduser(HWND parent);
+static void stop_alert_duration(HWND w);
+static void refresh_alert_duration(HWND w);
 
 /* ===================================================================
  * GDI helpers
@@ -534,18 +540,95 @@ static void paint_tiles(HDC hdc, int cw)
 
 static void paint_status_banner(HDC hdc, int cw)
 {
-    COLORREF bg, fg; const char *txt;
+    AlertLevel banner_lvl = g_app.has_patient ? patient_current_status(&g_app.patient) : ALERT_NORMAL;
+    COLORREF bg, fg;
+    const char *status_txt;
+    const char *mode_txt;
+    char duration_value[16];
+    char duration_txt[96];
     char rolling_msg[256];
     int offset;
+    RECT r;
 
     if (!g_app.sim_enabled) {
         bg  = CLR_SLATE;
         fg  = CLR_LIGHT_GRAY;
-        txt = localization_get_string(STR_DEVICE_MODE_MSG);
+        status_txt = localization_get_string(STR_DEVICE_MODE_MSG);
         fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
-        draw_text_ex(hdc, txt, 0, STAT_Y, cw, STAT_H,
+        draw_text_ex(hdc, status_txt, 0, STAT_Y, cw, STAT_H,
                      g_app.font_status, fg, DT_SINGLELINE|DT_VCENTER|DT_CENTER);
+        return;
     } else {
+        switch (banner_lvl) {
+            case ALERT_CRITICAL:
+                bg = CLR_CR_FG;
+                fg = CLR_WHITE;
+                status_txt = localization_get_string(STR_STATUS_CRITICAL);
+                break;
+            case ALERT_WARNING:
+                bg = CLR_WN_FG;
+                fg = CLR_WHITE;
+                status_txt = localization_get_string(STR_STATUS_WARNING);
+                break;
+            default:
+                bg = CLR_OK_FG;
+                fg = CLR_WHITE;
+                status_txt = localization_get_string(STR_STATUS_NORMAL);
+                break;
+        }
+
+        fill_rect(hdc, 0, STAT_Y, cw, STAT_H, bg);
+
+        duration_txt[0] = '\0';
+        if (gui_status_duration_is_active(&g_app.alert_duration)) {
+            uint64_t elapsed_seconds =
+                gui_status_duration_elapsed_seconds(&g_app.alert_duration, (uint64_t)GetTickCount64());
+            if (gui_status_duration_format(elapsed_seconds, duration_value, sizeof(duration_value))) {
+                snprintf(duration_txt, sizeof(duration_txt), "%s: %s",
+                         localization_get_string(STR_ALERT_STATE_AGE), duration_value);
+            }
+        }
+
+        draw_text_ex(hdc, status_txt,
+                     16, STAT_Y + 2,
+                     duration_txt[0] != '\0' ? cw - 252 : cw - 32,
+                     18,
+                     g_app.font_status, fg,
+                     duration_txt[0] != '\0'
+                         ? DT_SINGLELINE | DT_VCENTER | DT_LEFT
+                         : DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+
+        if (duration_txt[0] != '\0') {
+            draw_text_ex(hdc, duration_txt,
+                         cw - 236, STAT_Y + 2, 220, 18,
+                         g_app.font_tile_lbl, fg,
+                         DT_SINGLELINE | DT_VCENTER | DT_RIGHT);
+        }
+
+        if (g_app.sim_paused) {
+            mode_txt = localization_get_string(STR_SIM_PAUSED_MSG);
+            draw_text_ex(hdc, mode_txt,
+                         16, STAT_Y + 22, cw - 32, 18,
+                         g_app.font_tile_lbl, fg,
+                         DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+            return;
+        }
+
+        offset = g_app.sim_msg_scroll_offset;
+        mode_txt = localization_get_string(STR_SIM_MODE_MSG);
+        snprintf(rolling_msg, sizeof(rolling_msg),
+                 "   âœ¦  %s  âœ¦   %s  âœ¦   %s  âœ¦   %s  âœ¦",
+                 mode_txt, mode_txt, mode_txt, mode_txt);
+        r.left   = -offset;
+        r.top    = STAT_Y + 22;
+        r.right  = cw + 500;
+        r.bottom = STAT_Y + STAT_H;
+        SetTextColor(hdc, fg);
+        SetBkMode(hdc, TRANSPARENT);
+        SelectObject(hdc, g_app.font_tile_lbl);
+        DrawTextA(hdc, rolling_msg, -1, &r, DT_SINGLELINE|DT_VCENTER|DT_LEFT);
+        return;
+
         /* In simulation mode, show rolling message */
         offset = g_app.sim_msg_scroll_offset;
 
@@ -695,6 +778,7 @@ static void update_dashboard(HWND w)
     SendMessageA(GetDlgItem(w,IDC_LIST_HISTORY),LB_RESETCONTENT,0,0);
     SendMessageA(GetDlgItem(w,IDC_LIST_ALERTS), LB_RESETCONTENT,0,0);
     SendMessageA(GetDlgItem(w,IDC_LIST_EVENTS), LB_RESETCONTENT,0,0);
+    refresh_alert_duration(w);
     InvalidateRect(w, NULL, FALSE);
 
     if (!g_app.has_patient) {
@@ -804,6 +888,7 @@ static int do_admit(HWND w)
         SetFocus(GetDlgItem(w,IDC_PAT_NAME)); return 0;
     }
     patient_init(&g_app.patient,id,name,age,wt,ht);
+    gui_status_duration_reset(&g_app.alert_duration);
     g_app.has_patient=1;
     update_dashboard(w); return 1;
 }
@@ -826,6 +911,7 @@ static void do_add_reading(HWND w)
 static void do_clear(HWND w)
 {
     ZeroMemory(&g_app.patient,sizeof(g_app.patient));
+    gui_status_duration_reset(&g_app.alert_duration);
     g_app.has_patient=0;
     set_txt(w,IDC_PAT_ID,    "1001"); set_txt(w,IDC_PAT_NAME,"Sarah Johnson");
     set_txt(w,IDC_PAT_AGE,   "52");   set_txt(w,IDC_PAT_WEIGHT,"72.5");
@@ -1618,6 +1704,7 @@ static void apply_sim_mode(HWND dash)
         VitalSigns sv;
         if (!g_app.has_patient) {
             patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
+            gui_status_duration_reset(&g_app.alert_duration);
             g_app.has_patient = 1;
             set_txt(dash,IDC_PAT_ID,"2001"); set_txt(dash,IDC_PAT_NAME,"James Mitchell");
             set_txt(dash,IDC_PAT_AGE,"45");  set_txt(dash,IDC_PAT_WEIGHT,"78.0");
@@ -1630,6 +1717,7 @@ static void apply_sim_mode(HWND dash)
         SetTimer(dash, TIMER_SIM, 2000, NULL);
     } else {
         KillTimer(dash, TIMER_SIM);
+        stop_alert_duration(dash);
         g_app.sim_paused = 0;
         ZeroMemory(&g_app.patient, sizeof(g_app.patient));
         g_app.has_patient = 0;
@@ -1740,6 +1828,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         alarm_limits_load(&g_app.alarm_limits);       /* restore alarm limits @req SWR-ALM-001 */
         hw_init();
         g_app.sim_paused = 0;
+        gui_status_duration_reset(&g_app.alert_duration);
 
         /* Pause Sim and demo buttons only visible when simulation is active */
         ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
@@ -1781,6 +1870,11 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
     }
 
     case WM_TIMER:
+        if (wp == TIMER_ALERT_DURATION) {
+            refresh_alert_duration(w);
+            InvalidateRect(w, NULL, FALSE);
+            return 0;
+        }
         if (wp == TIMER_SIM && g_app.sim_enabled && !g_app.sim_paused) {
             VitalSigns v;
             if (g_app.has_patient && patient_is_full(&g_app.patient)) {
@@ -1790,6 +1884,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
                              g_app.patient.info.age, g_app.patient.info.weight_kg,
                              g_app.patient.info.height_m);
                 patient_note_session_reset(&g_app.patient, previous_reading_count);
+                gui_status_duration_reset(&g_app.alert_duration);
             }
             hw_get_next_reading(&v);
             patient_add_reading(&g_app.patient, &v);
@@ -1833,13 +1928,17 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             g_app.sim_paused = !g_app.sim_paused;
             SetWindowTextA(GetDlgItem(w,IDC_BTN_PAUSE),
                            g_app.sim_paused ? localization_get_string(STR_RESUME_SIM) : localization_get_string(STR_PAUSE_SIM));
-            InvalidateRect(w, NULL, FALSE);
+            if (g_app.sim_paused) {
+                stop_alert_duration(w);
+            }
+            update_dashboard(w);
             return 0;
         case IDC_BTN_SETTINGS:
             open_settings(w);
             return 0;
         case IDC_BTN_LOGOUT:
             KillTimer(w, TIMER_SIM);
+            stop_alert_duration(w);
             app_config_save(g_app.sim_enabled);
             ZeroMemory(&g_app.patient, sizeof(g_app.patient));
             g_app.has_patient    = 0;
@@ -1859,11 +1958,41 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_DESTROY:
         KillTimer(w, TIMER_SIM);
+        KillTimer(w, TIMER_ALERT_DURATION);
+        gui_status_duration_reset(&g_app.alert_duration);
         g_app.hwnd_dash = NULL;
         if (g_app.hwnd_login == NULL) PostQuitMessage(0);
         return 0;
     }
     return DefWindowProcA(w, msg, wp, lp);
+}
+
+static int dashboard_monitoring_live(void)
+{
+    return g_app.sim_enabled && !g_app.sim_paused;
+}
+
+static void stop_alert_duration(HWND w)
+{
+    gui_status_duration_reset(&g_app.alert_duration);
+    KillTimer(w, TIMER_ALERT_DURATION);
+}
+
+static void refresh_alert_duration(HWND w)
+{
+    AlertLevel lvl = g_app.has_patient ? patient_current_status(&g_app.patient) : ALERT_NORMAL;
+
+    gui_status_duration_update(&g_app.alert_duration,
+                               dashboard_monitoring_live(),
+                               g_app.has_patient,
+                               lvl,
+                               (uint64_t)GetTickCount64());
+
+    if (gui_status_duration_is_active(&g_app.alert_duration)) {
+        SetTimer(w, TIMER_ALERT_DURATION, 1000, NULL);
+    } else {
+        KillTimer(w, TIMER_ALERT_DURATION);
+    }
 }
 
 /* ===================================================================

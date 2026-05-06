@@ -37,6 +37,7 @@ add_library(monitor_lib STATIC
     src/news2.c
     src/alarm_limits.c
     src/trend.c
+    src/gui_status_duration.c
     src/localization.c
 )
 target_include_directories(monitor_lib PUBLIC include)

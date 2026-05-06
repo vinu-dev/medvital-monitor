@@ -89,6 +89,8 @@ static const char* g_strings_english[STR_COUNT] = {
     "!! CRITICAL — Immediate clinical action required !!",  /* STR_STATUS_CRITICAL */
     "DEVICE MODE — Enable simulation in Settings to use synthetic data",  /* STR_DEVICE_MODE_MSG */
     "SIMULATION MODE — Synthetic vital data",           /* STR_SIM_MODE_MSG */
+    "SIMULATION PAUSED - Monitoring feed held",          /* STR_SIM_PAUSED_MSG */
+    "Alert state age",                                   /* STR_ALERT_STATE_AGE */
 };
 
 /* Spanish strings */
@@ -162,6 +164,8 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "!! CRÍTICO — Se requiere acción clínica inmediata !!",
     "MODO DISPOSITIVO — Habilite la simulación en Configuración",
     "MODO SIMULACIÓN — Datos vitales sintéticos",
+    "SIMULACION EN PAUSA - Flujo de monitorizacion retenido",
+    "Tiempo en el estado de alerta",
 };
 
 /* French strings */
@@ -235,6 +239,8 @@ static const char* g_strings_french[STR_COUNT] = {
     "!! CRITIQUE — Action clinique immédiate requise !!",
     "MODE APPAREIL — Activez la simulation dans les paramètres",
     "MODE SIMULATION — Données vitales synthétiques",
+    "SIMULATION EN PAUSE - Flux de surveillance suspendu",
+    "Duree de l'etat d'alerte",
 };
 
 /* German strings */
@@ -308,6 +314,8 @@ static const char* g_strings_german[STR_COUNT] = {
     "!! KRITISCH — Sofortige klinische Maßnahme erforderlich !!",
     "GERÄT-MODUS — Aktivieren Sie die Simulation in den Einstellungen",
     "SIMULATIONSMODUS — Synthetische Vitaldaten",
+    "SIMULATION PAUSIERT - Monitoring-Datenstrom angehalten",
+    "Dauer des Alarmzustands",
 };
 
 /* All language tables */

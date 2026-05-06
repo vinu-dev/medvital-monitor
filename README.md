@@ -4,7 +4,7 @@
 
 Medical device software for real-time patient vital sign monitoring and alert generation.
 Built to **IEC 62304 Class B** and **FDA SW Validation Guidance** standards.
-**Version 2.7.0** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, a session alarm event review log, role-based settings access, rolling status message in simulation mode, 293 unit + 14 integration tests (307 total).
+**Version 2.7.0** — Six vital signs (including respiration rate), NEWS2 early warning score, configurable alarm limits (IEC 60601-1-8), trend sparkline graphs, a session alarm event review log, role-based settings access, a current alert-state duration cue in the dashboard banner, rolling status message in simulation mode, 303 unit + 14 integration tests (317 total).
 
 ---
 
@@ -327,7 +327,7 @@ from a terminal.
 | Script                 | What it does                                                          |
 |------------------------|-----------------------------------------------------------------------|
 | `build.bat`            | Configure + build everything (first run or incremental). Launches GUI.|
-| `run_tests.bat`        | Rebuild test targets and run all 307 tests. Exits non-zero on failure.|
+| `run_tests.bat`        | Rebuild test targets and run all 317 tests. Exits non-zero on failure.|
 | `run_coverage.bat`     | Build with `--coverage`, run tests, generate HTML + XML reports.      |
 | `generate_docs.bat`    | Run Doxygen to produce HTML + XML design documentation.               |
 | `create_installer.bat` | Build release exe + compile Windows installer (`dist\` folder).       |
@@ -469,9 +469,10 @@ requirements revision.
 | `tests/unit/test_hal.cpp`                       | 12     | Supporting HAL / simulator checks only |
 | `tests/unit/test_config.cpp`                    | 10     | Supporting config persistence checks only |
 | `tests/unit/test_localization.cpp`              | 8      | SWR-GUI-012                       |
+| `tests/unit/test_gui_status_duration.cpp`       | 10     | SWR-GUI-014                       |
 | `tests/integration/test_patient_monitoring.cpp` | 7      | SWR-PAT-*, SWR-VIT-*, SWR-ALT-*   |
 | `tests/integration/test_alert_escalation.cpp`   | 7      | SWR-VIT-*, SWR-ALT-*, SWR-PAT-007 |
-| **Total**                                       | **307** | **40 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
+| **Total**                                       | **317** | **41 SWRs covered across automated, architecture-review, and GUI-demo/manual evidence** |
 
 ### Test techniques applied
 
@@ -601,6 +602,7 @@ Opens `docs\html\index.html` automatically.
 | SWR-GUI-007     | `gui_users.c`/`gui_main.c`| `test_auth.cpp` — UserManagement |
 | SWR-GUI-008-010 | `gui_main.c`, `app_config.c`| `test_config.cpp` + visual    |
 | SWR-GUI-011     | `gui_main.c`              | GUI demonstration                |
+| SWR-GUI-014     | `gui_status_duration.c`, `gui_main.c` | `test_gui_status_duration.cpp` + GUI demonstration |
 | SWR-INT-MON     | All modules               | `test_patient_monitoring.cpp`    |
 | SWR-INT-ESC     | All modules               | `test_alert_escalation.cpp`      |
 
@@ -655,7 +657,8 @@ medvital-monitor/
 │   │   ├── test_trend.cpp           # 18 tests — SWR-TRD-001
 │   │   ├── test_hal.cpp             # 12 tests — SWR-GUI-005/006
 │   │   ├── test_config.cpp          # 10 tests — SWR-GUI-010
-│   │   └── test_localization.cpp    # 8 tests — SWR-GUI-012
+│   │   ├── test_localization.cpp    # 8 tests — SWR-GUI-012
+│   │   └── test_gui_status_duration.cpp  # 10 tests — SWR-GUI-014
 │   └── integration/
 │       ├── test_patient_monitoring.cpp  # 7 tests — SWR-PAT-*, SWR-VIT-*, SWR-ALT-*
 │       └── test_alert_escalation.cpp    # 7 tests — SWR-VIT-*, SWR-ALT-*, SWR-PAT-007
@@ -663,11 +666,11 @@ medvital-monitor/
 ├── requirements/
 |   |-- UNS.md                       # User Needs (17 items)
 |   |-- SYS.md                       # System Requirements (21 items)
-│   ├── SWR.md                       # Software Requirements (40 items)
-│   └── TRACEABILITY.md              # RTM — 17/17 UNS, 40/40 SWR, 307 tests
+│   ├── SWR.md                       # Software Requirements (41 items)
+│   └── TRACEABILITY.md              # RTM — 17/17 UNS, 41/41 SWR, 317 tests
 │
 ├── build.bat                        # Configure + build + launch GUI
-|-- run_tests.bat                    # Run all 307 tests
+|-- run_tests.bat                    # Run all 317 tests
 ├── run_coverage.bat                 # GCC coverage report (gcov + gcovr)
 ├── generate_docs.bat                # Doxygen HTML + XML documentation
 ├── create_installer.bat             # Build release + compile Windows installer
