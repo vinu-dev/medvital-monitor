@@ -82,6 +82,9 @@ static const char* g_strings_english[STR_COUNT] = {
     "Remove User",                  /* STR_REMOVE_USER */
     "Role",                         /* STR_ROLE */
     "Admin",                        /* STR_ADMIN */
+    "Last update: awaiting first reading",               /* STR_LAST_UPDATE_WAITING */
+    "Last update: %lu s ago",                            /* STR_LAST_UPDATE_AGE_SECONDS */
+    "Feed paused - last update: %lu s ago",              /* STR_LAST_UPDATE_PAUSED_AGE_SECONDS */
     "Clinical",                     /* STR_CLINICAL */
 
     "ALL NORMAL — Patient stable [ SIMULATION MODE ]",  /* STR_STATUS_NORMAL */
@@ -155,6 +158,9 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "Eliminar Usuario",
     "Rol",
     "Administrador",
+    "Ultima actualizacion: esperando la primera lectura",
+    "Ultima actualizacion: hace %lu s",
+    "Flujo en pausa - ultima actualizacion: hace %lu s",
     "Clínico",
 
     "TODO NORMAL — Paciente estable [ MODO SIMULACIÓN ]",
@@ -228,6 +234,9 @@ static const char* g_strings_french[STR_COUNT] = {
     "Supprimer un Utilisateur",
     "Rôle",
     "Administrateur",
+    "Derniere mise a jour : premiere lecture en attente",
+    "Derniere mise a jour : il y a %lu s",
+    "Flux en pause - derniere mise a jour : il y a %lu s",
     "Clinique",
 
     "TOUT NORMAL — Patient stable [ MODE SIMULATION ]",
@@ -301,6 +310,9 @@ static const char* g_strings_german[STR_COUNT] = {
     "Benutzer Entfernen",
     "Rolle",
     "Administrator",
+    "Letzte Aktualisierung: erste Messung ausstehend",
+    "Letzte Aktualisierung: vor %lu s",
+    "Zufuhr pausiert - letzte Aktualisierung: vor %lu s",
     "Klinisch",
 
     "ALLES NORMAL — Patient stabil [ SIMULATIONSMODUS ]",

@@ -14,7 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
- * @req SWR-VIT-008  @req SWR-NEW-001
+ * @req SWR-GUI-014  @req SWR-VIT-008  @req SWR-NEW-001
  */
 #ifdef _MSC_VER
 #  define _CRT_SECURE_NO_WARNINGS
@@ -37,6 +37,7 @@
 #include "gui_users.h"
 #include "hw_vitals.h"
 #include "app_config.h"
+#include "dashboard_freshness.h"
 #include "localization.h"
 
 /* ===================================================================
@@ -206,7 +207,9 @@ typedef struct {
     int           has_patient;
     int           sim_paused;
     int           sim_enabled;  /**< 1=simulation mode, 0=device/HAL mode @req SWR-GUI-010 */
+    int           has_last_reading_tick;
     int           sim_msg_scroll_offset; /**< Offset for rolling message in simulation mode */
+    uint64_t      last_reading_tick_ms;
     AlarmLimits   alarm_limits; /**< Configurable per-parameter alarm limits @req SWR-ALM-001 */
 
     HFONT font_hdr;
@@ -240,6 +243,8 @@ static void apply_sim_mode(HWND dash);
 static void open_settings(HWND parent);
 static void open_pwddlg(HWND parent, const char *user, int admin_mode);
 static void open_adduser(HWND parent);
+static void clear_dashboard_freshness(void);
+static int accept_reading_and_stamp(const VitalSigns *reading);
 
 /* ===================================================================
  * GDI helpers
@@ -287,12 +292,74 @@ static void draw_pill(HDC hdc, int x, int y, int w, int h,
                  DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }
 
+static void clear_dashboard_freshness(void)
+{
+    g_app.last_reading_tick_ms = 0ULL;
+    g_app.has_last_reading_tick = 0;
+}
+
+static int accept_reading_and_stamp(const VitalSigns *reading)
+{
+    if (!patient_add_reading(&g_app.patient, reading)) {
+        return 0;
+    }
+
+    g_app.last_reading_tick_ms = (uint64_t)GetTickCount64();
+    g_app.has_last_reading_tick = 1;
+    return 1;
+}
+
+static DashboardFreshness current_dashboard_freshness(void)
+{
+    return dashboard_freshness_compute(g_app.sim_enabled,
+                                       g_app.sim_paused,
+                                       g_app.has_last_reading_tick,
+                                       (uint64_t)GetTickCount64(),
+                                       g_app.last_reading_tick_ms);
+}
+
+static int format_dashboard_freshness_text(char *buffer,
+                                           size_t buffer_size,
+                                           const DashboardFreshness *freshness)
+{
+    if (buffer == NULL || buffer_size == 0U || freshness == NULL) {
+        return 0;
+    }
+
+    switch (freshness->state) {
+    case DASHBOARD_FRESHNESS_DEVICE_MODE:
+        buffer[0] = '\0';
+        return 0;
+    case DASHBOARD_FRESHNESS_NO_READING:
+        snprintf(buffer, buffer_size, "%s",
+                 localization_get_string(STR_LAST_UPDATE_WAITING));
+        return 1;
+    case DASHBOARD_FRESHNESS_LIVE_AGE:
+        snprintf(buffer, buffer_size,
+                 localization_get_string(STR_LAST_UPDATE_AGE_SECONDS),
+                 freshness->age_seconds);
+        return 1;
+    case DASHBOARD_FRESHNESS_PAUSED_AGE:
+        snprintf(buffer, buffer_size,
+                 localization_get_string(STR_LAST_UPDATE_PAUSED_AGE_SECONDS),
+                 freshness->age_seconds);
+        return 1;
+    }
+
+    buffer[0] = '\0';
+    return 0;
+}
+
 /* ===================================================================
  * Painted zones — header
  * =================================================================== */
 static void paint_header(HDC hdc, int cw)
 {
-    char buf[128];
+    char freshness_buf[160];
+    char user_buf[128];
+    DashboardFreshness freshness = current_dashboard_freshness();
+    int has_freshness = format_dashboard_freshness_text(
+        freshness_buf, sizeof(freshness_buf), &freshness);
     fill_rect(hdc, 0, 0, cw, HDR_H, CLR_NAVY);
 
     /* Medical cross (white GDI rects) */
@@ -301,16 +368,25 @@ static void paint_header(HDC hdc, int cw)
 
     /* App title */
     draw_text_ex(hdc, "  " APP_TITLE,
-                 38, 0, cw - 480, HDR_H,
+                 38, has_freshness ? 4 : 0, cw - 480, has_freshness ? 24 : HDR_H,
                  g_app.font_hdr, CLR_WHITE,
-                 DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+                 has_freshness
+                    ? (DT_SINGLELINE | DT_LEFT | DT_TOP)
+                    : (DT_SINGLELINE | DT_VCENTER | DT_LEFT));
+
+    if (has_freshness) {
+        draw_text_ex(hdc, freshness_buf,
+                     38, 30, cw - 480, 16,
+                     g_app.font_tile_lbl, RGB(191, 219, 254),
+                     DT_SINGLELINE | DT_LEFT | DT_END_ELLIPSIS);
+    }
 
     /* Info block — placed left of the header buttons (rightmost ~280px reserved for buttons) */
     if (g_app.logged_user[0]) {
         COLORREF badge_bg = (g_app.logged_role == ROLE_ADMIN) ? CLR_GOLD : CLR_TEAL;
         const char *badge_txt = (g_app.logged_role == ROLE_ADMIN) ? "ADMIN" : "CLINICAL";
-        snprintf(buf, sizeof(buf), "  %s", g_app.logged_user);
-        draw_text_ex(hdc, buf,
+        snprintf(user_buf, sizeof(user_buf), "  %s", g_app.logged_user);
+        draw_text_ex(hdc, user_buf,
                      cw - 560, 0, 160, HDR_H,
                      g_app.font_ui, RGB(186, 230, 253),
                      DT_SINGLELINE | DT_VCENTER | DT_LEFT);
@@ -805,6 +881,7 @@ static int do_admit(HWND w)
     }
     patient_init(&g_app.patient,id,name,age,wt,ht);
     g_app.has_patient=1;
+    clear_dashboard_freshness();
     update_dashboard(w); return 1;
 }
 static void do_add_reading(HWND w)
@@ -817,7 +894,7 @@ static void do_add_reading(HWND w)
     if (!parse_flt_field(w,IDC_VIT_TEMP,"Temperature",  &v.temperature))    return;
     if (!parse_int_field(w,IDC_VIT_SPO2,"SpO2",         &v.spo2))           return;
     if (!parse_int_field(w,IDC_VIT_RR,  "Resp Rate",    &v.respiration_rate)) return;
-    if (!patient_add_reading(&g_app.patient,&v)) {
+    if (!accept_reading_and_stamp(&v)) {
         MessageBoxA(w,"Reading buffer full (10 readings). Clear session to continue.",
                     APP_TITLE,MB_OK|MB_ICONWARNING); return;
     }
@@ -827,6 +904,7 @@ static void do_clear(HWND w)
 {
     ZeroMemory(&g_app.patient,sizeof(g_app.patient));
     g_app.has_patient=0;
+    clear_dashboard_freshness();
     set_txt(w,IDC_PAT_ID,    "1001"); set_txt(w,IDC_PAT_NAME,"Sarah Johnson");
     set_txt(w,IDC_PAT_AGE,   "52");   set_txt(w,IDC_PAT_WEIGHT,"72.5");
     set_txt(w,IDC_PAT_HEIGHT,"1.66"); set_txt(w,IDC_VIT_HR,"78");
@@ -850,7 +928,11 @@ static void do_scenario(HWND w, int s)
         set_txt(w,IDC_PAT_HEIGHT,"1.80"); rd=bra; n=2;
     }
     if (!do_admit(w)) return;
-    for (i=0;i<n;++i) patient_add_reading(&g_app.patient,&rd[i]);
+    for (i=0;i<n;++i) {
+        if (!accept_reading_and_stamp(&rd[i])) {
+            break;
+        }
+    }
     update_dashboard(w);
 }
 
@@ -1619,6 +1701,7 @@ static void apply_sim_mode(HWND dash)
         if (!g_app.has_patient) {
             patient_init(&g_app.patient, 2001, "James Mitchell", 45, 78.0f, 1.75f);
             g_app.has_patient = 1;
+            clear_dashboard_freshness();
             set_txt(dash,IDC_PAT_ID,"2001"); set_txt(dash,IDC_PAT_NAME,"James Mitchell");
             set_txt(dash,IDC_PAT_AGE,"45");  set_txt(dash,IDC_PAT_WEIGHT,"78.0");
             set_txt(dash,IDC_PAT_HEIGHT,"1.75");
@@ -1626,13 +1709,14 @@ static void apply_sim_mode(HWND dash)
         g_app.sim_paused = 0;
         SetWindowTextA(GetDlgItem(dash, IDC_BTN_PAUSE), localization_get_string(STR_PAUSE_SIM));
         hw_get_next_reading(&sv);
-        patient_add_reading(&g_app.patient, &sv);
+        accept_reading_and_stamp(&sv);
         SetTimer(dash, TIMER_SIM, 2000, NULL);
     } else {
         KillTimer(dash, TIMER_SIM);
         g_app.sim_paused = 0;
         ZeroMemory(&g_app.patient, sizeof(g_app.patient));
         g_app.has_patient = 0;
+        clear_dashboard_freshness();
     }
     update_dashboard(dash);
 }
@@ -1740,6 +1824,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
         alarm_limits_load(&g_app.alarm_limits);       /* restore alarm limits @req SWR-ALM-001 */
         hw_init();
         g_app.sim_paused = 0;
+        clear_dashboard_freshness();
 
         /* Pause Sim and demo buttons only visible when simulation is active */
         ShowWindow(GetDlgItem(w, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
@@ -1753,7 +1838,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             set_txt(w,IDC_PAT_AGE,"45");  set_txt(w,IDC_PAT_WEIGHT,"78.0");
             set_txt(w,IDC_PAT_HEIGHT,"1.75");
             hw_get_next_reading(&first_v);
-            patient_add_reading(&g_app.patient, &first_v);
+            accept_reading_and_stamp(&first_v);
             SetTimer(w, TIMER_SIM, 2000, NULL);
         }
         reposition_dash_controls(w, WIN_CW);   /* initial layout */
@@ -1781,22 +1866,30 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
     }
 
     case WM_TIMER:
-        if (wp == TIMER_SIM && g_app.sim_enabled && !g_app.sim_paused) {
-            VitalSigns v;
-            if (g_app.has_patient && patient_is_full(&g_app.patient)) {
-                int previous_reading_count = g_app.patient.reading_count;
-                patient_init(&g_app.patient,
-                             g_app.patient.info.id, g_app.patient.info.name,
-                             g_app.patient.info.age, g_app.patient.info.weight_kg,
-                             g_app.patient.info.height_m);
-                patient_note_session_reset(&g_app.patient, previous_reading_count);
+        if (wp == TIMER_SIM && g_app.sim_enabled) {
+            if (g_app.sim_paused) {
+                InvalidateRect(w, NULL, FALSE);
+                return 0;
             }
-            hw_get_next_reading(&v);
-            patient_add_reading(&g_app.patient, &v);
-            g_app.has_patient = 1;
-            /* Advance rolling message in simulation mode */
-            g_app.sim_msg_scroll_offset = (g_app.sim_msg_scroll_offset + 3) % 800;
-            update_dashboard(w);
+
+            {
+                VitalSigns v;
+                if (g_app.has_patient && patient_is_full(&g_app.patient)) {
+                    int previous_reading_count = g_app.patient.reading_count;
+                    patient_init(&g_app.patient,
+                                 g_app.patient.info.id, g_app.patient.info.name,
+                                 g_app.patient.info.age, g_app.patient.info.weight_kg,
+                                 g_app.patient.info.height_m);
+                    patient_note_session_reset(&g_app.patient, previous_reading_count);
+                    clear_dashboard_freshness();
+                }
+                hw_get_next_reading(&v);
+                accept_reading_and_stamp(&v);
+                g_app.has_patient = 1;
+                /* Advance rolling message in simulation mode */
+                g_app.sim_msg_scroll_offset = (g_app.sim_msg_scroll_offset + 3) % 800;
+                update_dashboard(w);
+            }
         }
         return 0;
 
@@ -1844,6 +1937,7 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
             ZeroMemory(&g_app.patient, sizeof(g_app.patient));
             g_app.has_patient    = 0;
             g_app.sim_paused     = 0;
+            clear_dashboard_freshness();
             g_app.logged_user[0] = '\0';
             g_app.logged_username[0] = '\0';
             g_app.hwnd_login = CreateWindowExA(

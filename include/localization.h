@@ -98,6 +98,9 @@ typedef enum {
     STR_REMOVE_USER,
     STR_ROLE,
     STR_ADMIN,
+    STR_LAST_UPDATE_WAITING,
+    STR_LAST_UPDATE_AGE_SECONDS,
+    STR_LAST_UPDATE_PAUSED_AGE_SECONDS,
     STR_CLINICAL,
 
     /* Status messages */

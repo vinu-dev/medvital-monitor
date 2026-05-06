@@ -29,6 +29,7 @@ option(ENABLE_COVERAGE "Enable GCC/Clang coverage instrumentation" OFF)
 # Production library — shared by app and all test targets
 # -------------------------------------------------------
 add_library(monitor_lib STATIC
+    src/dashboard_freshness.c
     src/vitals.c
     src/alerts.c
     src/patient.c

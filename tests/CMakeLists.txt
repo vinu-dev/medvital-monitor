@@ -19,6 +19,7 @@ add_executable(test_unit
     unit/test_hal.cpp
     unit/test_config.cpp
     unit/test_localization.cpp
+    unit/test_dashboard_freshness.cpp
     unit/test_news2.cpp
     unit/test_alarm_limits.cpp
     unit/test_trend.cpp

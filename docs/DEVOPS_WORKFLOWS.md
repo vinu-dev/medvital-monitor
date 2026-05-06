@@ -27,7 +27,7 @@ dispatch.
  │  ┌───────────┐    ┌──────────────────┐    ┌───────────────────────┐     │
  │  │ 1. BUILD  │───▸│ 2a. CPPCHECK     │───▸│ 3. UNIT & INTEGRATION │     │
  │  │   ALL     │    │    (ubuntu)       │    │    TESTS              │     │
- │  │ (windows) │    ├──────────────────┤    │    307 GTest cases    │     │
+ │  │ (windows) │    ├──────────────────┤    │    312 GTest cases    │     │
  │  └───────────┘    │ 2b. CODEQL       │───▸│    (windows)          │     │
  │                   │    (windows)      │    └───────────┬───────────┘     │
  │                   └──────────────────┘                │                 │
@@ -129,7 +129,7 @@ activity for Class B software.
 |-------------|-----------------------------------------------|
 | Runner      | `windows-latest`                              |
 | Framework   | Google Test (release-1.10.0)                   |
-| Unit tests  | 293 tests across 30 suites                     |
+| Unit tests  | 298 tests across 32 suites                     |
 | Integration | 14 tests across 2 suites                       |
 | Output      | JUnit XML → artefact (90-day retention)        |
 | Summary     | Pass/fail table in Actions job summary         |
@@ -148,6 +148,7 @@ activity for Class B software.
 | `test_hal.cpp`           | 12    | Supporting HAL / simulator checks |
 | `test_config.cpp`        | 10    | Supporting config persistence checks |
 | `test_localization.cpp`  | 8     | SWR-GUI-012                      |
+| `test_dashboard_freshness.cpp` | 5 | SWR-GUI-014                      |
 | `test_patient_monitoring.cpp` | 7 | End-to-end vital to alert flow plus historical event retention |
 | `test_alert_escalation.cpp` | 7  | Alert to NEWS2 to alarm escalation plus parameter-set review transitions |
 

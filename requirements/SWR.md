@@ -717,6 +717,33 @@ session event label string
 
 ---
 
+### SWR-GUI-014 â€” Latest Reading Freshness Cue
+
+**Requirement:** When simulation mode is enabled, the dashboard header shall
+render one passive freshness cue derived only from the most recent
+successfully accepted reading. The GUI shall record a monotonic tick when a
+reading is accepted during dashboard startup, `apply_sim_mode()`,
+`WM_TIMER`-driven live acquisition, manual `Add Reading`, and demo scenario
+injection. The cue shall use localized strings and the following states:
+`Last update: awaiting first reading` when no reading has been accepted in the
+current session, `Last update: <N> s ago` while the simulation feed is live,
+`Feed paused - last update: <N> s ago` while the feed is paused, and no
+freshness cue in device mode. Resetting or discarding the current session
+shall clear the stored freshness state. Paused simulation shall continue to
+repaint on the existing timer cadence so the displayed age can continue to
+increase without acquiring a new reading. The cue shall not alter
+`PatientRecord`, alert generation, NEWS2 scoring, or alarm semantics.
+
+**Traces to:** SYS-014
+**Implemented in:** `src/gui_main.c` â€” `paint_header()`, `do_admit()`,
+`do_add_reading()`, `do_clear()`, `do_scenario()`, `apply_sim_mode()`,
+`dash_proc()`; `src/dashboard_freshness.c` â€” `dashboard_freshness_compute()`;
+`src/localization.c` â€” freshness header strings
+**Verified by:** `tests/unit/test_dashboard_freshness.cpp` â€” `DashboardFreshness.REQ_GUI_014_*`
+(5 tests); Manual GUI review (`GUI-MAN-07`)
+
+---
+
 ## Revision History
 
 | Rev | Date       | Author          | Description          |
@@ -734,3 +761,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-06 | Codex implementer | Added SWR-GUI-014 for the dashboard latest-reading freshness cue |

@@ -163,7 +163,9 @@ active patient in a graphical dashboard using colour-coded status tiles:
 green for NORMAL, amber for WARNING, and red for CRITICAL. The aggregate
 alert status shall be displayed in a banner using the same colour convention.
 The dashboard shall refresh automatically after each new reading is added.
-**Traces to:** UNS-014, UNS-005, UNS-006, UNS-010
+When simulation mode is enabled, the header shall also show a passive
+freshness cue for the latest accepted reading using non-clinical wording.
+**Traces to:** UNS-014, UNS-005, UNS-006, UNS-010, UNS-015
 
 ---
 
@@ -266,3 +268,4 @@ events have been recorded.
 | D   | 2026-04-07 | vinu-engineer   | Added SYS-016 (multi-user accounts), SYS-017 (RBAC) |
 | E   | 2026-05-05 | Codex implementer | Added SYS-018 (RR) and SYS-019 (NEWS2) to restore defensible traceability for existing clinical requirements |
 | F   | 2026-05-05 | Codex implementer | Added SYS-020 and SYS-021 for session alarm event review |
+| G   | 2026-05-06 | Codex implementer | Expanded SYS-014 to require a passive latest-reading freshness cue in the dashboard header |

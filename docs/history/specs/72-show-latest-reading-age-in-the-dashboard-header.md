@@ -228,7 +228,7 @@ Recommended requirement update strategy:
 
 - amend `SYS-014` to mention a passive freshness cue for the latest accepted
   reading in the graphical dashboard
-- add a new software requirement, preferably `SWR-GUI-013`, that defines:
+- add a new software requirement, using the next available GUI identifier (`SWR-GUI-014` on the rebased branch), that defines:
   accepted-reading-boundary semantics, age-only display wording, no-reading and
   paused states, monotonic timing basis, and no effect on alerting/NEWS2
 - add RTM coverage linking the new SWR to `UNS-014`, `UNS-015`, and `SYS-014`

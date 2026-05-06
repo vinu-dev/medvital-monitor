@@ -20,7 +20,7 @@ The pipeline (`.github/workflows/pipeline.yml`) enforces this sequence — each 
 
 1. **Build All** — CMake + Ninja, all targets (Windows / MinGW-w64)
 2. **Static Analysis + SAST** — cppcheck + CodeQL (parallel, both gate on build)
-3. **Unit & Integration Tests** — GTest, 307 test cases
+3. **Unit & Integration Tests** — GTest, 312 test cases
 4. **Code Coverage** — gcovr, source-level line + branch coverage
 5. **DVT** — Design Verification Tests with IEC 62304 report
 6. **Publish Reports** — GitHub Pages dashboard (main branch only)
