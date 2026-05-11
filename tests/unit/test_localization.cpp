@@ -96,6 +96,33 @@ TEST_F(LocalizationTest, SupportsAllApprovedLanguages)
     }
 }
 
+// @req SWR-GUI-014 - Header patient identity strings exist across the approved languages
+TEST_F(LocalizationTest, HeaderPatientIdentityStringsExistAcrossAllLanguages)
+{
+    const Language languages[] = {
+        LOC_LANG_ENGLISH,
+        LOC_LANG_SPANISH,
+        LOC_LANG_FRENCH,
+        LOC_LANG_GERMAN,
+    };
+    const StringID ids[] = {STR_ACTIVE_PATIENT, STR_NO_ACTIVE_PATIENT};
+
+    for (Language lang : languages)
+    {
+        localization_set_language(lang);
+        for (StringID id : ids)
+        {
+            const char *value = localization_get_string(id);
+            ASSERT_NE(nullptr, value);
+            EXPECT_STRNE("", value);
+        }
+    }
+
+    localization_set_language(LOC_LANG_ENGLISH);
+    EXPECT_STREQ("Active patient", localization_get_string(STR_ACTIVE_PATIENT));
+    EXPECT_STREQ("No active patient", localization_get_string(STR_NO_ACTIVE_PATIENT));
+}
+
 // @req SWR-GUI-012 - Invalid language values do not change the current selection
 TEST_F(LocalizationTest, InvalidLanguageValuesAreIgnored)
 {

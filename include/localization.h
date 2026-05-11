@@ -54,6 +54,8 @@ typedef enum {
     STR_HEIGHT_M,
     STR_ADMIT,
     STR_ADMIT_REFRESH,
+    STR_ACTIVE_PATIENT,
+    STR_NO_ACTIVE_PATIENT,
 
     /* Vitals */
     STR_HR_BPM,

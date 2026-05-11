@@ -14,6 +14,7 @@
  * @req SWR-GUI-001  @req SWR-GUI-002  @req SWR-GUI-003  @req SWR-GUI-004
  * @req SWR-SEC-001  @req SWR-SEC-002  @req SWR-SEC-003
  * @req SWR-GUI-007  @req SWR-GUI-008  @req SWR-GUI-009  @req SWR-GUI-010
+ * @req SWR-GUI-013  @req SWR-GUI-014
  * @req SWR-VIT-008  @req SWR-NEW-001
  */
 #ifdef _MSC_VER
@@ -186,6 +187,9 @@
 #define CLR_CR_FG      RGB(185,  28,  28)
 #define CLR_GOLD       RGB(218, 165,  32)
 #define CLR_TEAL       RGB( 32, 178, 170)
+#define CLR_HDR_CARD_BG RGB(15,  23,  42)
+#define CLR_HDR_CARD_BR RGB(96, 165, 250)
+#define CLR_HDR_CARD_FG RGB(191,219, 254)
 
 /* ===================================================================
  * Global application state
@@ -273,6 +277,18 @@ static void draw_text_ex(HDC hdc, const char *txt,
     SelectObject(hdc, old);
 }
 
+static int measure_text_width(HDC hdc, HFONT font, const char *txt)
+{
+    SIZE sz = {0, 0};
+    HFONT old = (HFONT)SelectObject(hdc, font);
+
+    if (!GetTextExtentPoint32A(hdc, txt, lstrlenA(txt), &sz))
+        sz.cx = 0;
+
+    SelectObject(hdc, old);
+    return sz.cx;
+}
+
 static void draw_pill(HDC hdc, int x, int y, int w, int h,
                        COLORREF bg, const char *txt, HFONT font)
 {
@@ -287,44 +303,130 @@ static void draw_pill(HDC hdc, int x, int y, int w, int h,
                  DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }
 
+static int header_settings_x(int cw)
+{
+    return g_app.sim_enabled ? (cw - 272) : (cw - 176);
+}
+
 /* ===================================================================
  * Painted zones — header
  * =================================================================== */
+static void draw_header_identity_card(HDC hdc, int x, int y, int w, int h)
+{
+    char meta[64];
+    HBRUSH br;
+    HPEN pen;
+    HBRUSH old_br;
+    HPEN old_pen;
+
+    if (w <= 0 || h <= 0) return;
+
+    br = CreateSolidBrush(CLR_HDR_CARD_BG);
+    pen = CreatePen(PS_SOLID, 1, CLR_HDR_CARD_BR);
+    old_br = (HBRUSH)SelectObject(hdc, br);
+    old_pen = (HPEN)SelectObject(hdc, pen);
+    RoundRect(hdc, x, y, x+w, y+h, 12, 12);
+    SelectObject(hdc, old_br);
+    SelectObject(hdc, old_pen);
+    DeleteObject(br);
+    DeleteObject(pen);
+
+    draw_text_ex(hdc, localization_get_string(STR_ACTIVE_PATIENT),
+                 x + 10, y + 4, w - 20, 12,
+                 g_app.font_tile_lbl, CLR_HDR_CARD_FG,
+                 DT_SINGLELINE | DT_LEFT | DT_END_ELLIPSIS);
+
+    if (g_app.has_patient) {
+        draw_text_ex(hdc, g_app.patient.info.name,
+                     x + 10, y + 14, w - 20, 14,
+                     g_app.font_status, CLR_WHITE,
+                     DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
+        snprintf(meta, sizeof(meta), "%s %d | %s %d",
+                 localization_get_string(STR_PATIENT_ID), g_app.patient.info.id,
+                 localization_get_string(STR_AGE), g_app.patient.info.age);
+        draw_text_ex(hdc, meta,
+                     x + 10, y + 27, w - 20, 10,
+                     g_app.font_tile_lbl, CLR_HDR_CARD_FG,
+                     DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
+    } else {
+        draw_text_ex(hdc, localization_get_string(STR_NO_ACTIVE_PATIENT),
+                     x + 10, y + 18, w - 20, 14,
+                     g_app.font_ui, CLR_HDR_CARD_FG,
+                     DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
+    }
+}
+
 static void paint_header(HDC hdc, int cw)
 {
     char buf[128];
+    const int title_x = 38;
+    const int title_gap = 12;
+    const int title_min_w = 96;
+    const int card_min_w = 108;
+    const int buttons_left = header_settings_x(cw);
+    const int badge_w = 86;
+    const int badge_x = buttons_left - badge_w - 6;
+    const int user_w = (cw < 1100) ? 80 : 120;
+    const int user_x = badge_x - user_w - 8;
+    const int content_right = user_x - 12;
+    const int title_natural_w = measure_text_width(hdc, g_app.font_hdr, "  " APP_TITLE) + 6;
+    int title_w = title_natural_w;
+    int card_x = content_right;
+    int card_w = 0;
     fill_rect(hdc, 0, 0, cw, HDR_H, CLR_NAVY);
 
     /* Medical cross (white GDI rects) */
     fill_rect(hdc, 14,  12, 10, 32, CLR_WHITE);
     fill_rect(hdc,  9,  22, 20, 12, CLR_WHITE);
 
-    /* App title */
-    draw_text_ex(hdc, "  " APP_TITLE,
-                 38, 0, cw - 480, HDR_H,
-                 g_app.font_hdr, CLR_WHITE,
-                 DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+    if (title_w > content_right - title_x)
+        title_w = content_right - title_x;
 
-    /* Info block — placed left of the header buttons (rightmost ~280px reserved for buttons) */
+    /* Info block — reserve space for the card only when a dashboard session is active. */
     if (g_app.logged_user[0]) {
         COLORREF badge_bg = (g_app.logged_role == ROLE_ADMIN) ? CLR_GOLD : CLR_TEAL;
         const char *badge_txt = (g_app.logged_role == ROLE_ADMIN) ? "ADMIN" : "CLINICAL";
+        const int available_w = content_right - title_x;
+
+        if (available_w > title_gap + card_min_w) {
+            int max_title_w = available_w - title_gap - card_min_w;
+
+            if (title_w > max_title_w)
+                title_w = max_title_w;
+            if (title_w < title_min_w)
+                title_w = title_min_w;
+
+            card_x = title_x + title_w + title_gap;
+            card_w = content_right - card_x;
+        }
+
+        if (card_w > 96)
+            draw_header_identity_card(hdc, card_x, 8, card_w, HDR_H - 16);
         snprintf(buf, sizeof(buf), "  %s", g_app.logged_user);
         draw_text_ex(hdc, buf,
-                     cw - 560, 0, 160, HDR_H,
+                     user_x, 0, badge_x - user_x - 8, HDR_H,
                      g_app.font_ui, RGB(186, 230, 253),
-                     DT_SINGLELINE | DT_VCENTER | DT_LEFT);
-        draw_pill(hdc, cw - 400, 15, 86, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
+                     DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS);
+        draw_pill(hdc, badge_x, 15, badge_w, 26, badge_bg, badge_txt, g_app.font_tile_lbl);
     }
+
+    if (title_w < 0)
+        title_w = 0;
+
+    /* App title */
+    draw_text_ex(hdc, "  " APP_TITLE,
+                 title_x, 0, title_w, HDR_H,
+                 g_app.font_hdr, CLR_WHITE,
+                 DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS);
 
     /* Sim status indicator — only shown when simulation is active */
     if (g_app.sim_enabled) {
         const char *mode_txt = g_app.sim_paused ? "SIM PAUSED" : "* SIM LIVE";
         COLORREF    mode_clr = g_app.sim_paused ? RGB(253,224,71) : RGB(134,239,172);
         draw_text_ex(hdc, mode_txt,
-                     cw - 560, 32, 108, 22,
+                     user_x, 32, badge_x - user_x - 8, 18,
                      g_app.font_tile_lbl, mode_clr,
-                     DT_SINGLELINE | DT_LEFT);
+                     DT_SINGLELINE | DT_LEFT | DT_END_ELLIPSIS);
     }
 }
 
@@ -673,7 +775,7 @@ static void reposition_dash_controls(HWND w, int cw)
     SetWindowPos(GetDlgItem(w, IDC_BTN_PAUSE),  NULL, cw - 176, 14, 86, 28, SWP_NOZORDER|SWP_NOACTIVATE);
 
     btn = GetDlgItem(w, IDC_BTN_SETTINGS);
-    if (btn)  SetWindowPos(btn, NULL, cw - 272, 14, 86, 28, SWP_NOZORDER|SWP_NOACTIVATE);
+    if (btn)  SetWindowPos(btn, NULL, header_settings_x(cw), 14, 86, 28, SWP_NOZORDER|SWP_NOACTIVATE);
 
     /* Wide list boxes — stretch horizontally */
     SetWindowPos(GetDlgItem(w, IDC_LIST_ALERTS),  NULL, 20, CY+182, cw - 40, 72,  SWP_NOZORDER|SWP_NOACTIVATE);
@@ -1610,6 +1712,8 @@ static LRESULT CALLBACK adduser_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
  * =================================================================== */
 static void apply_sim_mode(HWND dash)
 {
+    RECT cr;
+
     ShowWindow(GetDlgItem(dash, IDC_BTN_PAUSE), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
     ShowWindow(GetDlgItem(dash, IDC_BTN_SCEN1), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
     ShowWindow(GetDlgItem(dash, IDC_BTN_SCEN2), g_app.sim_enabled ? SW_SHOW : SW_HIDE);
@@ -1634,6 +1738,8 @@ static void apply_sim_mode(HWND dash)
         ZeroMemory(&g_app.patient, sizeof(g_app.patient));
         g_app.has_patient = 0;
     }
+    GetClientRect(dash, &cr);
+    reposition_dash_controls(dash, cr.right);
     update_dashboard(dash);
 }
 
@@ -1782,18 +1888,20 @@ static LRESULT CALLBACK dash_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_TIMER:
         if (wp == TIMER_SIM && g_app.sim_enabled && !g_app.sim_paused) {
-            VitalSigns v;
-            if (g_app.has_patient && patient_is_full(&g_app.patient)) {
-                int previous_reading_count = g_app.patient.reading_count;
-                patient_init(&g_app.patient,
-                             g_app.patient.info.id, g_app.patient.info.name,
-                             g_app.patient.info.age, g_app.patient.info.weight_kg,
-                             g_app.patient.info.height_m);
-                patient_note_session_reset(&g_app.patient, previous_reading_count);
+            if (g_app.has_patient) {
+                VitalSigns v;
+
+                if (patient_is_full(&g_app.patient)) {
+                    int previous_reading_count = g_app.patient.reading_count;
+                    patient_init(&g_app.patient,
+                                 g_app.patient.info.id, g_app.patient.info.name,
+                                 g_app.patient.info.age, g_app.patient.info.weight_kg,
+                                 g_app.patient.info.height_m);
+                    patient_note_session_reset(&g_app.patient, previous_reading_count);
+                }
+                hw_get_next_reading(&v);
+                patient_add_reading(&g_app.patient, &v);
             }
-            hw_get_next_reading(&v);
-            patient_add_reading(&g_app.patient, &v);
-            g_app.has_patient = 1;
             /* Advance rolling message in simulation mode */
             g_app.sim_msg_scroll_offset = (g_app.sim_msg_scroll_offset + 3) % 800;
             update_dashboard(w);

@@ -1,6 +1,6 @@
 # Software Requirements Specification (SWR)
 
-**Document ID:** SWR-001-REV-M
+**Document ID:** SWR-001-REV-N
 **Project:** Patient Vital Signs Monitor
 **Version:** 2.7.0
 **Date:** 2026-05-06
@@ -714,6 +714,32 @@ reading.
 `reposition_dash_controls()`, `update_dashboard()`; `src/localization.c` —
 session event label string
 **Verified by:** Manual GUI review (`GUI-MAN-06`)
+ 
+### SWR-GUI-014 - Active Patient Identity Card In Dashboard Header
+
+**Requirement:** The authenticated dashboard header shall provide a persistent,
+read-only active-patient identity card that reuses the live patient session
+state already shown in the patient bar.
+
+1. When `has_patient != 0`, the card shall display the active patient's stored
+   name, ID, and age.
+2. When no patient is active, the card shall display a clear empty state such
+   as `No active patient`.
+3. The card shall render only from the current in-memory patient/session state
+   and shall clear immediately on Clear Session, device-mode transitions, and
+   logout.
+4. The card shall remain non-interactive and shall not modify admission,
+   alerting, NEWS2, persistence, or patient-selection workflows.
+5. Any new visible header-card label or empty-state text shall come from the
+   static localization layer.
+
+**Traces to:** SYS-008, SYS-011, SYS-014
+**Implemented in:** `src/gui_main.c` - `paint_header()`; `include/localization.h`,
+`src/localization.c` - header identity strings
+**Verified by:** Structured GUI review across Admit/Refresh, scenario changes,
+timer-driven updates, Clear Session, device mode, and logout;
+`tests/unit/test_localization.cpp` -
+`LocalizationTest.HeaderPatientIdentityStringsExistAcrossAllLanguages`
 
 ---
 
@@ -734,3 +760,4 @@ session event label string
 | K   | 2026-05-05 | Codex implementer | Restored defensible SYS-level traceability for SWR-VIT-008 and SWR-NEW-001; no clinical behavior changes |
 | L   | 2026-05-05 | Codex implementer | Added SWR-PAT-007/008 and SWR-GUI-013 for session alarm event review |
 | M   | 2026-05-06 | Codex implementer | Added explicit session-reset disclosure expectations for session review surfaces |
+| N   | 2026-05-06 | Codex implementer | Added SWR-GUI-014 for the localized active-patient identity card in the dashboard header |

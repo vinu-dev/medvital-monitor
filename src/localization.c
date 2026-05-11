@@ -43,6 +43,8 @@ static const char* g_strings_english[STR_COUNT] = {
     "Height (m)",                   /* STR_HEIGHT_M */
     "Admit",                        /* STR_ADMIT */
     "Admit / Refresh",              /* STR_ADMIT_REFRESH */
+    "Active patient",               /* STR_ACTIVE_PATIENT */
+    "No active patient",            /* STR_NO_ACTIVE_PATIENT */
 
     "HR (bpm)",                     /* STR_HR_BPM */
     "Systolic",                     /* STR_SYSTOLIC */
@@ -116,6 +118,8 @@ static const char* g_strings_spanish[STR_COUNT] = {
     "Altura (m)",
     "Admitir",
     "Admitir / Actualizar",
+    "Paciente activo",
+    "No hay paciente activo",
 
     "FC (lpm)",
     "Sistólica",
@@ -189,6 +193,8 @@ static const char* g_strings_french[STR_COUNT] = {
     "Hauteur (m)",
     "Admettre",
     "Admettre / Actualiser",
+    "Patient actif",
+    "Aucun patient actif",
 
     "FC (bpm)",
     "Systolique",
@@ -262,6 +268,8 @@ static const char* g_strings_german[STR_COUNT] = {
     "Höhe (m)",
     "Aufnehmen",
     "Aufnehmen / Aktualisieren",
+    "Aktiver Patient",
+    "Kein aktiver Patient",
 
     "HF (bpm)",
     "Systolisch",
